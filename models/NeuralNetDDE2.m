@@ -1,0 +1,68 @@
+% NeuralNetDDE Simple neural network with constant transmission delays
+%   Implements a general time-delayed firing-rate neural network
+%        tau * Vi'(t) = -Vi(t) + F(k*Kij*Vi(t-di) + Ii)
+%   where each neuron has a specific time delay
+%        V(t) is an (nx1) vector of firing rates
+%        Kij is an (nxn) connection matrix
+%        k is a scaling parameter
+%        di is an (nx1) vector of delay constants
+%        Ii is an (nx1) vector of injection currents
+%        F(U) is a sigmoid function
+%        tau is a time constant
+%
+% Example: Using the Brain Dynamics Toolbox
+%   n = 20;                     % number of neurons
+%   sys = NeuralNetDDE2(n);     % construct the system struct
+%   gui = bdGUI(sys);           % Open the Brain Dynamics GUI
+%
+% Copyright (C) 2016 Stewart Heitmann <heitmann@ego.id.au>
+% Licensed under the Academic Free License 3.0
+% https://opensource.org/licenses/AFL-3.0
+%
+function sys = NeuralNetDDE2(n)
+    % Random symmetric coupling matrix
+    Kij = 0.5*rand(n,n);
+    Kij = Kij + Kij';
+
+    % Construct the system struct
+    sys.ddefun = @ddefun;               % Handle to our DDE function
+    sys.pardef = {'Kij',Kij;            % DDE parameters {'name',value}
+                  'k',1/n;
+                  'Ie',rand(n,1);
+                  'tau',10};
+    sys.lagdef = {'lags',rand(n,1)};    % DDE lag parameters {'name',value}
+    sys.vardef = {'V',rand(n,1)};       % DDE variables {'name',value}
+    sys.solver = {'dde23'};             % pertinent matlab DDE solvers
+    sys.ddeopt = ddeset();              % default DDE solver options
+    sys.tspan = [0 200];                % default time span [begin end]
+    sys.texstr = {'\textbf{NeuralNetDDE2} \medskip';
+                  'Generic time-delayed firing-rate neural network \smallskip';
+                  '\qquad $\tau \dot V_i = -V_i + F\big(k \sum_j K_{ij} \, V_j(t-d_j) + I_i \big)$ \smallskip';
+                  'where each neuron has a unique time delay, \smallskip';
+                  '\qquad $V_i(t)$ is the firing rate of the $i^{th}$ neuron, \smallskip';
+                  '\qquad $K$ is the network connectivity matrix ($n$ x $n$), \smallskip';
+                  '\qquad $k$ is a scaling parameter, \smallskip';
+                  '\qquad $d$ is a vector of delay constants ($n$ x $1$), \smallskip';
+                  '\qquad $I$ is a vector of injection currents ($n$ x $1$), \smallskip';
+                  '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoid function, \smallskip';
+                  '\qquad $\tau$ is the time constant of the dynamics, \smallskip';
+                  '\qquad $i{=}1 \dots n$. \medskip';
+                  'Notes';
+                  ['\qquad 1. This simulation has $n{=}',num2str(n),'$ neurons.']};
+    
+end
+
+% The DDE function.
+function dV = ddefun(t,V,Z,Kij,k,Ie,tau)  
+    % extract the lagged values of V from the Z matrix (n neurons x n lags)
+    Vlag = diag(Z);
+    
+    % Delay Differential Equation
+    dV = (-V + F(k*Kij*Vlag + Ie))./tau;
+end
+    
+% Sigmoid function
+function y=F(x)
+    y = 1./(1+exp(-x));
+end
+
