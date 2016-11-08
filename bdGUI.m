@@ -84,9 +84,6 @@ classdef bdGUI
                 bdLatexPanel(this.tabgroup,'Equations',sys.texstr);
             end
             
-            % construct the Solver panel
-            bdSolverPanel(this.tabgroup,'Solver',sys,this.control);
-            
             % construct the Time Portrait panel
             bdTimePortrait(this.tabgroup,'Time Portrait',sys,this.control);
             
@@ -95,6 +92,9 @@ classdef bdGUI
             
             % construct the Space-Time panel
             bdSpaceTimePortrait(this.tabgroup,'Space-Time',sys,this.control);
+            
+            % construct the Solver panel
+            bdSolverPanel(this.tabgroup,'Solver',sys,this.control);
             
             % register a callback for resizing the figure
             set(this.fig,'SizeChangedFcn', @(~,~) this.SizeChanged());

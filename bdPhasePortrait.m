@@ -31,13 +31,14 @@ classdef bdPhasePortrait < handle
     % POSSIBILITY OF SUCH DAMAGE.
     
     properties (Access=private) 
-        tab         % handle to uitab object
-        ax          % handle to plot axes
-        popupx      % handle to X popup
-        popupy      % handle to Y popup
-        popupz      % handle to Z popup
-        checkbox3D  % handle to 3D checkbox
-        Ymap        % map Y elements to variable name and indices
+        tab                 % handle to uitab object
+        ax                  % handle to plot axes
+        popupx              % handle to X popup
+        popupy              % handle to Y popup
+        popupz              % handle to Z popup
+        checkbox3D          % handle to 3D checkbox
+        Ymap                % map Y elements to variable name and indices
+        vecfield = true     % vector field flag
     end
     
     methods
@@ -50,7 +51,7 @@ classdef bdPhasePortrait < handle
             %    title is a string defining the name given to the new tab.
             %    sys is the system struct defining the model.
             %    control is a handle to the GUI control panel.
-
+            
             % map all variables to their names and group indexes
             this.Ymap = enumerate(sys.vardef);
             nvardef = size(sys.vardef,1);
@@ -64,12 +65,12 @@ classdef bdPhasePortrait < handle
             parentw = this.tab.Position(3);
             parenth = this.tab.Position(4);
 
-            % plot axes
+            % axes
             posx = 50;
             posy = 80;
             posw = parentw-65;
             posh = parenth-90;
-            this.ax = axes('Parent',this.tab, 'Units','pixels', 'Position',[posx posy posw posh]);           
+            this.ax  = axes('Parent',this.tab, 'Units','pixels', 'Position',[posx posy posw posh]);           
             
             % x selector
             posx = 10;
@@ -155,6 +156,7 @@ classdef bdPhasePortrait < handle
             zstr = this.popupz.String{zindx};
             tindx = find(control.sol.x>=0);
             if this.checkbox3D.Value
+                % plot current trajectory in 3D
                 x = control.sol.y(xindx,tindx);
                 y = control.sol.y(yindx,tindx);
                 z = control.sol.y(zindx,tindx);
@@ -165,7 +167,25 @@ classdef bdPhasePortrait < handle
                 xlabel(this.ax,xstr, 'FontSize',16);
                 ylabel(this.ax,ystr, 'FontSize',16);
                 zlabel(this.ax,zstr, 'FontSize',16);
+
+                if this.vecfield
+                    % compute vector field
+                    xlimit = this.ax.XLim;
+                    ylimit = this.ax.YLim;
+                    zlimit = this.ax.ZLim;
+                    [xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh] = this.VectorField3D(control,xindx,yindx,zindx,xlimit,ylimit,zlimit);
+
+                    % plot vector field in axv
+                    hold(this.ax, 'on');                                
+                    quiver3(xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh,'parent',this.ax, 'color','b');
+                    % dont let the quiver plot change the original axes limits
+                    this.ax.XLim = xlimit;
+                    this.ax.YLim = ylimit;
+                    this.ax.ZLim = zlimit;
+                    hold(this.ax, 'off');                
+                end
             else
+                % plot current trajectory in 2D
                 x = control.sol.y(xindx,tindx);
                 y = control.sol.y(yindx,tindx);
                 plot(this.ax, x,y, 'color','k','Linewidth',1);
@@ -174,12 +194,114 @@ classdef bdPhasePortrait < handle
                 hold(this.ax, 'off');                
                 xlabel(this.ax,xstr, 'FontSize',16);
                 ylabel(this.ax,ystr, 'FontSize',16);
+                
+                if this.vecfield
+                    % compute vector field
+                    xlimit = this.ax.XLim;
+                    ylimit = this.ax.YLim;
+                    [xmesh,ymesh,dxmesh,dymesh] = this.VectorField2D(control,xindx,yindx,xlimit,ylimit);
+
+                    % plot vector field in axv
+                    hold(this.ax, 'on');                                
+                    quiver(xmesh,ymesh,dxmesh,dymesh, 'parent',this.ax, 'color','b');
+                    % dont let the quiver plot change the original axes limits
+                    this.ax.XLim = xlimit;
+                    this.ax.YLim = ylimit;
+                    hold(this.ax, 'off');                
+                end
             end
         end
         
     end
     
     methods (Access=private)   
+        
+        % Evaluate the 2D vector field 
+        function [xmesh,ymesh,dxmesh,dymesh] = VectorField2D(this,control,xindx,yindx,xlimit,ylimit)
+            disp('VectorField3D');
+    
+            % Do not compute vector fields for delay differential equations 
+            if strcmp(control.solver,'dde23')
+                xmesh=[];
+                ymesh=[];
+                dxmesh=[];
+                dymesh=[];
+                return
+            end
+            
+            % compute a mesh for the domain
+            xdomain = linspace(xlimit(1),xlimit(2), 21);
+            ydomain = linspace(ylimit(1),ylimit(2), 21);
+            [xmesh,ymesh] = meshgrid(xdomain,ydomain);
+            dxmesh = NaN(size(xmesh));
+            dymesh = dxmesh;
+            meshlen = numel(xmesh);
+            
+            % evaluate the vector field at trajectory end
+            Y0 = control.sol.y(:,end);
+            
+            % curent parameter values
+            P0 = {control.pardef{:,2}};
+            
+            % evaluate vector field
+            for idx=1:meshlen
+                % set initial conditions to curent mesh point
+                Y0(xindx) = xmesh(idx);
+                Y0(yindx) = ymesh(idx);
+                % evaluate ODE
+                dY = control.odefun(0,Y0,P0{:});
+                % save results
+                dxmesh(idx) = dY(xindx);
+                dymesh(idx) = dY(yindx);
+            end
+        end
+
+        % Evaluate the 3D vector field 
+        function [xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh] = VectorField3D(this,control,xindx,yindx,zindx,xlimit,ylimit,zlimit)
+            disp('VectorField3D');
+            
+            % Do not compute vector fields for delay differential equations 
+            if strcmp(control.solver,'dde23')
+                xmesh=[];
+                ymesh=[];
+                zmesh=[];
+                dxmesh=[];
+                dymesh=[];
+                dzmesh=[];
+                return
+            end
+            
+            % compute a mesh for the domain
+            xdomain = linspace(xlimit(1),xlimit(2), 7);
+            ydomain = linspace(ylimit(1),ylimit(2), 7);
+            zdomain = linspace(zlimit(1),zlimit(2), 7);
+            [xmesh,ymesh,zmesh] = meshgrid(xdomain,ydomain,zdomain);
+            dxmesh = NaN(size(xmesh));
+            dymesh = dxmesh;
+            dzmesh = dxmesh;
+            meshlen = numel(xmesh);
+            
+            % evaluate vector field at trajectory end
+            Y0 = control.sol.y(:,end);
+            
+            % curent parameter values
+            P0 = {control.pardef{:,2}};
+            
+            % evaluate vector field
+            for idx=1:meshlen
+                % set initial conditions to curent mesh point
+                Y0(xindx) = xmesh(idx);
+                Y0(yindx) = ymesh(idx);
+                Y0(zindx) = zmesh(idx);
+                % compute ODE (assume t=0)
+                dY = control.odefun(0,Y0,P0{:});
+                % save results
+                dxmesh(idx) = dY(xindx);
+                dymesh(idx) = dY(yindx);
+                dzmesh(idx) = dY(zindx);
+            end
+        end       
+        
         % Callback for panel resizing. 
         function SizeChanged(this,parent)
             % get new parent geometry
@@ -235,3 +357,29 @@ function map = enumerate(xxxdef)
 end
 
 
+function vec = GetDefValues(xxxdef)
+%GetDefValues returns the values stored in a pardef or vardef cell array.
+%This function is useful for extracting the values stored in a user-defined
+%vardef array as a single vector for use by the ODE solver.
+%Usage:
+%   vec = GetDefValues(xxxdef)
+%where xxxdef is a cell array of {'name',value} pairs. 
+%Example:
+%  vardef = {'a',1;
+%            'b',[2 3 4];
+%            'c',[5 8; 6 9; 7 10]};
+%  y0 = GetDefValues(vardef);
+%  ...
+%  sol = ode45(@odefun,tspan,y0,...)
+
+    % extract the second column of xxxdef
+    vec = xxxdef(:,2);
+    
+    % convert each cell entry to a column vector
+    for indx=1:numel(vec)
+        vec{indx} = reshape(vec{indx},[],1);
+    end
+    
+    % concatenate the column vectors to a simple vector
+    vec = cell2mat(vec);
+end
