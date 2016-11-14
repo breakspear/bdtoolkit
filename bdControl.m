@@ -47,6 +47,10 @@ classdef bdControl < handle
     
     properties (Access=private)
         fig         % handle of parent figure
+        hlt         % handle to HALT button
+        cpustart    % cpu start time
+        cpu         % handle to cpu clock
+        pro         % handle to progress counter
     end
     
     events
@@ -101,68 +105,7 @@ classdef bdControl < handle
             boxw = 50;
             boxh = 20;
             rowh = 22;            
-            
-%             % solver title
-%             uicontrol('Style','text', ...
-%                 'String','Solver', ...
-%                 'HorizontalAlignment','left', ...
-%                 'FontUnits','pixels', ...
-%                 'FontSize',12, ...
-%                 'Parent', panel, ...
-%                 'UserData', yoffset, ...
-%                 'Tag', 'bdControlWidget', ...
-%                 'Position',[0 panelh-yoffset posw boxh]);
-%             
-%             % next row
-%             yoffset = yoffset + rowh;
-%             
-%             % solver popup menu
-%             aa= uicontrol('Style','popupmenu', ...
-%                 'String',{'ode45','ode23'}, ...
-%                 'HorizontalAlignment','left', ...
-%                 'FontUnits','pixels', ...
-%                 'FontSize',12, ...
-%                 'Parent', panel, ...
-%                 'UserData', yoffset, ...
-%                 'Tag', 'bdControlWidget', ...
-%                 'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
-%             % next row
-%             yoffset = yoffset + rowh;                        
-% 
-%             % solver options
-%             uicontrol('Style','pushbutton', ...
-%                 'String','options', ...
-%                 'HorizontalAlignment','center', ...
-%                 'FontUnits','pixels', ...
-%                 'FontSize',12, ...
-%                 'Parent', panel, ...
-%                 'UserData', yoffset, ...
-%                 'Tag', 'bdControlWidget', ...
-%                 'Position',[5 panelh-yoffset 2*boxw-5 boxh]);
-        
-%             % connectivity matrix title
-%             uicontrol('Style','text', ...
-%                 'String','Connectivity', ...
-%                 'HorizontalAlignment','left', ...
-%                 'FontUnits','pixels', ...
-%                 'FontSize',12, ...
-%                 'Parent', panel, ...
-%                 'UserData', yoffset, ...
-%                 'Tag', 'bdControlWidget', ...
-%                 'Position',[0 panelh-yoffset posw boxh]);
-            
-%             % next row
-%             yoffset = yoffset + boxw;
-%             
-%             % connectivity matrix image
-%             ax = axes('parent', panel, ...
-%                 'Units','pixels', ...
-%                 'Position',[0 panelh-yoffset boxw boxw]);
-%             imagesc(ax,this.CM, ...
-%                 'ButtonDownFcn', @(src,~) this.ConnectivityCallback(src) );
-%             axis off;
-%             set(ax,'Tag','bdControlWidget', 'UserData',yoffset);
-                     
+                                 
             % next row
             yoffset = yoffset + rowh;                                    
             
@@ -513,7 +456,102 @@ classdef bdControl < handle
                 'Tag', 'bdControlWidget', ...
                 'Callback', @(src,~) this.ScalarTspan(src,2), ...
                 'Position',[boxw+5 panelh-yoffset boxw boxh]);
+          
+            % next row
+            yoffset = yoffset + 1.5*rowh;                        
+
+            % Solver Heading
+            uicontrol('Style','text', ...
+                'String','CPU Time', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','bold', ...
+                'Parent', panel, ...
+                'UserData', yoffset, ...
+                'Tag', 'bdControlWidget', ...
+                'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
             
+%             % next row
+%             yoffset = yoffset + rowh;
+%             
+%             % solver popup menu
+%             a=uicontrol('Style','popupmenu', ...
+%                 'String',{'ode45','ode23'}, ...
+%                 'HorizontalAlignment','left', ...
+%                 'FontUnits','pixels', ...
+%                 'FontSize',12, ...
+%                 'Parent', panel, ...
+%                 'UserData', yoffset, ...
+%                 'Tag', 'bdControlWidget', ...
+%                 'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
+%             get(a)
+
+            % next row
+            yoffset = yoffset + boxh;                        
+
+            % CPU time 
+            this.cpu = uicontrol('Style','text',...
+                'String','CPU 0.0s', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','normal', ...
+                'Parent', panel, ...
+                'UserData', yoffset, ...
+                'Tag', 'bdControlWidget', ...
+                'ToolTipString','CPU time (secs)', ...
+                'Position',[0 panelh-yoffset boxw boxh]);
+
+            % Progress counter  
+            this.pro = uicontrol('Style','text',...
+                'String','0%', ...
+                'HorizontalAlignment','right', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','normal', ...
+                'ForegroundColor', [0.5 0.5 0.5], ...
+                'Parent', panel, ...
+                'UserData', yoffset, ...
+                'Tag', 'bdControlWidget', ...
+                'ToolTipString','solver progress', ...
+                'Position',[boxw+5 panelh-yoffset boxw boxh]);
+
+            % next row
+            yoffset = yoffset + 1.5*boxh;                        
+
+            % HALT button
+            this.hlt = uicontrol('Style','radio', ...
+                'String','HALT', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','bold', ...
+                'ForegroundColor', 'r', ...
+                'Parent', panel, ...
+                'UserData', yoffset, ...
+                'Tag', 'bdControlWidget', ...
+                'ToolTipString', 'Halt the solver', ...
+                'Callback', @(~,~) this.HaltCallback(), ...
+                'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
+
+            % next row
+            yoffset = yoffset + rowh;                        
+
+%             % CPU heading 
+%             uicontrol('Style','text',...
+%                 'String','CPU', ...
+%                 'HorizontalAlignment','left', ...
+%                 'FontUnits','pixels', ...
+%                 'FontSize',12, ...
+%                 'FontWeight','bold', ...
+%                 'Parent', panel, ...
+%                 'UserData', yoffset, ...
+%                 'Tag', 'bdControlWidget', ...
+%                 'Position',[0 panelh-yoffset posw boxh]);
+
+
+
             % construct menu items
             menuobj = uimenu('Parent',this.fig, 'Label','Solver');
             checkstr='on';
@@ -525,7 +563,7 @@ classdef bdControl < handle
                     'Callback', @(src,~) this.SolverSelect(menuobj,src) );
                 checkstr='off';                
             end
-            uimenu('Parent',menuobj, 'Label','options', 'Separator','on');
+            %uimenu('Parent',menuobj, 'Label','options', 'Separator','on');
             
             % register a callback for resizing the panel
             set(panel,'SizeChangedFcn', @(~,~) SizeChanged(this,panel));
@@ -537,27 +575,29 @@ classdef bdControl < handle
             %notify(this,'recompute');
         end
         
-        function [sol,cpu] = solve(this)
+        function sol = solve(this)
             disp('bdControl.solve()');
-            % get cpu time
-            cpu = cputime;
-            
+
+            % Use odeset OutputFcn to track progress for ode45 and friends
+            odeopt = odeset(this.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+            tspan = linspace(this.tspan(1), this.tspan(2), 11);
+
             y0 = GetDefValues(this.vardef);          
             switch this.solver
                 case 'ode45'
-                    sol = ode45(this.odefun, this.tspan, y0, this.odeopt, this.pardef{:,2}); 
+                    sol = ode45(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
                 case 'ode23'
-                    sol = ode23(this.odefun, this.tspan, y0, this.odeopt, this.pardef{:,2}); 
+                    sol = ode23(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
                 case 'ode113'
-                    sol = ode113(this.odefun, this.tspan, y0, this.odeopt, this.pardef{:,2}); 
+                    sol = ode113(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
                 case 'ode15s'
-                    sol = ode15s(this.odefun, this.tspan, y0, this.odeopt, this.pardef{:,2}); 
+                    sol = ode15s(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
                 case 'ode23s'
-                    sol = ode23s(this.odefun, this.tspan, y0, this.odeopt, this.pardef{:,2}); 
+                    sol = ode23s(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
                 case 'ode23t'
-                    sol = ode23t(this.odefun, this.tspan, y0, this.odeopt, this.pardef{:,2}); 
+                    sol = ode23t(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
                 case 'ode23tb'
-                    sol = ode23tb(this.odefun, this.tspan, y0, this.odeopt, this.pardef{:,2}); 
+                    sol = ode23tb(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
                 case 'dde23'
                     lags = GetDefValues(this.lagdef); 
                     sol = dde23(this.ddefun, lags, y0, this.tspan, this.ddeopt, this.pardef{:,2});
@@ -582,12 +622,8 @@ classdef bdControl < handle
                 otherwise
                     error(['Unknown solver ''',this.solver,'''']);
             end
-            
-            % calculate the elapsed cpu time
-            cpu = cputime - cpu;
-            disp(cpu);
         end
-       
+        
         function [y,yp] = deval(this,tdomain,yindx)
             % number of variables in y
             n = size(this.sol.y,1);
@@ -680,7 +716,7 @@ classdef bdControl < handle
             % get the incoming value
             val = str2double(hObj.String);
             if isnan(val)
-                dlg = errordlg(['''', hObj.String, ''' is not a valid number'],'Invalid Number','modal');
+                dlg = errordlg(['Invalid Number ''', hObj.String, ''''],'Invalid number','modal');
                 val = hObj.Value;           % restore the previous value                
                 uiwait(dlg);                % wait for dialog box to close
             else
@@ -772,18 +808,60 @@ classdef bdControl < handle
             % Recompute using the new solver
             notify(this,'recompute');  
         end
-        
+                
         % Listener for the compute flag
         function RecomputeListener(this)
+            
+            if this.hlt.Value
+                return
+            end
+            
             % Change mouse cursor to hourglass
             set(this.fig,'Pointer','watch');
             drawnow;
             
+            % call the solver
             this.sol = this.solve();
+            
+            % notify all listeners that a redraw is required
             notify(this,'redraw');
             
             % Change mouse cursor to arrow
             set(this.fig,'Pointer','arrow');
+        end
+        
+        % ODE solver callback function
+        function status = odeplot(this,tspan,~,flag,varargin)
+            switch flag
+                case 'init'
+                    this.cpustart = cputime;
+                case ''
+                    cpu = cputime - this.cpustart;
+                    this.cpu.String = num2str(cpu,'%5.2fs');
+                    this.pro.String = num2str(100*tspan(1)/this.tspan(2),'%3.0f%%');
+                    drawnow;
+                case 'done'
+                   if this.hlt.Value~=1
+                        cpu = cputime - this.cpustart;
+                        this.cpu.String = num2str(cpu,'%5.2fs');
+                        this.pro.String = '100%';
+                        drawnow;
+                   end
+            end   
+            % return the state of the HALT button
+            status = this.hlt.Value;
+        end
+
+        % HALT button callback
+        function HaltCallback(this)
+            if this.hlt.Value==1
+                %this.cpu.String = '0.00s';
+                %this.pro.String = '0%';
+                this.cpu.ForegroundColor = [0.5 0.5 0.5];
+            else
+                this.cpu.ForegroundColor = [0 0 0];
+                notify(this,'recompute');  
+            end
         end
     end               
 end
@@ -828,3 +906,14 @@ function vec = GetDefValues(xxxdef)
     vec = cell2mat(vec);
 end
 
+function outflag = myodeplot(tspan,Y0,flag,vargin)
+    disp(flag);
+    switch flag
+        case 'init'
+        case ''
+            disp('woah')
+        case 'done'
+        otherwise
+    end
+    outflag = 0;
+end
