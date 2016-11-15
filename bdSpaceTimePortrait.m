@@ -104,7 +104,7 @@ classdef bdSpaceTimePortrait < handle
         end
         
         function render(this,sys,control)
-            disp('bdSpaceTimePortrait.render()')
+            %disp('bdSpaceTimePortrait.render()')
             varnum = this.popup.Value;
             varstr = this.popup.String{varnum};
             yindx = this.varindx{varnum};

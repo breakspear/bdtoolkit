@@ -518,7 +518,7 @@ classdef bdControl < handle
                 'Position',[boxw+5 panelh-yoffset boxw boxh]);
 
             % next row
-            yoffset = yoffset + 1.5*boxh;                        
+            yoffset = yoffset + 1.25*boxh;                        
 
             % HALT button
             this.hlt = uicontrol('Style','radio', ...
@@ -576,7 +576,7 @@ classdef bdControl < handle
         end
         
         function sol = solve(this)
-            disp('bdControl.solve()');
+            %disp('bdControl.solve()');
 
             % Use odeset OutputFcn to track progress for ode45 and friends
             odeopt = odeset(this.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);

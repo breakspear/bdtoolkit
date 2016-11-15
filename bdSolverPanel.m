@@ -285,7 +285,7 @@ classdef bdSolverPanel < handle
 
             % Listener function for updating the edit boxes
             function renderboxes
-                disp('bdSolverPanel.odePanel.renderboxes()')
+                %disp('bdSolverPanel.odePanel.renderboxes()')
                 switch control.solver
                     case {'ode45','ode23','ode113','ode15s','ode23s','ode23t','ode23tb'}
                         AbsTol.String = num2str(odeget(control.odeopt,'AbsTol'),'%g');
@@ -320,7 +320,7 @@ classdef bdSolverPanel < handle
             
             % Callback for user input to the edit boxes
             function editboxCallback(uibox,fieldname)
-                disp('bdSolverPanel.odePanel.editboxCallback()')
+                %disp('bdSolverPanel.odePanel.editboxCallback()')
                 % convert the edit box string into an odeopt value
                 if isempty(uibox.String)
                     val = [];               % use an empty odeopt value for an empty edit box
@@ -355,11 +355,8 @@ classdef bdSolverPanel < handle
             end           
         end
         
-
-        
-        
         function render(this,control,plt1,plt2)
-            disp('bdSolverPanel.render()')
+            %disp('bdSolverPanel.render()')
             tsteps = control.sol.x;
                         
             % render dy/dt versus time
@@ -371,11 +368,10 @@ classdef bdSolverPanel < handle
             stepsize = diff(control.sol.x);
             set(plt2, 'XData',tsteps, 'YData',stepsize([1:end,end]));            
         end
-        
-   
+           
         % Callback for tab panel resizing.
         function SizeChanged(this,tab,ax1,ax2)
-            disp('bdSolverPanel.SizeChanged()')
+            %disp('bdSolverPanel.SizeChanged()')
             
             % get new parent geometry
             parentw = tab.Position(3);

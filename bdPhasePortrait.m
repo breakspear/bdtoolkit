@@ -147,7 +147,7 @@ classdef bdPhasePortrait < handle
         end
         
         function render(this,control)
-            disp('bdPhasePortrait.render()')
+            %disp('bdPhasePortrait.render()')
             xindx = this.popupx.Value;
             yindx = this.popupy.Value;
             zindx = this.popupz.Value;
@@ -162,7 +162,7 @@ classdef bdPhasePortrait < handle
                 z = control.sol.y(zindx,tindx);
                 plot3(this.ax, x,y,z, 'color','k','Linewidth',1);
                 hold(this.ax, 'on');
-                plot3(this.ax, x(1),y(1),z(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',10);
+                plot3(this.ax, x(1),y(1),z(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
                 hold(this.ax, 'off');                
                 xlabel(this.ax,xstr, 'FontSize',16);
                 ylabel(this.ax,ystr, 'FontSize',16);
@@ -177,7 +177,7 @@ classdef bdPhasePortrait < handle
 
                     % plot vector field in axv
                     hold(this.ax, 'on');                                
-                    quiver3(xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh,'parent',this.ax, 'color','b');
+                    quiver3(xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh,'parent',this.ax, 'color',[0.5 0.5 0.5]);
                     % dont let the quiver plot change the original axes limits
                     this.ax.XLim = xlimit;
                     this.ax.YLim = ylimit;
@@ -190,7 +190,7 @@ classdef bdPhasePortrait < handle
                 y = control.sol.y(yindx,tindx);
                 plot(this.ax, x,y, 'color','k','Linewidth',1);
                 hold(this.ax, 'on');
-                plot(this.ax, x(1),y(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',10);
+                plot(this.ax, x(1),y(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
                 hold(this.ax, 'off');                
                 xlabel(this.ax,xstr, 'FontSize',16);
                 ylabel(this.ax,ystr, 'FontSize',16);
@@ -203,7 +203,7 @@ classdef bdPhasePortrait < handle
 
                     % plot vector field in axv
                     hold(this.ax, 'on');                                
-                    quiver(xmesh,ymesh,dxmesh,dymesh, 'parent',this.ax, 'color','b');
+                    quiver(xmesh,ymesh,dxmesh,dymesh, 'parent',this.ax, 'color',[0.5 0.5 0.5]);
                     % dont let the quiver plot change the original axes limits
                     this.ax.XLim = xlimit;
                     this.ax.YLim = ylimit;
@@ -218,7 +218,7 @@ classdef bdPhasePortrait < handle
         
         % Evaluate the 2D vector field 
         function [xmesh,ymesh,dxmesh,dymesh] = VectorField2D(this,control,xindx,yindx,xlimit,ylimit)
-            disp('VectorField3D');
+            %disp('bdPhasePortrait.VectorField2D()');
     
             % Do not compute vector fields for delay differential equations 
             if strcmp(control.solver,'dde23')
@@ -258,7 +258,7 @@ classdef bdPhasePortrait < handle
 
         % Evaluate the 3D vector field 
         function [xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh] = VectorField3D(this,control,xindx,yindx,zindx,xlimit,ylimit,zlimit)
-            disp('VectorField3D');
+            %disp('bdPhasePortrait.VectorField3D()');
             
             % Do not compute vector fields for delay differential equations 
             if strcmp(control.solver,'dde23')

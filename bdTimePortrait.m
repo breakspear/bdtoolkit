@@ -118,7 +118,7 @@ classdef bdTimePortrait < handle
         end
         
         function render(this,control)
-            disp('bdTimePortrait.render()')
+            %disp('bdTimePortrait.render()')
             
             % render the upper and lower axes 
             renderax(this.ax1, this.popup1.Value);
