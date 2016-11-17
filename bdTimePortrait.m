@@ -36,6 +36,7 @@ classdef bdTimePortrait < handle
         popup1  % handle to popup selector 1
         popup2  % handle to popup selector 2
         Ymap
+        gridflag = false    % grid flag
     end
     
     methods
@@ -110,6 +111,15 @@ classdef bdTimePortrait < handle
                 'Parent', this.tab, ...
                 'Position',[posx posy posw posh]);
             
+            % construct menu items
+            fig = ancestor(tabgroup,'figure');
+            menuobj = uimenu('Parent',fig, 'Label','Time Portrait');
+            uimenu('Parent',menuobj, ...
+                'Label','Grid', ...
+                'Checked','off', ...
+                'Separator','off', ...
+                'Callback', @(src,~) this.MenuItemCallback(src,control) );          
+            
             % register a callback for resizing the panel
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
             
@@ -124,6 +134,15 @@ classdef bdTimePortrait < handle
             renderax(this.ax1, this.popup1.Value);
             renderax(this.ax2, this.popup2.Value);            
             xlabel(this.ax2,'time', 'FontSize',14);
+
+            % show gridlines (or not)
+            if this.gridflag
+                grid(this.ax1,'on');
+                grid(this.ax2,'on');
+            else
+                grid(this.ax1,'off')
+                grid(this.ax2,'off')
+            end
 
             % Yindx is the global index of the selected variable
             function renderax(ax,Yindx)
@@ -173,6 +192,23 @@ classdef bdTimePortrait < handle
         function selectorCallback(this,control)
             this.render(control);
         end
+        
+        % Menu Item Callback
+        function MenuItemCallback(this,menuitem,control)
+            switch menuitem.Label
+                case 'Grid'
+                    switch menuitem.Checked
+                        case 'on'
+                            this.gridflag = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            this.gridflag = true;
+                            menuitem.Checked='on';
+                    end
+            end            
+            % re-render this panel
+            this.render(control);
+        end              
         
     end
     

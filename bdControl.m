@@ -549,30 +549,12 @@ classdef bdControl < handle
 %                 'UserData', yoffset, ...
 %                 'Tag', 'bdControlWidget', ...
 %                 'Position',[0 panelh-yoffset posw boxh]);
-
-
-
-            % construct menu items
-            menuobj = uimenu('Parent',this.fig, 'Label','Solver');
-            checkstr='on';
-            for indx = 1:numel(sys.solver)
-                uimenu('Parent',menuobj, ...
-                    'Label',sys.solver{indx}, ...
-                    'Tag', 'bdSolverSelector', ...
-                    'Checked',checkstr, ...
-                    'Callback', @(src,~) this.SolverSelect(menuobj,src) );
-                checkstr='off';                
-            end
-            %uimenu('Parent',menuobj, 'Label','options', 'Separator','on');
-            
+           
             % register a callback for resizing the panel
             set(panel,'SizeChangedFcn', @(~,~) SizeChanged(this,panel));
             
             % listen for recompute events
             addlistener(this,'recompute',@(~,~) RecomputeListener(this));
-            
-            % force the recompute
-            %notify(this,'recompute');
         end
         
         function sol = solve(this)
@@ -793,22 +775,6 @@ classdef bdControl < handle
             notify(this,'recompute');
         end
         
-        % Solver Menu Item Callback
-        function SolverSelect(this,menuobj,menuitem)
-            % Find all solver menu items and un-check them.
-            menuitems = findobj(menuobj,'Tag','bdSolverSelector');
-            for ix=1:numel(menuitems)                
-                menuitems(ix).Checked='off';
-            end
-            
-            % Except for the newly selected one
-            menuitem.Checked = 'on';
-            this.solver = menuitem.Label;
-            
-            % Recompute using the new solver
-            notify(this,'recompute');  
-        end
-                
         % Listener for the compute flag
         function RecomputeListener(this)
             

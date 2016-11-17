@@ -38,7 +38,9 @@ classdef bdPhasePortrait < handle
         popupz              % handle to Z popup
         checkbox3D          % handle to 3D checkbox
         Ymap                % map Y elements to variable name and indices
-        vecfield = true     % vector field flag
+        gridflag = false    % grid flag
+        vecfield = false    % vector field flag
+        initflag = true     % initial conditions flag
     end
     
     methods
@@ -139,15 +141,80 @@ classdef bdPhasePortrait < handle
                 'Parent', this.tab, ...
                 'Position',[posx posy posw posh]);
 
+            % construct menu items
+            fig = ancestor(tabgroup,'figure');
+            menuobj = uimenu('Parent',fig, 'Label','Phase Portrait');
+            uimenu('Parent',menuobj, ...
+                   'Label','Vector Field', ...
+                   'Checked','off', ...
+                   'Callback', @(src,~) this.MenuItemCallback(src,control) );          
+            uimenu('Parent',menuobj, ...
+                   'Label','Initial Conditions', ...
+                   'Checked','on', ...
+                   'Callback', @(src,~) this.MenuItemCallback(src,control) );          
+            uimenu('Parent',menuobj, ...
+                   'Label','Grid', ...
+                   'Checked','off', ...
+                   'Callback', @(src,~) this.MenuItemCallback(src,control) );          
+            
             % register a callback for resizing the panel
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
 
             % listen to the control panel for redraw events
-            addlistener(control,'redraw',@(~,~) this.render(control));    
+            addlistener(control,'redraw',@(~,~) this.render(control));            
+        end
+            
+    end
+    
+    methods (Access=private)   
+
+        % Menu Item Callback
+        function MenuItemCallback(this,menuitem,control)
+            switch menuitem.Label
+                case 'Grid'
+                    switch menuitem.Checked
+                        case 'on'
+                            this.gridflag = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            this.gridflag = true;
+                            menuitem.Checked='on';
+                    end
+                    
+                case 'Vector Field'
+                    switch menuitem.Checked
+                        case 'on'
+                            this.vecfield = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            this.vecfield = true;
+                            menuitem.Checked='on';
+                    end
+                    
+                case 'Initial Conditions'
+                    switch menuitem.Checked
+                        case 'on'
+                            this.initflag = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            this.initflag = true;
+                            menuitem.Checked='on';
+                    end
+            end            
+            % re-render the phase portrait
+            this.render(control);
         end
         
         function render(this,control)
             %disp('bdPhasePortrait.render()')
+
+            % convergence test
+            steadystate = convergence(control);
+            
+            T1 = control.sol.x(end);
+            Y1 = control.sol.y(:,end);
+            P1 = {control.pardef{:,2}};
+
             xindx = this.popupx.Value;
             yindx = this.popupy.Value;
             zindx = this.popupz.Value;
@@ -160,10 +227,16 @@ classdef bdPhasePortrait < handle
                 x = control.sol.y(xindx,tindx);
                 y = control.sol.y(yindx,tindx);
                 z = control.sol.y(zindx,tindx);
+
                 plot3(this.ax, x,y,z, 'color','k','Linewidth',1);
                 hold(this.ax, 'on');
-                plot3(this.ax, x(1),y(1),z(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
-                hold(this.ax, 'off');                
+                if this.initflag
+                    plot3(this.ax, x(1),y(1),z(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
+                end
+                if steadystate
+                    plot3(this.ax, x(end),y(end),z(end), 'color','k', 'marker','o', 'markerfacecolor','k', 'markersize',6);               
+                end
+                
                 xlabel(this.ax,xstr, 'FontSize',16);
                 ylabel(this.ax,ystr, 'FontSize',16);
                 zlabel(this.ax,zstr, 'FontSize',16);
@@ -176,22 +249,35 @@ classdef bdPhasePortrait < handle
                     [xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh] = this.VectorField3D(control,xindx,yindx,zindx,xlimit,ylimit,zlimit);
 
                     % plot vector field in axv
-                    hold(this.ax, 'on');                                
                     quiver3(xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh,'parent',this.ax, 'color',[0.5 0.5 0.5]);
                     % dont let the quiver plot change the original axes limits
                     this.ax.XLim = xlimit;
                     this.ax.YLim = ylimit;
                     this.ax.ZLim = zlimit;
-                    hold(this.ax, 'off');                
                 end
-            else
+                
+                % show gridlines (if appropriate) 
+                if this.gridflag
+                    grid(this.ax,'on');
+                else
+                    grid(this.ax,'off');
+                end                    
+                
+                hold(this.ax, 'off');
+           else
                 % plot current trajectory in 2D
                 x = control.sol.y(xindx,tindx);
                 y = control.sol.y(yindx,tindx);
+
                 plot(this.ax, x,y, 'color','k','Linewidth',1);
                 hold(this.ax, 'on');
-                plot(this.ax, x(1),y(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
-                hold(this.ax, 'off');                
+                if this.initflag
+                    plot(this.ax, x(1),y(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
+                end
+                if steadystate
+                    plot(this.ax, x(end),y(end), 'color','k', 'marker','o', 'markerfacecolor','k', 'markersize',6);               
+                end
+                
                 xlabel(this.ax,xstr, 'FontSize',16);
                 ylabel(this.ax,ystr, 'FontSize',16);
                 
@@ -202,19 +288,22 @@ classdef bdPhasePortrait < handle
                     [xmesh,ymesh,dxmesh,dymesh] = this.VectorField2D(control,xindx,yindx,xlimit,ylimit);
 
                     % plot vector field in axv
-                    hold(this.ax, 'on');                                
                     quiver(xmesh,ymesh,dxmesh,dymesh, 'parent',this.ax, 'color',[0.5 0.5 0.5]);
                     % dont let the quiver plot change the original axes limits
                     this.ax.XLim = xlimit;
                     this.ax.YLim = ylimit;
-                    hold(this.ax, 'off');                
                 end
+                
+                % show gridlines (if appropriate)
+                if this.gridflag
+                    grid(this.ax,'on');
+                else
+                    grid(this.ax,'off');
+                end                    
+                
+                hold(this.ax, 'off');
             end
         end
-        
-    end
-    
-    methods (Access=private)   
         
         % Evaluate the 2D vector field 
         function [xmesh,ymesh,dxmesh,dymesh] = VectorField2D(this,control,xindx,yindx,xlimit,ylimit)
@@ -306,8 +395,7 @@ classdef bdPhasePortrait < handle
         function SizeChanged(this,parent)
             % get new parent geometry
             parentw = parent.Position(3);
-            parenth = parent.Position(4);
-            
+            parenth = parent.Position(4);            
             % resize the axes
             this.ax.Position = [50, 80, parentw-65, parenth-90];
         end
@@ -332,6 +420,19 @@ classdef bdPhasePortrait < handle
 end
 
 
+% Returns TRUE if the trajectory has converged to a fixed point
+% otherwise returns FALSE.
+function flag = convergence(control)
+    dt = diff(control.sol.x([end-1:end]));
+    dY1 = diff(control.sol.y(:,[end-2:end]),1,2); 
+    dY2 = diff(dY1,1,2);
+    if isempty(dY2)
+        flag=false;
+    else
+        flag = (norm(dY2) < (1e-3 * dt));
+    end
+end
+    
 % Returns a mapping for each entry in vardef where
 % map.name = the string name of the variable
 % map.def = the row index of vardef{}

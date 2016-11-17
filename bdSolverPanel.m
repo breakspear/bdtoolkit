@@ -28,7 +28,8 @@ classdef bdSolverPanel < handle
     % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
-    properties (Access=private) 
+    properties (Access=private)
+        gridflag = false    % grid flag
     end
 
     methods        
@@ -50,7 +51,7 @@ classdef bdSolverPanel < handle
             ax1 = axes('Parent',tab, ...
                 'Units','pixels', ...
                 'Position', [60 150+axesh  axesw axesh]);
-            plt1 = stairs(0,0, 'parent',ax1);
+            plt1 = stairs(0,0, 'parent',ax1, 'color','k', 'Linewidth',1);
             set(ax1,'TickDir','out');
             %xlabel('time (t)','FontSize',14);
             ylabel('||dY||','FontSize',14);
@@ -59,19 +60,38 @@ classdef bdSolverPanel < handle
             ax2 = axes('Parent',tab, ...
                 'Units','pixels', ...
                 'Position', [60 130 axesw axesh]);
-            plt2 = stairs(0,0, 'parent',ax2);
+            plt2 = stairs(0,0, 'parent',ax2, 'color','k', 'Linewidth',1);
             set(ax2,'TickDir','out');
             xlabel('time (t)','FontSize',14);
             ylabel('step size (dt)','FontSize',14);
             
             % construct panel for odeoptions
             this.odePanel(tab,control);
+            
+            % construct menu items
+            fig = ancestor(tabgroup,'figure');
+            menuobj = uimenu('Parent',fig, 'Label','Solver');
+            checkstr='on';
+            for indx = 1:numel(sys.solver)
+                uimenu('Parent',menuobj, ...
+                    'Label',sys.solver{indx}, ...
+                    'Tag', 'bdSolverSelector', ...
+                    'Checked',checkstr, ...
+                    'Callback', @(src,~) this.SolverSelect(menuobj,src,control) );
+                checkstr='off';                
+            end
+            uimenu('Parent',menuobj, ...
+                'Label','Grid', ...
+                'Checked','off', ...
+                'Separator','on', ...
+                'Callback', @(src,~) this.MenuItemCallback(src,control,ax1,ax2,plt1,plt2) );          
+
                         
             % register a callback for resizing the panel
             set(tab,'SizeChangedFcn', @(~,~) this.SizeChanged(tab,ax1,ax2));
 
             % listen to the control panel for redraw events
-            addlistener(control,'redraw',@(~,~) this.render(control,plt1,plt2));    
+            addlistener(control,'redraw',@(~,~) this.render(control,ax1,ax2,plt1,plt2));    
         end
         
     end
@@ -355,7 +375,7 @@ classdef bdSolverPanel < handle
             end           
         end
         
-        function render(this,control,plt1,plt2)
+        function render(this,control,ax1,ax2,plt1,plt2)
             %disp('bdSolverPanel.render()')
             tsteps = control.sol.x;
                         
@@ -367,8 +387,50 @@ classdef bdSolverPanel < handle
             % render the step size versus time
             stepsize = diff(control.sol.x);
             set(plt2, 'XData',tsteps, 'YData',stepsize([1:end,end]));            
+
+            % show gridlines (or not)
+            if this.gridflag
+                grid(ax1,'on');
+                grid(ax2,'on');
+            else
+                grid(ax1,'off')
+                grid(ax2,'off')
+            end
         end
            
+        % Solver Solver Menu Item Callback
+        function SolverSelect(this,menuobj,menuitem,control)
+            % Find all solver menu items and un-check them.
+            menuitems = findobj(menuobj,'Tag','bdSolverSelector');
+            for ix=1:numel(menuitems)                
+                menuitems(ix).Checked='off';
+            end
+            
+            % Except for the newly selected one
+            menuitem.Checked = 'on';
+            control.solver = menuitem.Label;
+            
+            % Recompute using the new solver
+            notify(control,'recompute');  
+        end
+        
+        % Menu Item Callback
+        function MenuItemCallback(this,menuitem,control,ax1,ax2,plt1,plt2)
+            switch menuitem.Label
+                case 'Grid'
+                    switch menuitem.Checked
+                        case 'on'
+                            this.gridflag = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            this.gridflag = true;
+                            menuitem.Checked='on';
+                    end
+            end            
+            % re-render this panel
+            this.render(control,ax1,ax2,plt1,plt2);
+        end      
+        
         % Callback for tab panel resizing.
         function SizeChanged(this,tab,ax1,ax2)
             %disp('bdSolverPanel.SizeChanged()')
