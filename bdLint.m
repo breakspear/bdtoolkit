@@ -53,6 +53,11 @@ function bdLint(sys)
     if isfield(sys,'odefun')
         assert(isa(sys.odefun,'function_handle'), 'sys.odefun must be a function handle');
     end
+    
+    % check that auxfun is a function handle (if it has been defined)
+    if isfield(sys,'auxfun')
+        assert(isa(sys.auxfun,'function_handle'), 'sys.auxfun must be a function handle');
+    end
 
     % check that ddefun is a function handle (if it has been defined)
     if isfield(sys,'ddefun')
@@ -128,8 +133,14 @@ function bdLint(sys)
         end
         t = sys.tspan(1);
         Y0 = GetDefValues(sys.vardef);        
-        disp(['Calling Y = sys.odefun(t,Y0,',parnames(1:end-1),')']);
-        disp(num2str([t size(Y0)],'where t=%g and Y0 is size [%d %d]'))   ;
+        disp(['Calling Y = sys.odefun(t,Y0,',parnames(1:end-1),') where']);
+        disp(['t is size [', num2str(size(t)), ']']);
+        disp(['Y0 is size [', num2str(size(Y0)), ']']);
+        for indx = 1:size(sys.pardef,1)
+            pname = sys.pardef{indx,1};
+            psize = size(sys.pardef{indx,2});
+            disp([pname ' is size [', num2str(psize), ']']);
+        end
         Y = sys.odefun(t,Y0,sys.pardef{:,2});
         disp(num2str(size(Y),'returns Y as size [%d %d]'));      
         assert(size(Y,2)==1, 'sys.odefun must return Y as a column vector');        
@@ -150,8 +161,15 @@ function bdLint(sys)
         n = size(Y0,1);
         l = size(lags,1);
         Z = Y0*ones(1,l);
-        disp(['Calling Y = sys.ddefun(t,Y0,Z,',parnames(1:end-1),')']);
-        disp(num2str([t size(Y0) size(Z)],'where t=%g, Y0 is size [%d %d], Z is size [%d %d]'))   ;
+        disp(['Calling Y = sys.ddefun(t,Y0,Z,',parnames(1:end-1),') where']);
+        disp(['t is size [', num2str(size(t)), ']']);
+        disp(['Y0 is size [', num2str(size(Y0)), ']']);
+        disp(['Z is size [', num2str(size(Z)), ']']);
+        for indx = 1:size(sys.pardef,1)
+            pname = sys.pardef{indx,1};
+            psize = size(sys.pardef{indx,2});
+            disp([pname ' is size [', num2str(psize), ']']);
+        end
         Y = sys.ddefun(t,Y0,Z,sys.pardef{:,2});
         disp(num2str(size(Y),'returns Y as size [%d %d]'));      
         assert(size(Y,2)==1, 'sys.ddefun must return Y as a column vector');        
@@ -169,12 +187,47 @@ function bdLint(sys)
         end
         t = sys.tspan(1);
         Y0 = GetDefValues(sys.vardef);        
-        disp(['Calling G = sys.sdefun(t,Y0,',parnames(1:end-1),')']);
-        disp(num2str([t size(Y0)],'where t=%g and Y0 is size [%d %d]'))   ;
+        disp(['Calling G = sys.sdefun(t,Y0,',parnames(1:end-1),') where']);
+        disp(['t is size [', num2str(size(t)), ']']);
+        disp(['Y0 is size [', num2str(size(Y0)), ']']);
+        for indx = 1:size(sys.pardef,1)
+            pname = sys.pardef{indx,1};
+            psize = size(sys.pardef{indx,2});
+            disp([pname ' is size [', num2str(psize), ']']);
+        end
         G = sys.sdefun(t,Y0,sys.pardef{:,2});
         disp(num2str(size(G),'returns G as size [%d %d]'));      
         assert(size(G,2)==1, 'sys.sdefun must return G as a column vector');        
         disp('sys.sdefun format is OK');
+        disp('---');
+    end
+    
+    % test sys.auxfun
+    if isfield(sys,'auxfun')
+        if isempty(sys.pardef)
+            parnames=',';
+        else
+            parnames = sprintf('%s,',sys.pardef{:,1});
+        end
+        % generate a faux time domain from tspan
+        tcount = 11;
+        t = linspace(sys.tspan(1), sys.tspan(2), tcount);
+        % generate faux Y values by replicating the initial conditions 
+        Y0 = GetDefValues(sys.vardef);
+        Y = Y0(:,ones(1,tcount));
+        % call the auxfun
+        disp(['Calling Yaux = sys.auxfun(t,Y,',parnames(1:end-1),') where']);
+        disp(['t is size [', num2str(size(t)), ']']);
+        disp(['Y is size [', num2str(size(Y)), ']']);
+        for indx = 1:size(sys.pardef,1)
+            pname = sys.pardef{indx,1};
+            psize = size(sys.pardef{indx,2});
+            disp([pname ' is size [', num2str(psize), ']']);
+        end
+        Yaux = sys.auxfun(t,Y,sys.pardef{:,2});
+        disp(num2str(size(Yaux),'returns Yaux as size [%d %d]'));      
+        assert(size(Yaux,2)==tcount, 'sys.auxfun must return Yaux with the same number of columns as t');        
+        disp('sys.auxfun format is OK');
         disp('---');
     end
     

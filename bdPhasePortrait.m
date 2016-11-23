@@ -37,7 +37,8 @@ classdef bdPhasePortrait < handle
         popupy              % handle to Y popup
         popupz              % handle to Z popup
         checkbox3D          % handle to 3D checkbox
-        Ymap                % map Y elements to variable name and indices
+        %auxMap              % maps entries in auxdef to rows in sal
+        solMap              % maps rows in sol.y to entries in vardef
         gridflag = false    % grid flag
         vecfield = false    % vector field flag
         initflag = true     % initial conditions flag
@@ -53,11 +54,14 @@ classdef bdPhasePortrait < handle
             %    title is a string defining the name given to the new tab.
             %    sys is the system struct defining the model.
             %    control is a handle to the GUI control panel.
-            
-            % map all variables to their names and group indexes
-            this.Ymap = enumerate(sys.vardef);
-            nvardef = size(sys.vardef,1);
 
+            % map vardef and auxdef entries to rows in sol and sal
+            %this.varMap = bdUtils.varMap(sys.vardef);
+            this.solMap = bdUtils.solMap(sys.vardef);
+            
+            % number of entries in vardef
+            nvardef = size(sys.vardef,1);
+            
             % construct the uitab
             this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
             
@@ -81,7 +85,7 @@ classdef bdPhasePortrait < handle
             posh = 20;
             popupval = 1;            
             this.popupx = uicontrol('Style','popup', ...
-                'String', {this.Ymap.name}, ...
+                'String', {this.solMap.name}, ...
                 'Value', popupval, ...
                 'Callback', @(~,~) this.selectorCallback(control), ...
                 'HorizontalAlignment','left', ...
@@ -99,7 +103,7 @@ classdef bdPhasePortrait < handle
                 popupval = numel(sys.vardef{1,2}) + 1;
             end
             this.popupy = uicontrol('Style','popup', ...
-                'String', {this.Ymap.name}, ...
+                'String', {this.solMap.name}, ...
                 'Value', popupval, ...
                 'Callback', @(~,~) this.selectorCallback(control), ...
                 'HorizontalAlignment','left', ...
@@ -117,7 +121,7 @@ classdef bdPhasePortrait < handle
                 popupval = numel(sys.vardef{1,2}) + numel(sys.vardef{2,2}) + 1;
             end
             this.popupz = uicontrol('Style','popup', ...
-                'String', {this.Ymap.name}, ...
+                'String', {this.solMap.name}, ...
                 'Value', popupval, ...
                 'Enable','off', ...
                 'Callback', @(~,~) this.selectorCallback(control), ...
@@ -433,31 +437,6 @@ function flag = convergence(control)
     end
 end
     
-% Returns a mapping for each entry in vardef where
-% map.name = the string name of the variable
-% map.def = the row index of vardef{}
-% map.grp = the Y indices of all variables with this name.
-function map = enumerate(xxxdef)
-    map = [];
-    ndef = size(xxxdef,1);
-    pos = 0;
-    for def=1:ndef
-        len = numel(xxxdef{def,2});
-        for c=1:len
-            if len==1
-                name = xxxdef{def,1};        
-            else
-                name = num2str(c,[xxxdef{def,1},'_{%d}']);        
-            end                
-            map(end+1).name = name;
-            map(end).def = def;
-            map(end).grp = [1:len]+pos;
-        end
-        pos = pos + len;
-    end
-end
-
-
 function vec = GetDefValues(xxxdef)
 %GetDefValues returns the values stored in a pardef or vardef cell array.
 %This function is useful for extracting the values stored in a user-defined

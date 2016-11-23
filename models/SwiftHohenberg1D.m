@@ -7,6 +7,13 @@ function sys = SwiftHohenberg(n,dx)
     %   where the Laplacian operator Dxx is an nxn matrix
     %        Dxx(i,j) = (U(i+1,j) - 2U(i,j) + U(i+1,j) )/h^2 
     %   and h is the spatial step (dx).
+    %
+    % Example:
+    %   n = 300;                        % number of spatial nodes
+    %   dx = 0.25;                      % spatial step size
+    %   sys = SwiftHohenberg1D(n,dx);   % construct the system struct
+    %   gui = bdGUI(sys);               % open the Brain Dynamics GUI
+    %
 
     % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
     % All rights reserved.

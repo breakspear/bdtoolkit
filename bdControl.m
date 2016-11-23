@@ -38,11 +38,14 @@ classdef bdControl < handle
         ddefun      % DDE function
         ddeopt      % DDE solver options (see ddeset)
         sdefun      % SDE function
+        auxfun      % auxillary function
         tspan       % solver time span (1x2)
         pardef      % ODE/DDE parameter definitions, cell array of {name,value} pairs
         lagdef      % DDE lag parameters, cell array of {name, value} pairs.
-        vardef      % ODE variable definitions, cell array of {name, value} pairs
+        vardef      % ODE variable definitions, cell array of {name, value, index} triples
+        auxdef      % AUX variable definitions, cell array of {name, value, index} triples
         sol         % solution returned by the matlab solver
+        sal         % auxillary solutions computed from sol.y by user-defined solfun
     end
     
     properties (Access=private)
@@ -82,13 +85,17 @@ classdef bdControl < handle
             if isfield(sys,'sdefun')
                 this.sdefun = sys.sdefun;
             end            
+            if isfield(sys,'auxfun')
+                this.auxfun = sys.auxfun;
+            end            
             this.tspan = sys.tspan;
             this.pardef = sys.pardef;
             if isfield(sys,'lagdef')
                 this.lagdef = sys.lagdef;
-            end            
-            this.vardef = sys.vardef;            
+            end 
+            this.vardef = sys.vardef;
             this.sol = [];
+            this.sal = [];
             
             % remember the parent figure
             this.fig = ancestor(panel,'figure');
@@ -558,7 +565,7 @@ classdef bdControl < handle
         end
         
         function sol = solve(this)
-            %disp('bdControl.solve()');
+            disp('bdControl.solve()');
 
             % Use odeset OutputFcn to track progress for ode45 and friends
             odeopt = odeset(this.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
@@ -603,6 +610,11 @@ classdef bdControl < handle
                     end
                 otherwise
                     error(['Unknown solver ''',this.solver,'''']);
+            end
+            
+            % compute the auxillary variables
+            if ~isempty(this.auxfun)
+                this.sal = this.auxfun(sol.x,sol.y,this.pardef{:,2});
             end
         end
         

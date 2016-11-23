@@ -30,12 +30,15 @@ classdef bdTimePortrait < handle
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
     properties (Access=private) 
-        tab     % handle to uitab object
-        ax1     % handle to plot 1 axes
-        ax2     % handle to plot 2 axes
-        popup1  % handle to popup selector 1
-        popup2  % handle to popup selector 2
-        Ymap
+        tab             % handle to uitab object
+        ax1             % handle to plot 1 axes
+        ax2             % handle to plot 2 axes
+        popup1          % handle to popup selector 1
+        popup2          % handle to popup selector 2
+        varMap          % maps entries in vardef to rows in sol.y
+        auxMap          % maps entries in auxdef to rows in sal
+        solMap          % maps rows in sol.y to entries in vardef
+        salMap          % maps rows in sal to entries in auxdef
         gridflag = false    % grid flag
     end
     
@@ -50,10 +53,21 @@ classdef bdTimePortrait < handle
             %    sys is the system struct defining the model.
             %    control is a handle to the GUI control panel.
 
-            % map all variables to their names and group indexes
-            this.Ymap = enumerate(sys.vardef);
-            nvardef = size(sys.vardef,1);
+            % map vardef entries to rows in sol
+            this.varMap = bdUtils.varMap(sys.vardef);
+            this.solMap = bdUtils.solMap(sys.vardef);
+            if isfield(sys,'auxdef')
+                % map auxdef entries to rows in sal
+                this.auxMap = bdUtils.varMap(sys.auxdef);
+                this.salMap = bdUtils.solMap(sys.auxdef);
+            else
+                this.auxMap = bdUtils.varMap([]);
+                this.salMap = bdUtils.solMap([]);
+            end
             
+            % number of entries in vardef
+            nvardef = size(sys.vardef,1);
+                        
             % construct the uitab
             this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
             
@@ -77,14 +91,15 @@ classdef bdTimePortrait < handle
             posy = 80;
             this.ax2 = axes('Parent',this.tab, 'Units','pixels', 'Position',[posx posy posw posh]);           
             
-            % plot 1 var selector
+            % plot 1 popup selector
             posx = 10;
             posy = 10;
             posw = 100;
             posh = 20;
-            popupval = 1;       
+            popupval = 1;  
+            popuplist = {this.solMap.name, this.salMap.name};
             this.popup1 = uicontrol('Style','popup', ...
-                'String', {this.Ymap.name}, ...
+                'String', popuplist, ...
                 'Value', popupval, ...
                 'Callback', @(~,~) this.selectorCallback(control), ...
                 'HorizontalAlignment','left', ...
@@ -102,7 +117,7 @@ classdef bdTimePortrait < handle
                 popupval = numel(sys.vardef{1,2}) + 1;
             end            
             this.popup2 = uicontrol('Style','popup', ...
-                'String', {this.Ymap.name}, ...
+                'String', popuplist, ...
                 'Value', popupval, ...
                 'Callback', @(~,~) this.selectorCallback(control), ...
                 'HorizontalAlignment','left', ...
@@ -145,28 +160,60 @@ classdef bdTimePortrait < handle
             end
 
             % Yindx is the global index of the selected variable
-            function renderax(ax,Yindx)
-                % get detail of the selected variable
-                name    = this.Ymap(Yindx).name;   % name string
-                YYindx  = this.Ymap(Yindx).grp;    % index of group in Y
-                yyindx  = Yindx - YYindx(1) + 1;   % relative index of selected variable in group index
-                    
-                % find non-negative time entries
+            function renderax(ax,popindx)
+                % find the non-negative time entries in sol.x
                 tindx = find(control.sol.x>=0);
-            
-                % the stuff we plot 
                 t = control.sol.x(tindx);
-                y = control.sol.y(YYindx,tindx);
+
+                % number of entries in sol
+                nvardef = numel(this.solMap);
                 
-                plot(ax, t, y, 'color',[0.9 0.9 0.9]);
+                % if the user selected a variable from vardef then ...
+                if popindx <= nvardef
+                    % the popup index corresponds to the row index of sol
+                    solindx = popindx; 
+
+                    % get detail of the selected variable
+                    name    = this.solMap(solindx).name;        % name string
+                    varindx = this.solMap(solindx).varindx;     % index in vardef{}
+                
+                    % find all rows of sol.y that are related to this vardef entry
+                    solrows = this.varMap(varindx).solindx;
+                    
+                    % extract the values for plotting
+                    y = control.sol.y(solrows,tindx);
+
+                    % index of the variable of interest
+                    yrow = solindx - solrows(1) + 1;
+                else
+                    % the popup index refers to an entry of sal
+                    salindx = popindx - nvardef;
+                    
+                    % get detail of the selected variable
+                    name    = this.salMap(salindx).name;        % name string
+                    auxindx = this.salMap(salindx).varindx;     % auxdef index
+
+                    % find all rows of aux that are related to this auxdef entry
+                    salrows = this.auxMap(auxindx).solindx;
+
+                    % extract the values for plotting
+                    y = control.sal(salrows,tindx);
+
+                    % index of the variable of interest
+                    yrow = salindx - salrows(1) + 1;
+                end
+
+                % plot the background traces in grey
+                plot(ax, t, y', 'color',[0.75 0.75 0.75]);
                 hold(ax,'on');
-                plot(ax, t, y(yyindx,:), 'color','k', 'Linewidth',1.5);
-                hold(ax,'off');      
+                
+                % (re)plot the variable of interest in black
+                plot(ax, t, y(yrow,:), 'color','k', 'Linewidth',1.5);
                 ylabel(ax,name, 'FontSize',16,'FontWeight','normal');
-                %xlabel(ax,'time');
+
+                hold(ax,'off');      
             end
-        end       
-        
+        end
         
     end
     
@@ -213,28 +260,3 @@ classdef bdTimePortrait < handle
     end
     
 end
-
-% Returns a mapping for each entry in vardef where
-% map.name = the string name of the variable
-% map.def = the row index of vardef{}
-% map.grp = the Y indices of all variables with this name.
-function map = enumerate(xxxdef)
-    map = [];
-    ndef = size(xxxdef,1);
-    pos = 0;
-    for def=1:ndef
-        len = numel(xxxdef{def,2});
-        for c=1:len
-            if len==1
-                name = xxxdef{def,1};        
-            else
-                name = num2str(c,[xxxdef{def,1},'_{%d}']);        
-            end                
-            map(end+1).name = name;
-            map(end).def = def;
-            map(end).grp = [1:len]+pos;
-        end
-        pos = pos + len;
-    end
-end
-

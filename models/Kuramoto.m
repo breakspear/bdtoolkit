@@ -8,40 +8,76 @@
 %
 % Example:
 %   n = 20;                 % number of oscillators
-%   sys = Kuramoto(n);      % construct the system struct
+%   Kij = ones(n);          % coupling matrix
+%   sys = Kuramoto(Kij);    % construct the system struct
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 %
-% Copyright (C) 2016 Stewart Heitmann <heitmann@ego.id.au>
-% Licensed under the Academic Free License 3.0
-% https://opensource.org/licenses/AFL-3.0
-%
-function sys = Kuramoto(n)
-    % Construct the default connection matrix (a chain in this case)
-    Kij = circshift(eye(n),1) + circshift(eye(n),-1);
 
+% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+% All rights reserved.
+%
+% Redistribution and use in source and binary forms, with or without
+% modification, are permitted provided that the following conditions
+% are met:
+%
+% 1. Redistributions of source code must retain the above copyright
+%    notice, this list of conditions and the following disclaimer.
+% 
+% 2. Redistributions in binary form must reproduce the above copyright
+%    notice, this list of conditions and the following disclaimer in
+%    the documentation and/or other materials provided with the
+%    distribution.
+%
+% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+% "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+% LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+% FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+% COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+% INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+% BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+% LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+% CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+% LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+% ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+% POSSIBILITY OF SUCH DAMAGE.
+function sys = Kuramoto(Kij)
+    n = size(Kij,1);
+    
     % Construct the system struct
     sys.odefun = @odefun;                   % Handle to our ODE function
+    sys.auxfun = @auxfun;                   % Handle to our auxillary function
     sys.pardef = {'Kij', Kij;               % ODE parameters {'name',value}
                   'k',1;               
                   'omega',randn(n,1)};
     sys.vardef = {'theta',2*pi*rand(n,1)};  % ODE variables {'name',value}
+    sys.auxdef = {'phi',zeros(n,1);         % AUX variables {'name',value}
+                  'R',0};
     sys.solver = {'ode45',                  % pertinent matlab ODE solvers
                   'ode23',
                   'ode113',
                   'ode15s'};
     sys.tspan = [0 100];                    % default time span [begin end]
-    sys.odeopt = odeset();                  % default ODE solver options
+    sys.odeopt = odeset('RelTol',1e-6, ...  % default ODE solver options
+                        'MaxStep',0.1);
     sys.texstr = {'\textbf{Kuramoto} \medskip';
-                  'Network of Kuramoto Phase-Coupled Oscillators\smallskip';
+                  'Network of Kuramoto Oscillators\smallskip';
                   '\qquad $\dot \theta_i = \omega_i + \frac{k}{n} \sum_j K_{ij} \sin(\theta_i - \theta_j)$ \smallskip';
                   'where \smallskip';
                   '\qquad $\theta_i$ is the phase of the $i^{th}$ oscillator (radians),';
                   '\qquad $\omega_i$ is its natural oscillation frequency (cycles/sec),';
-                  '\qquad $K$ is the connectivity matrix ($n$ x $n$),';
+                  '\qquad $K$ is the network connectivity matrix ($n$ x $n$),';
                   '\qquad $k$ is a scaling constant,';
                   '\qquad $i,j=1 \dots n$. \medskip';
+                  'Auxillary variables';
+                  '\qquad $\phi_i = \theta_i - \theta_1$ is the phase of $\theta_i$ relative to $\theta_1$';                  
+                  '\qquad $R = \frac{1}{n} \sum_i \exp(\mathbf{i} \theta_i)$ is the Kuramoto order parameter. \medskip';                  
                   'Notes';
-                  ['\qquad 1. This simulation has $n{=}',num2str(n),'$ oscillators. \medskip']};
+                  ['\qquad 1. This simulation has $n{=}',num2str(n),'$ oscillators.'];
+                  '\qquad 2. $\mathbf{i} = \sqrt{-1}$ \medskip';
+                  'References';
+                  '\qquad Kuramoto (1984) Chemical oscillations, waves and turbulence.';
+                  '\qquad Strogatz (2000) From Kuramoto to Crawford.';
+                  '\qquad Breakspear et al (2010) Generative models of cortical oscillations.'};
 end
 
 % Kuramoto ODE function where
@@ -55,4 +91,15 @@ function dtheta = odefun(t,theta,Kij,k,omega)
     theta_j = ones(n,1) * theta';                       % (nxn) matrix with same theta values in each col
     theta_ij = theta_i - theta_j;                       % (nxn) matrix of all possible (theta_i - theta_j) combinations
     dtheta = omega + k/n.*sum(Kij.*sin(theta_ij),1)';   % Kuramoto Equation in vector form.
+end
+
+% The auxillary function acts on the computed solution. 
+% The inputs t and theta correspond to sol.x and sol.y respectively.
+% Here we compute the auxillary variables sin(theta) and the order parameter R.
+function aux = auxfun(t,theta,Kij,k,omega)
+    n = size(theta,1);
+    phi = theta - ones(n,1)*theta(1,:);           % (nx1) vector
+    %phi = mod(phi+pi,2*pi)-pi;                   % wrap phi at [-pi,pi]
+    R = abs(sum(exp(1i*theta),1))./n;             % (1xt) vector
+    aux = [phi; R];
 end
