@@ -593,6 +593,8 @@ classdef bdControl < handle
                 case 'dde23'
                     lags = GetDefValues(this.lagdef); 
                     sol = dde23(this.ddefun, lags, y0, this.tspan, this.ddeopt, this.pardef{:,2});
+		case 'ito_euler'
+		    sol = ito_euler(this.odefun, this.sdefun, tspan, y0, this.sdeopt);
                 case 'sde'
                     % SDE solver uses fixed-step Euler method
                     sol.solver = 'sde';
