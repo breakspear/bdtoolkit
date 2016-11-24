@@ -64,20 +64,35 @@ function sys = NeuralNetODE(n)
                   'ode23tb'};
     sys.odeopt = odeset();              % default ODE solver options
     sys.tspan = [0 1000];               % default time span [begin end]
-    sys.texstr = {'\textbf{NeuralNetODE} \medskip';
-                  'Simple Firing-Rate Neural Network \smallskip';
-                  '\qquad $\tau \dot V_i = -V_i + F\big(k_i \sum_j K_{ij} \, V_j + I_i - b \big)$ \smallskip';
-                  'where \smallskip';
-                  '\qquad $V_i(t)$ is the firing rate of the $i^{th}$ neuron,';
-                  '\qquad $K$ is the network connectivity matrix ($n$ x $n$),';
-                  '\qquad $k$ is a scaling parameter,';
-                  '\qquad $I_i$ is an external current applied to the $i^{th}$ neuron,';
-                  '\qquad $b$ is the firing threshold,';
-                  '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoid function,';
-                  '\qquad $\tau$ is the time constant of the dynamics,';
-                  '\qquad $i{=}1 \dots n$. \medskip';
-                  'Notes';
-                  ['\qquad 1. This simulation has $n{=}',num2str(n),'$ neurons.']};
+              
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{NeuralNetODE} \medskip';
+      'Simple Firing-Rate Neural Network \smallskip';
+      '\qquad $\tau \dot V_i = -V_i + F\big(k_i \sum_j K_{ij} \, V_j + I_i - b \big)$ \smallskip';
+      'where \smallskip';
+      '\qquad $V_i(t)$ is the firing rate of the $i^{th}$ neuron,';
+      '\qquad $K$ is the network connectivity matrix ($n$ x $n$),';
+      '\qquad $k$ is a scaling parameter,';
+      '\qquad $I_i$ is an external current applied to the $i^{th}$ neuron,';
+      '\qquad $b$ is the firing threshold,';
+      '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoid function,';
+      '\qquad $\tau$ is the time constant of the dynamics,';
+      '\qquad $i{=}1 \dots n$. \medskip';
+      'Notes';
+      ['\qquad 1. This simulation has $n{=}',num2str(n),'$ neurons.']};
+
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+ 
+    % Include the Phase Portrait panel in the GUI
+    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+
+    % Include the Space-Time Portrait panel in the GUI
+    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';                
 end
 
 % The ODE function.

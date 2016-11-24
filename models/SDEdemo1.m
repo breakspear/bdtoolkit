@@ -75,13 +75,23 @@ function sys = SDEdemo1()
     sys.vardef = {'Y',5};               % SDE variables {'name',value}
     sys.solver = {'sde'};               % The SDE solver
     sys.tspan = [0 10];                 % default time span
-    sys.texstr = {'\textbf{SDEdemo1} \medskip';
-                  'A Stochastic Differential Equation \smallskip';
-                  '\qquad $dY = \mu\,Y\,dt + \sigma\,Y\,dW_t$ \smallskip';
-                  'describing geometric Brownian motion, where \smallskip';
-                  '\qquad $Y(t)$ is the dynamic variable, \smallskip';
-                  '\qquad $\mu$ and $\sigma$ are scalar constants, \smallskip';
-                  '\qquad $dW_t$ is a Weiner process. \medskip'};
+              
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo1} \medskip';
+        'A Stochastic Differential Equation \smallskip';
+        '\qquad $dY = \mu\,Y\,dt + \sigma\,Y\,dW_t$ \smallskip';
+        'describing geometric Brownian motion, where \smallskip';
+        '\qquad $Y(t)$ is the dynamic variable, \smallskip';
+        '\qquad $\mu$ and $\sigma$ are scalar constants, \smallskip';
+        '\qquad $dW_t$ is a Weiner process. \medskip'};
+
+    
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';                       
 end
 
 % The deterministic function.

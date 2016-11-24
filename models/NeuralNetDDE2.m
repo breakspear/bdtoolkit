@@ -59,21 +59,35 @@ function sys = NeuralNetDDE2(n)
     sys.solver = {'dde23'};             % pertinent matlab DDE solvers
     sys.ddeopt = ddeset();              % default DDE solver options
     sys.tspan = [0 200];                % default time span [begin end]
-    sys.texstr = {'\textbf{NeuralNetDDE2} \medskip';
-                  'Generic time-delayed firing-rate neural network \smallskip';
-                  '\qquad $\tau \dot V_i = -V_i + F\big(k \sum_j K_{ij} \, V_j(t-d_j) + I_i \big)$ \smallskip';
-                  'where each neuron has a unique time delay, \smallskip';
-                  '\qquad $V_i(t)$ is the firing rate of the $i^{th}$ neuron, \smallskip';
-                  '\qquad $K$ is the network connectivity matrix ($n$ x $n$), \smallskip';
-                  '\qquad $k$ is a scaling parameter, \smallskip';
-                  '\qquad $d$ is a vector of delay constants ($n$ x $1$), \smallskip';
-                  '\qquad $I$ is a vector of injection currents ($n$ x $1$), \smallskip';
-                  '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoid function, \smallskip';
-                  '\qquad $\tau$ is the time constant of the dynamics, \smallskip';
-                  '\qquad $i{=}1 \dots n$. \medskip';
-                  'Notes';
-                  ['\qquad 1. This simulation has $n{=}',num2str(n),'$ neurons.']};
     
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{NeuralNetDDE2} \medskip';
+        'Generic time-delayed firing-rate neural network \smallskip';
+        '\qquad $\tau \dot V_i = -V_i + F\big(k \sum_j K_{ij} \, V_j(t-d_j) + I_i \big)$ \smallskip';
+        'where each neuron has a unique time delay, \smallskip';
+        '\qquad $V_i(t)$ is the firing rate of the $i^{th}$ neuron, \smallskip';
+        '\qquad $K$ is the network connectivity matrix ($n$ x $n$), \smallskip';
+        '\qquad $k$ is a scaling parameter, \smallskip';
+        '\qquad $d$ is a vector of delay constants ($n$ x $1$), \smallskip';
+        '\qquad $I$ is a vector of injection currents ($n$ x $1$), \smallskip';
+        '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoid function, \smallskip';
+        '\qquad $\tau$ is the time constant of the dynamics, \smallskip';
+        '\qquad $i{=}1 \dots n$. \medskip';
+        'Notes';
+        ['\qquad 1. This simulation has $n{=}',num2str(n),'$ neurons.']};
+
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+ 
+    % Include the Phase Portrait panel in the GUI
+    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+
+    % Include the Space-Time Portrait panel in the GUI
+    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';                  
 end
 
 % The DDE function.

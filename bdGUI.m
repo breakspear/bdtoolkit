@@ -79,22 +79,19 @@ classdef bdGUI
             % resize the panels (putting them in their exact position)
             this.SizeChanged();
 
-            % construct the Equations panel (if sys.textstr is defined)
-            if isfield(sys,'texstr')
-                bdLatexPanel(this.tabgroup,'Equations',sys.texstr);
+            % load each gui panel listed in sys.gui
+            if isfield(sys,'gui')
+                panels = fieldnames(sys.gui);
+                for indx = 1:numel(panels)
+                    classname = panels{indx};
+                    if exist(classname,'class')
+                        feval(classname,this.tabgroup,this.control);
+                    else
+                        dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
+                        uiwait(dlg);
+                    end
+                end
             end
-            
-            % construct the Time Portrait panel
-            bdTimePortrait(this.tabgroup,'Time Portrait',sys,this.control);
-            
-            % construct the Phase Portrait panel
-            bdPhasePortrait(this.tabgroup,'Phase Portrait',sys,this.control);
-            
-            % construct the Space-Time panel
-            bdSpaceTimePortrait(this.tabgroup,'Space-Time',sys,this.control);
-            
-            % construct the Solver panel
-            bdSolverPanel(this.tabgroup,'Solver',sys,this.control);
             
             % register a callback for resizing the figure
             set(this.fig,'SizeChangedFcn', @(~,~) this.SizeChanged());

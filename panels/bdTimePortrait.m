@@ -43,30 +43,42 @@ classdef bdTimePortrait < handle
     end
     
     methods
-        function this = bdTimePortrait(tabgroup,title,sys,control)
+        function this = bdTimePortrait(tabgroup,control)
             % Construct a new tab panel in the parent tabgroup.
             % Usage:
-            %    bdTimePortrait(tabgroup,title,sys,control)
+            %    bdTimePortrait(tabgroup,title,control)
             % where 
             %    tabgroup is a handle to the parent uitabgroup object.
             %    title is a string defining the name given to the new tab.
-            %    sys is the system struct defining the model.
             %    control is a handle to the GUI control panel.
 
-            % map vardef entries to rows in sol
-            this.varMap = bdUtils.varMap(sys.vardef);
-            this.solMap = bdUtils.solMap(sys.vardef);
-            if isfield(sys,'auxdef')
-                % map auxdef entries to rows in sal
-                this.auxMap = bdUtils.varMap(sys.auxdef);
-                this.salMap = bdUtils.solMap(sys.auxdef);
+            % validate the sys.gui settings
+            if ~isfield(control.sys.gui,'bdTimePortrait')
+                return      % we aren't wanted so do nothing.
+            end
+            
+            % sys.gui.bdTimePortrait.title (optional)
+            if isfield(control.sys.gui.bdTimePortrait,'title')
+                title = control.sys.gui.bdTimePortrait.title;
             else
+                title = 'Time Portrait';
+            end
+            
+            % map vardef entries to rows in sol
+            this.varMap = bdUtils.varMap(control.vardef);
+            this.solMap = bdUtils.solMap(control.vardef);
+            if isempty(control.auxdef)
+                % construct empty maps
                 this.auxMap = bdUtils.varMap([]);
                 this.salMap = bdUtils.solMap([]);
+            else
+                % map auxdef entries to rows in sal
+                this.auxMap = bdUtils.varMap(control.auxdef);
+                this.salMap = bdUtils.solMap(control.auxdef);
             end
             
             % number of entries in vardef
-            nvardef = size(sys.vardef,1);
+            nvardef = size(control.vardef,1);
                         
             % construct the uitab
             this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
@@ -114,7 +126,7 @@ classdef bdTimePortrait < handle
             posw = 100;
             posh = 20;
             if nvardef>=2
-                popupval = numel(sys.vardef{1,2}) + 1;
+                popupval = numel(control.vardef{1,2}) + 1;
             end            
             this.popup2 = uicontrol('Style','popup', ...
                 'String', popuplist, ...

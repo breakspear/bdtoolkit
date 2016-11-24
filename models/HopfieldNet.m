@@ -55,18 +55,32 @@ function sys = HopfieldNet(n)
     sys.solver = {'ode45'};             % pertinent matlab ODE solvers
     sys.odeopt = odeset();              % default ODE solver options
     sys.tspan = [0 200];               % default time span [begin end]
-    sys.texstr = {'\textbf{HopfieldNet} \medskip';
-                  'The Continuous Hopfield Network \smallskip';
-                  '\qquad $\tau \dot V_i = -V_i + \sum_j W_{ij} \tanh(b\, V_i) + I_{app}$ \smallskip';
-                  'where \smallskip';
-                  '\qquad $V$ is the firing rate of each neuron ($n$ x $1$),';
-                  '\qquad $K$ is the connectivity matrix ($n$ x $n$),';
-                  '\qquad $b$ is a slope parameter,';
-                  '\qquad $I_{app}$ is the applied current ($n$ x $1$),';
-                  '\qquad $i{=}1 \dots n$. \medskip';
-                  'Notes';
-                  ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
+    
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{HopfieldNet} \medskip';
+        'The Continuous Hopfield Network \smallskip';
+        '\qquad $\tau \dot V_i = -V_i + \sum_j W_{ij} \tanh(b\, V_i) + I_{app}$ \smallskip';
+        'where \smallskip';
+        '\qquad $V$ is the firing rate of each neuron ($n$ x $1$),';
+        '\qquad $K$ is the connectivity matrix ($n$ x $n$),';
+        '\qquad $b$ is a slope parameter,';
+        '\qquad $I_{app}$ is the applied current ($n$ x $1$),';
+        '\qquad $i{=}1 \dots n$. \medskip';
+        'Notes';
+        ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
+    
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+ 
+    % Include the Phase Portrait panel in the GUI
+    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
 
+    % Include the Space-Time Portrait panel in the GUI
+    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';    
 end
 
 % The ODE function.

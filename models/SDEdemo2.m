@@ -46,18 +46,33 @@ function sys = SDEdemo2(n)
     sys.vardef = {'Y',5*ones(n,1)};     % SDE variables {'name',value}
     sys.solver = {'sde'};               % The SDE solver
     sys.tspan = [0 10];                 % default time span  
-    sys.texstr = {'\textbf{SDEdemo2} \medskip';
-                  'N independent Ornstein-Uhlenbeck processes\smallskip';
-                  '\qquad $dY_i = \theta (\mu - Y_i)\,dt + \sigma dW_i$ \smallskip';
-                  'where \smallskip';
-                  '\qquad $Y(t)$ is a vector of dynamic variables ($n$ x $1$),';
-                  '\qquad $\theta>0$ is the rate of convergence to the mean,';
-                  '\qquad $\mu$ is the (long-term) mean,';
-                  '\qquad $\sigma>0$ is the volatility,';
-                  '\qquad $dW_i(t)$ is a Weiner process,';
-                  '\qquad $i{=}1 \dots n$. \medskip';
-                  'Notes';
-                  ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
+              
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo2} \medskip';
+        'N independent Ornstein-Uhlenbeck processes\smallskip';
+        '\qquad $dY_i = \theta (\mu - Y_i)\,dt + \sigma dW_i$ \smallskip';
+        'where \smallskip';
+        '\qquad $Y(t)$ is a vector of dynamic variables ($n$ x $1$),';
+        '\qquad $\theta>0$ is the rate of convergence to the mean,';
+        '\qquad $\mu$ is the (long-term) mean,';
+        '\qquad $\sigma>0$ is the volatility,';
+        '\qquad $dW_i(t)$ is a Weiner process,';
+        '\qquad $i{=}1 \dots n$. \medskip';
+        'Notes';
+        ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
+              
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+ 
+    % Include the Phase Portrait panel in the GUI
+    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+
+    % Include the Space-Time Portrait panel in the GUI
+    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';               
 end
 
 % The deterministic function.

@@ -33,7 +33,19 @@ classdef bdSolverPanel < handle
     end
 
     methods        
-        function this = bdSolverPanel(tabgroup,title,sys,control)
+        function this = bdSolverPanel(tabgroup,control)
+            % validate the sys.gui settings
+            if ~isfield(control.sys.gui,'bdSolverPanel')
+                return      % we aren't wanted so do nothing.
+            end
+            
+            % sys.gui.bdSolverPanel.title (optional)
+            if isfield(control.sys.gui.bdSolverPanel,'title')
+                title = control.sys.gui.bdSolverPanel.title;
+            else
+                title = 'Solver';
+            end
+            
             % construct the uitab
             tab = uitab(tabgroup,'title',title, 'Units','pixels');
             
@@ -72,9 +84,9 @@ classdef bdSolverPanel < handle
             fig = ancestor(tabgroup,'figure');
             menuobj = uimenu('Parent',fig, 'Label','Solver');
             checkstr='on';
-            for indx = 1:numel(sys.solver)
+            for indx = 1:numel(control.solvers)
                 uimenu('Parent',menuobj, ...
-                    'Label',sys.solver{indx}, ...
+                    'Label',control.solvers{indx}, ...
                     'Tag', 'bdSolverSelector', ...
                     'Checked',checkstr, ...
                     'Callback', @(src,~) this.SolverSelect(menuobj,src,control) );

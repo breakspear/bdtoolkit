@@ -59,25 +59,40 @@ function sys = Kuramoto(Kij)
     sys.tspan = [0 100];                    % default time span [begin end]
     sys.odeopt = odeset('RelTol',1e-6, ...  % default ODE solver options
                         'MaxStep',0.1);
-    sys.texstr = {'\textbf{Kuramoto} \medskip';
-                  'Network of Kuramoto Oscillators\smallskip';
-                  '\qquad $\dot \theta_i = \omega_i + \frac{k}{n} \sum_j K_{ij} \sin(\theta_i - \theta_j)$ \smallskip';
-                  'where \smallskip';
-                  '\qquad $\theta_i$ is the phase of the $i^{th}$ oscillator (radians),';
-                  '\qquad $\omega_i$ is its natural oscillation frequency (cycles/sec),';
-                  '\qquad $K$ is the network connectivity matrix ($n$ x $n$),';
-                  '\qquad $k$ is a scaling constant,';
-                  '\qquad $i,j=1 \dots n$. \medskip';
-                  'Auxillary variables';
-                  '\qquad $\phi_i = \theta_i - \theta_1$ is the phase of $\theta_i$ relative to $\theta_1$';                  
-                  '\qquad $R = \frac{1}{n} \sum_i \exp(\mathbf{i} \theta_i)$ is the Kuramoto order parameter. \medskip';                  
-                  'Notes';
-                  ['\qquad 1. This simulation has $n{=}',num2str(n),'$ oscillators.'];
-                  '\qquad 2. $\mathbf{i} = \sqrt{-1}$ \medskip';
-                  'References';
-                  '\qquad Kuramoto (1984) Chemical oscillations, waves and turbulence.';
-                  '\qquad Strogatz (2000) From Kuramoto to Crawford.';
-                  '\qquad Breakspear et al (2010) Generative models of cortical oscillations.'};
+                    
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{Kuramoto} \medskip';
+        'Network of Kuramoto Oscillators\smallskip';
+        '\qquad $\dot \theta_i = \omega_i + \frac{k}{n} \sum_j K_{ij} \sin(\theta_i - \theta_j)$ \smallskip';
+        'where \smallskip';
+        '\qquad $\theta_i$ is the phase of the $i^{th}$ oscillator (radians),';
+        '\qquad $\omega_i$ is its natural oscillation frequency (cycles/sec),';
+        '\qquad $K$ is the network connectivity matrix ($n$ x $n$),';
+        '\qquad $k$ is a scaling constant,';
+        '\qquad $i,j=1 \dots n$. \medskip';
+        'Auxillary variables';
+        '\qquad $\phi_i = \theta_i - \theta_1$ is the phase of $\theta_i$ relative to $\theta_1$';                  
+        '\qquad $R = \frac{1}{n} \sum_i \exp(\mathbf{i} \theta_i)$ is the Kuramoto order parameter. \medskip';                  
+        'Notes';
+        ['\qquad 1. This simulation has $n{=}',num2str(n),'$ oscillators.'];
+        '\qquad 2. $\mathbf{i} = \sqrt{-1}$ \medskip';
+        'References';
+        '\qquad Kuramoto (1984) Chemical oscillations, waves and turbulence.';
+        '\qquad Strogatz (2000) From Kuramoto to Crawford.';
+        '\qquad Breakspear et al (2010) Generative models of cortical oscillations.'};
+    
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+ 
+    % Include the Phase Portrait panel in the GUI
+    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+
+    % Include the Space-Time Portrait panel in the GUI
+    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';                
 end
 
 % Kuramoto ODE function where

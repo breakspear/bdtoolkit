@@ -62,20 +62,35 @@ function sys = SwiftHohenberg(n,dx)
     sys.solver = {'ode45','ode23','ode113'};% pertinent matlab ODE solvers
     sys.odeopt = odeset();     % default ODE solver options
     sys.tspan = [0 20];                     % default time span
-    sys.texstr = {'\textbf{SwiftHohenberg1D} \medskip';
-                  'Spatially discretized Swift-Hohenberg partial differential equation \smallskip';
-                  '\qquad $\dot U = -(I + D_{xx})^2 U - \mu U + \nu U^3 - U^5$ \smallskip';
-                  'where \smallskip';
-                  '\qquad $I$ is the Identity matrix,';
-                  '\qquad $D_{xx}$ is the Laplacian operator,';
-                  '\qquad $\mu$ and $nu$ are scalar constants, \medskip';
-                  'Notes';
-                  '\qquad 1. $D_{xx,i} = \big( U_{i+1} - 2U_{i} + U_{i+1} \big) / dx^2$.';
-                  '\qquad 2. $dx$ is the step size of the spatial discretization,';
-                  '\qquad 3. Boundary conditions are periodic.';
-                  ['\qquad 4. This simulation has $n{=}',num2str(n),'$. \medskip'];
-                  'Adapted from Avitabile (2016) Numerical computation of coherent';
-                  'structures in spatially-extended neural networks. ICMNS 2016, Antibes'};
+              
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{SwiftHohenberg1D} \medskip';
+        'Spatially discretized Swift-Hohenberg partial differential equation \smallskip';
+        '\qquad $\dot U = -(I + D_{xx})^2 U - \mu U + \nu U^3 - U^5$ \smallskip';
+        'where \smallskip';
+        '\qquad $I$ is the Identity matrix,';
+        '\qquad $D_{xx}$ is the Laplacian operator,';
+        '\qquad $\mu$ and $nu$ are scalar constants, \medskip';
+        'Notes';
+        '\qquad 1. $D_{xx,i} = \big( U_{i+1} - 2U_{i} + U_{i+1} \big) / dx^2$.';
+        '\qquad 2. $dx$ is the step size of the spatial discretization,';
+        '\qquad 3. Boundary conditions are periodic.';
+        ['\qquad 4. This simulation has $n{=}',num2str(n),'$. \medskip'];
+        'Adapted from Avitabile (2016) Numerical computation of coherent';
+        'structures in spatially-extended neural networks. ICMNS 2016, Antibes'};
+              
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+ 
+    % Include the Phase Portrait panel in the GUI
+    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+
+    % Include the Space-Time Portrait panel in the GUI
+    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';                      
               
     % The ODE function; using the precomputed values of Ix and Dxx
     function dU = odefun(t,U,mu,nu,dx)

@@ -45,19 +45,29 @@ classdef bdSpaceTimePortrait < handle
     end
     
     methods
-        function this = bdSpaceTimePortrait(tabgroup,title,sys,control)
+        function this = bdSpaceTimePortrait(tabgroup,control)
             % Construct a new tab panel in the parent tabgroup.
             % Usage:
-            %    bdSpaceTimePortrait(tabgroup,title,sys,control)
+            %    bdSpaceTimePortrait(tabgroup,title,control)
             % where 
             %    tabgroup is a handle to the parent uitabgroup object.
             %    title is a string defining the name given to the new tab.
-            %    sys is the system struct defining the model.
             %    control is a handle to the GUI control panel.
 
+            if ~isfield(control.sys.gui,'bdSpaceTimePortrait')
+                return      % we aren't wanted so quietly do nothing.
+            end
+            
+            % sys.gui.bdSpaceTimePortrait.title (optional)
+            if isfield(control.sys.gui.bdSpaceTimePortrait,'title')
+                title = control.sys.gui.bdSpaceTimePortrait.title;
+            else
+                title = 'Space-Time';
+            end
+
             % build a lookup table describing the data indexes pertinent
-            % to each ODE variable defined in sys.vardef{name,value}
-            this.varindx = this.enumerate(sys.vardef);
+            % to each ODE variable defined in control.vardef{name,value}
+            this.varindx = this.enumerate(control.vardef);
             
             % construct the uitab
             this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
@@ -87,9 +97,9 @@ classdef bdSpaceTimePortrait < handle
             posh = 20;
             
             this.popup = uicontrol('Style','popup', ...
-                'String', sys.vardef(:,1), ...
+                'String', control.vardef(:,1), ...
                 'Value', 1, ...
-                'Callback', @(~,~) this.selectorCallback(sys,control), ...
+                'Callback', @(~,~) this.selectorCallback(control), ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -100,10 +110,10 @@ classdef bdSpaceTimePortrait < handle
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
 
             % listen to the control panel for redraw events
-            addlistener(control,'redraw',@(~,~) this.render(sys,control));    
+            addlistener(control,'redraw',@(~,~) this.render(control));    
         end
         
-        function render(this,sys,control)
+        function render(this,control)
             %disp('bdSpaceTimePortrait.render()')
             varnum = this.popup.Value;
             varstr = this.popup.String{varnum};
@@ -138,8 +148,8 @@ classdef bdSpaceTimePortrait < handle
  
         
         % Callback ffor the plot variable selectors
-        function selectorCallback(this,sys,control)
-            this.render(sys,control);
+        function selectorCallback(this,control)
+            this.render(control);
         end
 
         function indices = enumerate(this,xxxdef)

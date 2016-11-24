@@ -32,7 +32,7 @@ classdef bdLatexPanel < handle
     % POSSIBILITY OF SUCH DAMAGE.
 
     methods        
-        function this = bdLatexPanel(tabgroup,title,latexstr)
+        function this = bdLatexPanel(tabgroup,control)
             % Construct a new tab panel in the parent tabgroup.
             % Usage:
             %    bdLatexPanel(tabgroup,title,latexstr)
@@ -42,6 +42,28 @@ classdef bdLatexPanel < handle
             %    latexstr is a cell array of single-line strings that are
             %       formatted for the MATLAB built-in latex interpreter.
 
+            % validate the sys.gui settings
+            if ~isfield(control.sys.gui,'bdLatexPanel')
+                return      % we aren't wanted so do nothing.
+            end
+            
+            % sys.gui.bdLatexPanel.title (optional)
+            if isfield(control.sys.gui.bdLatexPanel,'title')
+                title = control.sys.gui.bdLatexPanel.title;
+            else
+                title = 'Equations';
+            end
+            
+            % sys.gui.bdLatexPanel.latex (mandatory)
+            if isfield(control.sys.gui.bdLatexPanel,'latex')
+                latex = control.sys.gui.bdLatexPanel.latex;
+            else
+                % issue a warning and return
+                dlg = warndlg({['sys.gui.bdLatexPanel.latex is undefined'],'The Latex Panel will not be displayed'},'bdLatexPanel','modal');
+                uiwait(dlg);
+                return
+            end
+            
             % construct the uitab
             tab = uitab(tabgroup, 'title',title);
 
@@ -56,7 +78,7 @@ classdef bdLatexPanel < handle
             %axis 'off';
             
             % construct the latex text
-            text(0.01,0.98,latexstr, 'interpreter','latex', 'Parent',ax, 'FontSize',16, 'VerticalAlignment','top');
+            text(0.01,0.98,latex, 'interpreter','latex', 'Parent',ax, 'FontSize',16, 'VerticalAlignment','top');
             
             % No need to listen for changes because everything on this
             % panel is fixed at creation time.

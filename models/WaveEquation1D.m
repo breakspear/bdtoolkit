@@ -64,17 +64,33 @@ function sys = WaveEquation1D(n)
                   'ode113'};
     sys.odeopt = odeset('RelTol',1e-6);     % default ODE solver options
     sys.tspan = [0 20];                     % default time span
-    sys.texstr = {'\textbf{WaveEquation1D} \medskip';
-                  'The second-order Wave Equation in one spatial dimension\smallskip';
-                  '\qquad $\partial^2 U/ \partial t^2 = c^2 \; \partial^2 U / \partial x^2$ \smallskip';
-                  'transformed into a system of first-order equations\smallskip';
-                  '\qquad $\dot U = V$ \smallskip';
-                  '\qquad $\dot V = c^2 \; \partial_{xx} U$ \smallskip';
-                  'where $c$ is the wave propagation speed.\medskip';
-                  'Notes';
-                  '\qquad 1. $\partial_{xx} U \approx \big( U_{i+1} - 2U_{i} + U_{i+1} \big) / dx^2$ is the spatial Laplacian.';
-                  '\qquad 2. $dx$ is the spatial discretization step.';
-                  ['\qquad 3. $n{=}',num2str(n),'$. \medskip']};
+              
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{WaveEquation1D} \medskip';
+        'The second-order Wave Equation in one spatial dimension\smallskip';
+        '\qquad $\partial^2 U/ \partial t^2 = c^2 \; \partial^2 U / \partial x^2$ \smallskip';
+        'transformed into a system of first-order equations\smallskip';
+        '\qquad $\dot U = V$ \smallskip';
+        '\qquad $\dot V = c^2 \; \partial_{xx} U$ \smallskip';
+        'where $c$ is the wave propagation speed.\medskip';
+        'Notes';
+        '\qquad 1. $\partial_{xx} U \approx \big( U_{i+1} - 2U_{i} + U_{i+1} \big) / dx^2$ is the spatial Laplacian.';
+        '\qquad 2. $dx$ is the spatial discretization step.';
+        ['\qquad 3. $n{=}',num2str(n),'$. \medskip']};
+              
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+ 
+    % Include the Phase Portrait panel in the GUI
+    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+
+    % Include the Space-Time Portrait panel in the GUI
+    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';                                   
+              
               
     % The ODE function; using the precomputed values of Dxx
     function dY = odefun(~,Y,c,dx)

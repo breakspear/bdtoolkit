@@ -60,15 +60,27 @@ function sys = ODEdemo2()
     sys.solver = {'ode45','ode113'};    % pertinent matlab ODE solvers
     sys.odeopt = odeset();              % default ODE solver options
     sys.tspan = [0 20];                 % default time span 
-    sys.texstr = {'\textbf{ODEdemo2} \medskip';
-                  'The van der Pol oscillator \smallskip';
-                  '\qquad $\dot U(t) = V(t)$ \smallskip';
-                  '\qquad $\dot V(t) = a\,\big(1 - U^2(t)\big)\,V(t) - U(t)$ \smallskip';
-                  'where \smallskip';
-                  '\qquad $U(t)$ and $V(t)$ are the dynamic variables,';
-                  '\qquad $a$ is a scalar constant. \medskip';
-                  'Notes';
-                  '\qquad 1. Oscillations occur for $a>0$.'};
+              
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo2} \medskip';
+        'The van der Pol oscillator \smallskip';
+        '\qquad $\dot U(t) = V(t)$ \smallskip';
+        '\qquad $\dot V(t) = a\,\big(1 - U^2(t)\big)\,V(t) - U(t)$ \smallskip';
+        'where \smallskip';
+        '\qquad $U(t)$ and $V(t)$ are the dynamic variables,';
+        '\qquad $a$ is a scalar constant. \medskip';
+        'Notes';
+        '\qquad 1. Oscillations occur for $a>0$.'};
+    
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+ 
+    % Include the Phase Portrait panel in the GUI
+    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+    
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';              
 end
 
 % The ODE function.

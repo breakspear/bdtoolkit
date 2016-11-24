@@ -70,20 +70,35 @@ function sys = HindmarshRose(n)
                   'ode23tb'};
     sys.odeopt = odeset();              % default ODE solver options
     sys.tspan = [0 1000];               % default time span [begin end]
-    sys.texstr = {'\textbf{HindmarshRose} \medskip';
-                  'Network of reciprocally-coupled Hindmarsh-Rose neurons \smallskip';
-                  '\qquad $\dot X_i = Y_i - a\,X_i^3 + b\,X_i^2 - Z_i + I_{app} - I_{net}$ \smallskip';
-                  '\qquad $\dot Y_i = c - d\,X_i^2 - Y_i$ \smallskip';
-                  '\qquad $\dot Z_i = r\,(s\,(X_i-x_0) - Z_i)$ \smallskip';
-                  'where \smallskip';
-                  '\qquad $K_{ij}$ is the connectivity matrix ($n$ x $n$),';
-                  '\qquad $a, b, c, d, r, s, x_0, I_{app}, g_s, V_s$ and $\theta$ are constants,';
-                  '\qquad $I_{app}$ is the applied current,';
-                  '\qquad $I_{net} = g_s\,(X_i-V_s) \sum_j K_{ij} F(X_j-\theta)$,';
-                  '\qquad $F(x) = 1/(1+\exp(-x))$,';
-                  '\qquad $i{=}1 \dots n$. \medskip';
-                  'Notes';
-                  ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
+              
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{HindmarshRose} \medskip';
+        'Network of reciprocally-coupled Hindmarsh-Rose neurons \smallskip';
+        '\qquad $\dot X_i = Y_i - a\,X_i^3 + b\,X_i^2 - Z_i + I_{app} - I_{net}$ \smallskip';
+        '\qquad $\dot Y_i = c - d\,X_i^2 - Y_i$ \smallskip';
+        '\qquad $\dot Z_i = r\,(s\,(X_i-x_0) - Z_i)$ \smallskip';
+        'where \smallskip';
+        '\qquad $K_{ij}$ is the connectivity matrix ($n$ x $n$),';
+        '\qquad $a, b, c, d, r, s, x_0, I_{app}, g_s, V_s$ and $\theta$ are constants,';
+        '\qquad $I_{app}$ is the applied current,';
+        '\qquad $I_{net} = g_s\,(X_i-V_s) \sum_j K_{ij} F(X_j-\theta)$,';
+        '\qquad $F(x) = 1/(1+\exp(-x))$,';
+        '\qquad $i{=}1 \dots n$. \medskip';
+        'Notes';
+        ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
+    
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+ 
+    % Include the Phase Portrait panel in the GUI
+    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+
+    % Include the Space-Time Portrait panel in the GUI
+    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';                               
 end
 
 % The ODE function for the Hindmarsh Rose model.

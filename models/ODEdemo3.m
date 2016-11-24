@@ -95,19 +95,34 @@ function sys = main(Kij)
     sys.solver = {'ode45','ode23','ode113'};% pertinent matlab ODE solvers
     sys.odeopt = odeset('RelTol',1e-6);     % default ODE solver options
     sys.tspan = [0 100];                    % default time span
-    sys.texstr = {'\textbf{ODEdemo3} \medskip';
-                  'A network of coupled van der Pol oscillators \smallskip';
-                  '\qquad $\dot U_i = V_i$ \smallskip';
-                  '\qquad $\dot V_i = a\,(1 - U_i^2)\,V_i - U_i - b\,\sum_j K_{ij}\,U_j$ \smallskip';
-                  'where \smallskip';
-                  '\qquad $U_i(t)$ and $V_i(t)$ are the dynamic variables ($n$ x $1$),';
-                  '\qquad $K_{ij}$ is the connectivity matrix ($n$ x $n$),';
-                  '\qquad $a$ and $b$ are scalar constants,';
-                  '\qquad $i{=}1 \dots n$. \medskip';
-                  'Notes';
-                  ['\qquad 1. This simulation has $n{=}',num2str(n),'$.'];
-                  '\qquad 2. Oscillations occur for $a>0$.';
-                  '\qquad 3. Network coupling is scaled by $b$.'};
+              
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo3} \medskip';
+        'A network of coupled van der Pol oscillators \smallskip';
+        '\qquad $\dot U_i = V_i$ \smallskip';
+        '\qquad $\dot V_i = a\,(1 - U_i^2)\,V_i - U_i - b\,\sum_j K_{ij}\,U_j$ \smallskip';
+        'where \smallskip';
+        '\qquad $U_i(t)$ and $V_i(t)$ are the dynamic variables ($n$ x $1$),';
+        '\qquad $K_{ij}$ is the connectivity matrix ($n$ x $n$),';
+        '\qquad $a$ and $b$ are scalar constants,';
+        '\qquad $i{=}1 \dots n$. \medskip';
+        'Notes';
+        ['\qquad 1. This simulation has $n{=}',num2str(n),'$.'];
+        '\qquad 2. Oscillations occur for $a>0$.';
+        '\qquad 3. Network coupling is scaled by $b$.'};
+    
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+ 
+    % Include the Phase Portrait panel in the GUI
+    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+
+    % Include the Space-Time Portrait panel in the GUI
+    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';                         
 end
 
 % The ODE function.

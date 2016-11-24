@@ -32,20 +32,22 @@ classdef bdControl < handle
     % POSSIBILITY OF SUCH DAMAGE.
     
     properties
-        solver      % matlab solver string (ode45,ode112,dde23,...)
-        odefun      % ODE function
-        odeopt      % ODE solver options (see odeset)
-        ddefun      % DDE function
-        ddeopt      % DDE solver options (see ddeset)
-        sdefun      % SDE function
-        auxfun      % auxillary function
-        tspan       % solver time span (1x2)
-        pardef      % ODE/DDE parameter definitions, cell array of {name,value} pairs
-        lagdef      % DDE lag parameters, cell array of {name, value} pairs.
-        vardef      % ODE variable definitions, cell array of {name, value, index} triples
-        auxdef      % AUX variable definitions, cell array of {name, value, index} triples
-        sol         % solution returned by the matlab solver
-        sal         % auxillary solutions computed from sol.y by user-defined solfun
+        sys
+        solvers = []    % matlab solver string (ode45,ode112,dde23,...)
+        solver = []     % active solver string
+        odefun = []     % ODE function
+        odeopt = []     % ODE solver options (see odeset)
+        ddefun = []     % DDE function
+        ddeopt = []     % DDE solver options (see ddeset)
+        sdefun = []     % SDE function
+        auxfun = []     % auxillary function
+        tspan  = []     % solver time span (1x2)
+        pardef = []     % ODE/DDE parameter definitions, cell array of {name,value} pairs
+        lagdef = []     % DDE lag parameters, cell array of {name, value} pairs.
+        vardef = []     % ODE variable definitions, cell array of {name, value, index} triples
+        auxdef = []     % AUX variable definitions, cell array of {name, value, index} triples
+        sol = []        % solution returned by the matlab solver
+        sal = []        % auxillary solutions computed from sol.y by user-defined solfun
     end
     
     properties (Access=private)
@@ -63,12 +65,15 @@ classdef bdControl < handle
     
     methods
         function this = bdControl(panel,sys)
+            this.sys = sys;
+            
             % init defaults
             if isfield(sys,'ddefun')
                 this.ddefun = sys.ddefun;
                 this.ddeopt = sys.ddeopt;
                 this.lagdef = sys.lagdef;
             end 
+            this.solvers = sys.solver;
             this.solver = sys.solver{1};
             if isfield(sys,'odefun')
                 this.odefun = sys.odefun;
@@ -94,8 +99,6 @@ classdef bdControl < handle
                 this.lagdef = sys.lagdef;
             end 
             this.vardef = sys.vardef;
-            this.sol = [];
-            this.sal = [];
             
             % remember the parent figure
             this.fig = ancestor(panel,'figure');

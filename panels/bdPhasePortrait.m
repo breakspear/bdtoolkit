@@ -37,7 +37,6 @@ classdef bdPhasePortrait < handle
         popupy              % handle to Y popup
         popupz              % handle to Z popup
         checkbox3D          % handle to 3D checkbox
-        %auxMap              % maps entries in auxdef to rows in sal
         solMap              % maps rows in sol.y to entries in vardef
         gridflag = false    % grid flag
         vecfield = false    % vector field flag
@@ -45,22 +44,32 @@ classdef bdPhasePortrait < handle
     end
     
     methods
-        function this = bdPhasePortrait(tabgroup,title,sys,control)
+        function this = bdPhasePortrait(tabgroup,control)
             % Construct a new tab panel in the parent tabgroup.
             % Usage:
-            %    bdPhasePortrait(tabgroup,title,sys,control)
+            %    bdPhasePortrait(tabgroup,title,control)
             % where 
             %    tabgroup is a handle to the parent uitabgroup object.
             %    title is a string defining the name given to the new tab.
-            %    sys is the system struct defining the model.
             %    control is a handle to the GUI control panel.
+            % validate the sys.gui settings
+
+            if ~isfield(control.sys.gui,'bdPhasePortrait')
+                return      % we aren't wanted so quietly do nothing.
+            end
+            
+            % sys.gui.bdTimePortrait.title (optional)
+            if isfield(control.sys.gui.bdPhasePortrait,'title')
+                title = control.sys.gui.bdPhasePortrait.title;
+            else
+                title = 'Phase Portrait';
+            end
 
             % map vardef and auxdef entries to rows in sol and sal
-            %this.varMap = bdUtils.varMap(sys.vardef);
-            this.solMap = bdUtils.solMap(sys.vardef);
+            this.solMap = bdUtils.solMap(control.vardef);
             
             % number of entries in vardef
-            nvardef = size(sys.vardef,1);
+            nvardef = size(control.vardef,1);
             
             % construct the uitab
             this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
@@ -100,7 +109,7 @@ classdef bdPhasePortrait < handle
             posw = 100;
             posh = 20; 
             if nvardef>=2
-                popupval = numel(sys.vardef{1,2}) + 1;
+                popupval = numel(control.vardef{1,2}) + 1;
             end
             this.popupy = uicontrol('Style','popup', ...
                 'String', {this.solMap.name}, ...
@@ -118,7 +127,7 @@ classdef bdPhasePortrait < handle
             posw = 100;
             posh = 20;
             if nvardef>=3
-                popupval = numel(sys.vardef{1,2}) + numel(sys.vardef{2,2}) + 1;
+                popupval = numel(control.vardef{1,2}) + numel(control.vardef{2,2}) + 1;
             end
             this.popupz = uicontrol('Style','popup', ...
                 'String', {this.solMap.name}, ...

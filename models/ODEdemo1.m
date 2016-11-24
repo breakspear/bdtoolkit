@@ -57,14 +57,23 @@ function sys = ODEdemo1()
     sys.solver = {'ode45','ode23'};     % pertinent matlab ODE solvers
     sys.odeopt = odeset();              % default ODE solver options
     sys.tspan = [0 5];                  % default time span  
-    sys.texstr = {'\textbf{ODEdemo1} \medskip';
-                  'An Ordinary Differential Equation \medskip';
-                  '\qquad $\dot Y(t) = a\,Y(t) + b\,t$ \medskip';
-                  'where $a$ and $b$ are scalar constants,'};
+    
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo1} \medskip';
+                                  'An Ordinary Differential Equation \medskip';
+                                  '\qquad $\dot Y(t) = a\,Y(t) + b\,t$ \medskip';
+                                  'where $a$ and $b$ are scalar constants,'};
+    
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';
 end
 
 % The ODE function.
 function dYdt = odefun(t,Y,a,b)  
     dYdt = a*Y + b*t;
 end
-   
+    

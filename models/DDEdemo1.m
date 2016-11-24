@@ -72,18 +72,30 @@ function sys = DDEdemo1()
     sys.solver = {'dde23'};             % pertinent matlab DDE solvers
     sys.ddeopt = ddeset();              % default DDE solver options
     sys.tspan = [0 20];                 % default time span 
-    sys.texstr = {'\textbf{DDEdemo1} \medskip';
-                  'Delay Differential Equation with constant time delays \smallskip';
-                  '\qquad $\dot y_1(t) = a\,y_1(t-\tau_1)$ \smallskip';
-                  '\qquad $\dot y_2(t) = b\,y_1(t-\tau_1) + c\,y_2(t-\tau_2)$ \smallskip';
-                  '\qquad $\dot y_3(t) = d\,y_2(t)$ \smallskip';
-                  'where \smallskip';
-                  '\qquad $y_1(t), y_2(t), y_3(t)$ are the dynamic variables,\smallskip';
-                  '\qquad $a,b,c,d$ are scalar constants, \smallskip';
-                  '\qquad $\tau_1,\tau_2$ are constant time delays. \medskip';
-                  'Notes';
-                  '\qquad 1. The equations of Wille'' and Baker (see DDEX1, DDE23)' ;
-                  '\qquad 2. Constant initial conditions apply for $t{<}t_0$' };
+
+    % Include the Latex (Equations) panel in the GUI
+    sys.gui.bdLatexPanel.title = 'Equations'; 
+    sys.gui.bdLatexPanel.latex = {'\textbf{DDEdemo1} \medskip';
+        'Delay Differential Equation with constant time delays \smallskip';
+        '\qquad $\dot y_1(t) = a\,y_1(t-\tau_1)$ \smallskip';
+        '\qquad $\dot y_2(t) = b\,y_1(t-\tau_1) + c\,y_2(t-\tau_2)$ \smallskip';
+        '\qquad $\dot y_3(t) = d\,y_2(t)$ \smallskip';
+        'where \smallskip';
+        '\qquad $y_1(t), y_2(t), y_3(t)$ are the dynamic variables,\smallskip';
+        '\qquad $a,b,c,d$ are scalar constants, \smallskip';
+        '\qquad $\tau_1,\tau_2$ are constant time delays. \medskip';
+        'Notes';
+        '\qquad 1. The equations of Wille'' and Baker (see DDEX1, DDE23)' ;   
+        '\qquad 2. Constant initial conditions apply for $t{<}t_0$' };
+    
+    % Include the Time Portrait panel in the GUI
+    sys.gui.bdTimePortrait.title = 'Time Portrait';
+ 
+    % Include the Phase Portrait panel in the GUI
+    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+
+    % Include the Solver panel in the GUI
+    sys.gui.bdSolverPanel.title = 'Solver';                     
 end
 
 % The DDE function.
