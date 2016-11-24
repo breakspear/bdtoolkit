@@ -78,14 +78,14 @@ function sys = SDEdemo1()
               
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo1} \medskip';
-        'A Stochastic Differential Equation \smallskip';
-        '\qquad $dY = \mu\,Y\,dt + \sigma\,Y\,dW_t$ \smallskip';
-        'describing geometric Brownian motion, where \smallskip';
-        '\qquad $Y(t)$ is the dynamic variable, \smallskip';
-        '\qquad $\mu$ and $\sigma$ are scalar constants, \smallskip';
-        '\qquad $dW_t$ is a Weiner process. \medskip'};
-
+    sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo1}';
+        '';
+        'A Stochastic Differential Equation describing geometric Brownian motion';
+        '\qquad $dY = \mu\,Y\,dt + \sigma\,Y\,dW_t$';
+        'where';
+        '\qquad $Y(t)$ is the dynamic variable,';
+        '\qquad $\mu$ and $\sigma$ are scalar constants,';
+        '\qquad $dW_t$ is a Weiner process.'};
     
     % Include the Time Portrait panel in the GUI
     sys.gui.bdTimePortrait.title = 'Time Portrait';

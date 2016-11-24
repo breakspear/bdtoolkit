@@ -35,12 +35,10 @@ classdef bdLatexPanel < handle
         function this = bdLatexPanel(tabgroup,control)
             % Construct a new tab panel in the parent tabgroup.
             % Usage:
-            %    bdLatexPanel(tabgroup,title,latexstr)
+            %    bdLatexPanel(tabgroup,control)
             % where 
             %    tabgroup is a handle to the parent uitabgroup object.
-            %    title is a string defining the name given to the new tab.
-            %    latexstr is a cell array of single-line strings that are
-            %       formatted for the MATLAB built-in latex interpreter.
+            %    control is a handle to the GUI control object.
 
             % validate the sys.gui settings
             if ~isfield(control.sys.gui,'bdLatexPanel')
@@ -59,32 +57,94 @@ classdef bdLatexPanel < handle
                 latex = control.sys.gui.bdLatexPanel.latex;
             else
                 % issue a warning and return
-                dlg = warndlg({['sys.gui.bdLatexPanel.latex is undefined'],'The Latex Panel will not be displayed'},'bdLatexPanel','modal');
+                dlg = warndlg({'sys.gui.bdLatexPanel.latex is undefined','The Latex Panel will not be displayed'},'bdLatexPanel','modal');
                 uiwait(dlg);
                 return
             end
             
             % construct the uitab
-            tab = uitab(tabgroup, 'title',title);
+            tab = uitab(tabgroup, 'title',title, 'Units','points');
+
+            % get tab geometry (in points)
+            %parentx = tab.Position(1);
+            %parenty = tab.Position(2);
+            %parentw = tab.Position(3);
+            parenth = tab.Position(4);
 
             % construct the axes
             ax = axes('Parent',tab, ...
                 'Units','normal', ...
-                'Position', [0 0 1 1], ...
+                'Position',[0 0 1 1], ...
                 'XTick', [], ...
                 'YTick', [], ...
                 'XColor', [1 1 1], ...
                 'YColor', [1 1 1]);
-            %axis 'off';
             
-            % construct the latex text
-            text(0.01,0.98,latex, 'interpreter','latex', 'Parent',ax, 'FontSize',16, 'VerticalAlignment','top');
+            % render the latex text as one large action
+            %text(0.01,0.98,latex, 'interpreter','latex', 'Parent',ax, 'FontSize',16, 'VerticalAlignment','top');
             
-            % No need to listen for changes because everything on this
-            % panel is fixed at creation time.
+            % Render the latex strings one line at a time. This is better
+            % than rendering the latex strings in a single text box
+            % because (i) the latex interpreter has limited memory for
+            % monumental strings, and (ii) it is difficult for the user
+            % to locate latex syntax errors in monumental strings.
+            yoffset = 4;   % points
+            for l = 1:numel(latex)
+                
+                % special case: small skip for empty strings
+                if numel(latex{l})==0
+                    yoffset = yoffset + 8;      % small skip
+                    continue;
+                end 
+                
+                % render the text
+                obj = text(4,parenth-yoffset, latex{l}, ...
+                    'interpreter','latex', ...
+                    'Parent',ax, ...
+                    'Units','points', ...
+                    'FontSize',16, ...
+                    'VerticalAlignment','top', ...
+                    'Tag', 'bdLatexPanelWidget', ...
+                    'UserData', yoffset); 
+               
+                % error handling 
+                if obj.Extent(4)==0
+                    % latex syntax error occured. Colour the offending text red.
+                    obj.Color = [1 0 0];                    
+                    % issue a syntax error
+                    uiwait( warndlg({'latex syntax error in sys.gui.bdLatexPanel.latex',latex{l}},'bdLatexPanel','modal') );
+                    yoffset = yoffset + 24;                   % skip one line (approx)
+                else
+                    yoffset = yoffset + 1.1*obj.Extent(4);    % skip one line (exactly)
+                end       
+                
+            end
+            
+            % register a callback for resizing the panel
+            set(tab,'SizeChangedFcn', @(~,~) SizeChanged(this,tab));
         end
         
     end
     
+    methods (Access = private)
+    
+        % Callback for panel resizing. This function relies on each
+        % widget having its desired yoffset stored in its UserData field.
+        function SizeChanged(~,panel)
+            % get new parent geometry
+            panelh = panel.Position(4);
+            
+            % find all widgets in the control panel
+            objs = findobj(panel,'Tag','bdLatexPanelWidget');
+            
+            % for each widget, adjust its y position according to its preferred position
+            for indx = 1:numel(objs)
+                obj = objs(indx);                       % get the widget handle
+                yoffset = obj.UserData;                 % retrieve the preferred y position from UserData.
+                obj.Position(2) = panelh - yoffset;     % apply the preferred y position
+            end            
+        end
+    
+    end
 end
 

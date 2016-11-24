@@ -66,8 +66,8 @@ classdef bdSpaceTimePortrait < handle
             end
 
             % build a lookup table describing the data indexes pertinent
-            % to each ODE variable defined in control.vardef{name,value}
-            this.varindx = this.enumerate(control.vardef);
+            % to each ODE variable defined in sys.vardef{name,value}
+            this.varindx = this.enumerate(control.sys.vardef);
             
             % construct the uitab
             this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
@@ -97,7 +97,7 @@ classdef bdSpaceTimePortrait < handle
             posh = 20;
             
             this.popup = uicontrol('Style','popup', ...
-                'String', control.vardef(:,1), ...
+                'String', control.sys.vardef(:,1), ...
                 'Value', 1, ...
                 'Callback', @(~,~) this.selectorCallback(control), ...
                 'HorizontalAlignment','left', ...

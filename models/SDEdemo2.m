@@ -49,16 +49,18 @@ function sys = SDEdemo2(n)
               
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo2} \medskip';
-        'N independent Ornstein-Uhlenbeck processes\smallskip';
-        '\qquad $dY_i = \theta (\mu - Y_i)\,dt + \sigma dW_i$ \smallskip';
-        'where \smallskip';
+    sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo2}';
+        '';
+        'N independent Ornstein-Uhlenbeck processes';
+        '\qquad $dY_i = \theta (\mu - Y_i)\,dt + \sigma dW_i$';
+        'where';
         '\qquad $Y(t)$ is a vector of dynamic variables ($n$ x $1$),';
         '\qquad $\theta>0$ is the rate of convergence to the mean,';
         '\qquad $\mu$ is the (long-term) mean,';
         '\qquad $\sigma>0$ is the volatility,';
         '\qquad $dW_i(t)$ is a Weiner process,';
-        '\qquad $i{=}1 \dots n$. \medskip';
+        '\qquad $i{=}1 \dots n$.';
+        '';
         'Notes';
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
               

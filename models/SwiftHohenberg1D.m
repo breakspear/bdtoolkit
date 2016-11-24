@@ -65,20 +65,23 @@ function sys = SwiftHohenberg(n,dx)
               
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{SwiftHohenberg1D} \medskip';
-        'Spatially discretized Swift-Hohenberg partial differential equation \smallskip';
-        '\qquad $\dot U = -(I + D_{xx})^2 U - \mu U + \nu U^3 - U^5$ \smallskip';
-        'where \smallskip';
+    sys.gui.bdLatexPanel.latex = {'\textbf{SwiftHohenberg1D}';
+        '';
+        'Spatially discretized Swift-Hohenberg partial differential equation';
+        '\qquad $\dot U = -(I + D_{xx})^2 U - \mu U + \nu U^3 - U^5$';
+        'where';
         '\qquad $I$ is the Identity matrix,';
         '\qquad $D_{xx}$ is the Laplacian operator,';
-        '\qquad $\mu$ and $nu$ are scalar constants, \medskip';
+        '\qquad $\mu$ and $\nu$ are scalar constants.';
+        '';
         'Notes';
         '\qquad 1. $D_{xx,i} = \big( U_{i+1} - 2U_{i} + U_{i+1} \big) / dx^2$.';
         '\qquad 2. $dx$ is the step size of the spatial discretization,';
         '\qquad 3. Boundary conditions are periodic.';
-        ['\qquad 4. This simulation has $n{=}',num2str(n),'$. \medskip'];
+        ['\qquad 4. This simulation has $n{=}',num2str(n),'$.'];
+        '';
         'Adapted from Avitabile (2016) Numerical computation of coherent';
-        'structures in spatially-extended neural networks. ICMNS 2016, Antibes'};
+        'structures in spatially-extended neural networks. ICMNS 2016.'};
               
     % Include the Time Portrait panel in the GUI
     sys.gui.bdTimePortrait.title = 'Time Portrait';

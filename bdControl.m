@@ -32,22 +32,10 @@ classdef bdControl < handle
     % POSSIBILITY OF SUCH DAMAGE.
     
     properties
-        sys
-        solvers = []    % matlab solver string (ode45,ode112,dde23,...)
-        solver = []     % active solver string
-        odefun = []     % ODE function
-        odeopt = []     % ODE solver options (see odeset)
-        ddefun = []     % DDE function
-        ddeopt = []     % DDE solver options (see ddeset)
-        sdefun = []     % SDE function
-        auxfun = []     % auxillary function
-        tspan  = []     % solver time span (1x2)
-        pardef = []     % ODE/DDE parameter definitions, cell array of {name,value} pairs
-        lagdef = []     % DDE lag parameters, cell array of {name, value} pairs.
-        vardef = []     % ODE variable definitions, cell array of {name, value, index} triples
-        auxdef = []     % AUX variable definitions, cell array of {name, value, index} triples
-        sol = []        % solution returned by the matlab solver
-        sal = []        % auxillary solutions computed from sol.y by user-defined solfun
+        sys         % user-supplied system definition
+        solver      % active solver
+        sol = []    % solution struct returned by the matlab solver
+        sal = []    % auxiliary solutions computed from sol.y by user-defined solfun
     end
     
     properties (Access=private)
@@ -65,40 +53,11 @@ classdef bdControl < handle
     
     methods
         function this = bdControl(panel,sys)
+            % working copy of the system struct
             this.sys = sys;
             
-            % init defaults
-            if isfield(sys,'ddefun')
-                this.ddefun = sys.ddefun;
-                this.ddeopt = sys.ddeopt;
-                this.lagdef = sys.lagdef;
-            end 
-            this.solvers = sys.solver;
-            this.solver = sys.solver{1};
-            if isfield(sys,'odefun')
-                this.odefun = sys.odefun;
-            end
-            if isfield(sys,'odeopt')
-                this.odeopt = sys.odeopt;
-            end
-            if isfield(sys,'ddefun')
-                this.ddefun = sys.ddefun;
-            end
-            if isfield(sys,'ddeopt')
-                this.ddeopt = sys.ddeopt;
-            end
-            if isfield(sys,'sdefun')
-                this.sdefun = sys.sdefun;
-            end            
-            if isfield(sys,'auxfun')
-                this.auxfun = sys.auxfun;
-            end            
-            this.tspan = sys.tspan;
-            this.pardef = sys.pardef;
-            if isfield(sys,'lagdef')
-                this.lagdef = sys.lagdef;
-            end 
-            this.vardef = sys.vardef;
+            % currently active solver
+            this.solver = sys.solver{1};            
             
             % remember the parent figure
             this.fig = ancestor(panel,'figure');
@@ -443,8 +402,8 @@ classdef bdControl < handle
 
             % start time
             uicontrol('Style','edit', ...
-                'String',num2str(this.tspan(1),'%0.4g'), ...
-                'Value', this.tspan(1), ...
+                'String',num2str(sys.tspan(1),'%0.4g'), ...
+                'Value', sys.tspan(1), ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -456,8 +415,8 @@ classdef bdControl < handle
             
             % end time
             uicontrol('Style','edit', ...
-                'String',num2str(this.tspan(2),'%0.4g'), ...
-                'Value', this.tspan(2), ...
+                'String',num2str(sys.tspan(2),'%0.4g'), ...
+                'Value', sys.tspan(2), ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -481,21 +440,6 @@ classdef bdControl < handle
                 'UserData', yoffset, ...
                 'Tag', 'bdControlWidget', ...
                 'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
-            
-%             % next row
-%             yoffset = yoffset + rowh;
-%             
-%             % solver popup menu
-%             a=uicontrol('Style','popupmenu', ...
-%                 'String',{'ode45','ode23'}, ...
-%                 'HorizontalAlignment','left', ...
-%                 'FontUnits','pixels', ...
-%                 'FontSize',12, ...
-%                 'Parent', panel, ...
-%                 'UserData', yoffset, ...
-%                 'Tag', 'bdControlWidget', ...
-%                 'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
-%             get(a)
 
             % next row
             yoffset = yoffset + boxh;                        
@@ -544,21 +488,6 @@ classdef bdControl < handle
                 'ToolTipString', 'Halt the solver', ...
                 'Callback', @(~,~) this.HaltCallback(), ...
                 'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
-
-            % next row
-            yoffset = yoffset + rowh;                        
-
-%             % CPU heading 
-%             uicontrol('Style','text',...
-%                 'String','CPU', ...
-%                 'HorizontalAlignment','left', ...
-%                 'FontUnits','pixels', ...
-%                 'FontSize',12, ...
-%                 'FontWeight','bold', ...
-%                 'Parent', panel, ...
-%                 'UserData', yoffset, ...
-%                 'Tag', 'bdControlWidget', ...
-%                 'Position',[0 panelh-yoffset posw boxh]);
            
             % register a callback for resizing the panel
             set(panel,'SizeChangedFcn', @(~,~) SizeChanged(this,panel));
@@ -570,35 +499,59 @@ classdef bdControl < handle
         function sol = solve(this)
             disp('bdControl.solve()');
 
-            % Use odeset OutputFcn to track progress for ode45 and friends
-            odeopt = odeset(this.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
-            tspan = linspace(this.tspan(1), this.tspan(2), 11);
-
-            y0 = GetDefValues(this.vardef);          
+            y0 = GetDefValues(this.sys.vardef);          
             switch this.solver
                 case 'ode45'
-                    sol = ode45(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
+                    % Integrate using the matlab ode45 solver.
+                    % We use the OutputFcn to track progress and detect halt events.
+                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
+                    sol = ode45(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
                 case 'ode23'
-                    sol = ode23(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
+                    % Integrate using the matlab ode23 solver.
+                    % We use the OutputFcn to track progress and detect halt events.
+                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
+                    sol = ode23(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
                 case 'ode113'
-                    sol = ode113(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
+                    % Integrate using the matlab ode113 solver.
+                    % We use the OutputFcn to track progress and detect halt events.
+                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
+                    sol = ode113(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
                 case 'ode15s'
-                    sol = ode15s(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
+                    % Integrate using the matlab ode15s solver.
+                    % We use the OutputFcn to track progress and detect halt events.
+                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
+                    sol = ode15s(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
                 case 'ode23s'
-                    sol = ode23s(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
+                    % Integrate using the matlab ode23s solver.
+                    % We use the OutputFcn to track progress and detect halt events.
+                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
+                    sol = ode23s(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
                 case 'ode23t'
-                    sol = ode23t(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
+                    % Integrate using the matlab ode23t solver.
+                    % We use the OutputFcn to track progress and detect halt events.
+                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
+                    sol = ode23t(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
                 case 'ode23tb'
-                    sol = ode23tb(this.odefun, tspan, y0, odeopt, this.pardef{:,2}); 
+                    % Integrate using the matlab ode23tb solver.
+                    % We use the OutputFcn to track progress and detect halt events.
+                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
+                    sol = ode23tb(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
                 case 'dde23'
-                    lags = GetDefValues(this.lagdef); 
-                    sol = dde23(this.ddefun, lags, y0, this.tspan, this.ddeopt, this.pardef{:,2});
+                    lags = GetDefValues(this.sys.lagdef); 
+                    sol = dde23(this.sys.ddefun, lags, y0, this.sys.tspan, this.sys.ddeopt, this.sys.pardef{:,2});
                 case 'sde'
                     % SDE solver uses fixed-step Euler method
                     sol.solver = 'sde';
                     dt = 0.001;         % TODO: FIX ME
                     sqrtdt = sqrt(dt);
-                    sol.x = this.tspan(1):dt:this.tspan(2);
+                    sol.x = this.sys.tspan(1):dt:this.sys.tspan(2);
                     tcount = numel(sol.x);
                     sol.y = NaN(numel(y0),tcount);
                     sol.yp = sol.y;
@@ -606,18 +559,21 @@ classdef bdControl < handle
                     for indx=2:tcount
                         t = sol.x(indx);
                         y = sol.y(:,indx-1);
-                        F = this.odefun(t,y,this.pardef{:,2});
-                        G = this.sdefun(t,y,this.pardef{:,2});
+                        F = this.sys.odefun(t,y,this.sys.pardef{:,2});
+                        G = this.sys.sdefun(t,y,this.sys.pardef{:,2});
                         sol.yp(:,indx) = F*dt + sqrtdt*G;
                         sol.y(:,indx) = y + sol.yp(:,indx);
                     end
+                    sol.stats.nsteps = tcount;
+                    sol.stats.nfailed = 0;
+                    sol.stats.nfevals = tcount;
                 otherwise
                     error(['Unknown solver ''',this.solver,'''']);
             end
             
             % compute the auxillary variables
-            if ~isempty(this.auxfun)
-                this.sal = this.auxfun(sol.x,sol.y,this.pardef{:,2});
+            if isfield(this.sys,'auxfun')
+                this.sal = this.sys.auxfun(sol.x,sol.y,this.sys.pardef{:,2});
             end
         end
         
@@ -636,7 +592,7 @@ classdef bdControl < handle
                     if any(yindx<0) || any(yindx>n)
                         error('bdControl.deval(tdomain,yindx): yindex is out of bounds');
                     end  
-                    % Anoyingly, interp1() transposes the output when the
+                    % Annoyingly, interp1() transposes the output when the
                     % input is a matrix but not a vector.
                     if size(yindx,2)==1
                         % Here the input is a VECTOR so we DON'T transpose the output.
@@ -677,28 +633,28 @@ classdef bdControl < handle
         % Callback for ODE parameter edit box
         function ScalarParameter(this,editObj,parindx)
             this.ScalarCallback(editObj);
-            this.pardef{parindx,2} = editObj.Value;
+            this.sys.pardef{parindx,2} = editObj.Value;
             notify(this,'recompute');
         end
         
         % Callback for DDE lag edit box
         function ScalarLag(this,editObj,lagindx)
             this.ScalarCallback(editObj);
-            this.lagdef{lagindx,2} = editObj.Value;
+            this.sys.lagdef{lagindx,2} = editObj.Value;
             notify(this,'recompute');
         end
         
         % Callback for ODE variable edit box
         function ScalarVariable(this,editObj,varindx)
             this.ScalarCallback(editObj);
-            this.vardef{varindx,2} = editObj.Value;
+            this.sys.vardef{varindx,2} = editObj.Value;
             notify(this,'recompute');
         end
 
         % Callback for ODE time domain edit box
         function ScalarTspan(this,hObj,tindx)
             this.ScalarCallback(hObj);
-            this.tspan(tindx) = hObj.Value;
+            this.sys.tspan(tindx) = hObj.Value;
             notify(this,'recompute');            
         end
 
@@ -727,21 +683,21 @@ classdef bdControl < handle
         % Callback for ODE parameter vector widget
         function VectorParameter(this,barObj,name,parindx)
             this.VectorCallback(barObj,name);
-            this.pardef{parindx,2} = reshape(barObj.YData, size(this.pardef{parindx,2}));
+            this.sys.pardef{parindx,2} = reshape(barObj.YData, size(this.syspardef{parindx,2}));
             notify(this,'recompute');
         end
 
         % Callback for DDE lag vector widget
         function VectorLag(this,barObj,name,lagindx)
             this.VectorCallback(barObj,name);
-            this.lagdef{lagindx,2} = reshape(barObj.YData, size(this.lagdef{lagindx,2}));
+            this.sys.lagdef{lagindx,2} = reshape(barObj.YData, size(this.sys.lagdef{lagindx,2}));
             notify(this,'recompute');
         end
         
         % Callback for ODE variable vector widget
         function VectorVariable(this,barObj,name,varindx)
             this.VectorCallback(barObj,name);
-            this.vardef{varindx,2} = reshape(barObj.YData, size(this.vardef{varindx,2}));
+            this.sys.vardef{varindx,2} = reshape(barObj.YData, size(this.sys.vardef{varindx,2}));
             notify(this,'recompute');
         end
         
@@ -766,27 +722,27 @@ classdef bdControl < handle
         % Callback for ODE parameter matrix widget
         function MatrixParameter(this,imObj,name,parindx)
             % open dialog box for editing a matrix
-            this.pardef{parindx,2} = bdEditMatrix(this.pardef{parindx,2},name);
+            this.sys.pardef{parindx,2} = bdEditMatrix(this.sys.pardef{parindx,2},name);
             % update the image data in the control panel
-            set(imObj,'CData',this.pardef{parindx,2});
+            set(imObj,'CData',this.sys.pardef{parindx,2});
             notify(this,'recompute');
         end
 
         % Callback for DDE lag matrix widget
         function MatrixLag(this,imObj,name,lagindx)
             % open dialog box for editing a matrix
-            this.lagdef{lagindx,2} = bdEditMatrix(this.lagdef{lagindx,2},name);
+            this.sys.lagdef{lagindx,2} = bdEditMatrix(this.sys.lagdef{lagindx,2},name);
             % update the image data in the control panel
-            set(imObj,'CData',this.lagdef{lagindx,2});
+            set(imObj,'CData',this.sys.lagdef{lagindx,2});
             notify(this,'recompute');
         end
 
         % Callback for ODE varoable matrix widget
         function MatrixVariable(this,imObj,name,varindx)
             % open dialog box for editing a matrix
-            this.vardef{varindx,2} = bdEditMatrix(this.vardef{varindx,2},name);
+            this.sys.vardef{varindx,2} = bdEditMatrix(this.sys.vardef{varindx,2},name);
             % update the image data in the control panel
-            set(imObj,'CData',this.vardef{varindx,2});
+            set(imObj,'CData',this.sys.vardef{varindx,2});
             notify(this,'recompute');
         end
         
@@ -819,7 +775,7 @@ classdef bdControl < handle
                 case ''
                     cpu = cputime - this.cpustart;
                     this.cpu.String = num2str(cpu,'%5.2fs');
-                    this.pro.String = num2str(100*tspan(1)/this.tspan(2),'%3.0f%%');
+                    this.pro.String = num2str(100*tspan(1)/this.sys.tspan(2),'%3.0f%%');
                     drawnow;
                 case 'done'
                    if this.hlt.Value~=1
@@ -885,16 +841,4 @@ function vec = GetDefValues(xxxdef)
     
     % concatenate the column vectors to a simple vector
     vec = cell2mat(vec);
-end
-
-function outflag = myodeplot(tspan,Y0,flag,vargin)
-    disp(flag);
-    switch flag
-        case 'init'
-        case ''
-            disp('woah')
-        case 'done'
-        otherwise
-    end
-    outflag = 0;
 end

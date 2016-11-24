@@ -60,10 +60,11 @@ function sys = ODEdemo1()
     
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo1} \medskip';
-                                  'An Ordinary Differential Equation \medskip';
-                                  '\qquad $\dot Y(t) = a\,Y(t) + b\,t$ \medskip';
-                                  'where $a$ and $b$ are scalar constants,'};
+    sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo1}';
+        '';
+        'A simple example of an Ordinary Differential Equation (ODE) \medskip';
+        '\qquad $\dot Y(t) = a\,Y(t) + b\,t$ \medskip';
+        'where $a$ and $b$ are scalar constants.'};
     
     % Include the Time Portrait panel in the GUI
     sys.gui.bdTimePortrait.title = 'Time Portrait';

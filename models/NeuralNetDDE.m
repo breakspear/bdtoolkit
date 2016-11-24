@@ -111,22 +111,24 @@ function sys = NeuralNetDDE(n)
     
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{NeuralNetDDE} \medskip';
-        'Firing-rate neural network with constant time delays\smallskip';
-        '\qquad $\tau \dot V_i = -V_i + F\big(I_a + I_b + I_c + I_{ext} - \theta \big)$ \smallskip';
-        'where \smallskip';
-        '\qquad $V_i(t)$ is the firing rate of the $i^{th}$ neuron,\medskip';
-        '\qquad $I_a(t) = a \sum_j A_{ij} \, V_j(t)$ \smallskip';
-        '\qquad $I_b(t) = b \sum_j B_{ij} \, V_j(t-d_1)$ \smallskip';
-        '\qquad $I_c(t) = c \sum_j C_{ij} \, V_j(t-d_2)$ \medskip';
-        '\qquad $A, B, C$ are ($n$ x $n$) connectivity matrices, \smallskip';
-        '\qquad $a,b,c$ are scaling constants, \smallskip';
-        '\qquad $d1,d2$ are delay constants, \medskip';
-        '\qquad $I_{ext}$ is an external current ($n$ x $1$), \smallskip';
-        '\qquad $\theta$ is the firing threshold, \smallskip';
-        '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoid function, \smallskip';                  
-        '\qquad $\tau$ is the time constant of the dynamics, \smallskip';
-        '\qquad $i{=}1 \dots n$. \medskip';
+    sys.gui.bdLatexPanel.latex = {'\textbf{NeuralNetDDE}';
+        '';
+        'Firing-rate neural network with constant time delays';
+        '\qquad $\tau \dot V_i = -V_i + F\big(I_a + I_b + I_c + I_{ext} - \theta \big)$';
+        'where';
+        '\qquad $V_i(t)$ is the firing rate of the $i^{th}$ neuron,';
+        '\qquad $I_a(t) = a \sum_j A_{ij} \, V_j(t)$';
+        '\qquad $I_b(t) = b \sum_j B_{ij} \, V_j(t-d_1)$';
+        '\qquad $I_c(t) = c \sum_j C_{ij} \, V_j(t-d_2)$';
+        '\qquad $A, B, C$ are ($n$ x $n$) connectivity matrices,';
+        '\qquad $a,b,c$ are scaling constants,';
+        '\qquad $d1,d2$ are delay constants,';
+        '\qquad $I_{ext}$ is an external current ($n$ x $1$),';
+        '\qquad $\theta$ is the firing threshold,';
+        '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoid function,';                  
+        '\qquad $\tau$ is the time constant of the dynamics,';
+        '\qquad $i{=}1 \dots n$.';
+        '';
         'Notes';
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$ neurons.']};
 

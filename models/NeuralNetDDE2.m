@@ -62,18 +62,20 @@ function sys = NeuralNetDDE2(n)
     
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{NeuralNetDDE2} \medskip';
-        'Generic time-delayed firing-rate neural network \smallskip';
-        '\qquad $\tau \dot V_i = -V_i + F\big(k \sum_j K_{ij} \, V_j(t-d_j) + I_i \big)$ \smallskip';
-        'where each neuron has a unique time delay, \smallskip';
-        '\qquad $V_i(t)$ is the firing rate of the $i^{th}$ neuron, \smallskip';
-        '\qquad $K$ is the network connectivity matrix ($n$ x $n$), \smallskip';
-        '\qquad $k$ is a scaling parameter, \smallskip';
-        '\qquad $d$ is a vector of delay constants ($n$ x $1$), \smallskip';
-        '\qquad $I$ is a vector of injection currents ($n$ x $1$), \smallskip';
-        '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoid function, \smallskip';
-        '\qquad $\tau$ is the time constant of the dynamics, \smallskip';
-        '\qquad $i{=}1 \dots n$. \medskip';
+    sys.gui.bdLatexPanel.latex = {'\textbf{NeuralNetDDE2}';
+        '';
+        'Generic time-delayed firing-rate neural network';
+        '\qquad $\tau \dot V_i = -V_i + F\big(k \sum_j K_{ij} \, V_j(t-d_j) + I_i \big)$ ';
+        'where each neuron has a unique time delay,';
+        '\qquad $V_i(t)$ is the firing rate of the $i^{th}$ neuron,';
+        '\qquad $K$ is the network connectivity matrix ($n$ x $n$),';
+        '\qquad $k$ is a scaling parameter,';
+        '\qquad $d$ is a vector of delay constants ($n$ x $1$),';
+        '\qquad $I$ is a vector of injection currents ($n$ x $1$),';
+        '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoid function,';
+        '\qquad $\tau$ is the time constant of the dynamics,';
+        '\qquad $i{=}1 \dots n$.';
+        '';
         'Notes';
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$ neurons.']};
 

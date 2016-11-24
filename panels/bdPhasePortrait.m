@@ -66,10 +66,10 @@ classdef bdPhasePortrait < handle
             end
 
             % map vardef and auxdef entries to rows in sol and sal
-            this.solMap = bdUtils.solMap(control.vardef);
+            this.solMap = bdUtils.solMap(control.sys.vardef);
             
             % number of entries in vardef
-            nvardef = size(control.vardef,1);
+            nvardef = size(control.sys.vardef,1);
             
             % construct the uitab
             this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
@@ -109,7 +109,7 @@ classdef bdPhasePortrait < handle
             posw = 100;
             posh = 20; 
             if nvardef>=2
-                popupval = numel(control.vardef{1,2}) + 1;
+                popupval = numel(control.sys.vardef{1,2}) + 1;
             end
             this.popupy = uicontrol('Style','popup', ...
                 'String', {this.solMap.name}, ...
@@ -127,7 +127,7 @@ classdef bdPhasePortrait < handle
             posw = 100;
             posh = 20;
             if nvardef>=3
-                popupval = numel(control.vardef{1,2}) + numel(control.vardef{2,2}) + 1;
+                popupval = numel(control.sys.vardef{1,2}) + numel(control.sys.vardef{2,2}) + 1;
             end
             this.popupz = uicontrol('Style','popup', ...
                 'String', {this.solMap.name}, ...
@@ -226,7 +226,7 @@ classdef bdPhasePortrait < handle
             
             T1 = control.sol.x(end);
             Y1 = control.sol.y(:,end);
-            P1 = {control.pardef{:,2}};
+            P1 = {control.sys.pardef{:,2}};
 
             xindx = this.popupx.Value;
             yindx = this.popupy.Value;
@@ -343,7 +343,7 @@ classdef bdPhasePortrait < handle
             Y0 = control.sol.y(:,end);
             
             % curent parameter values
-            P0 = {control.pardef{:,2}};
+            P0 = {control.sys.pardef{:,2}};
             
             % evaluate vector field
             for idx=1:meshlen
@@ -351,7 +351,7 @@ classdef bdPhasePortrait < handle
                 Y0(xindx) = xmesh(idx);
                 Y0(yindx) = ymesh(idx);
                 % evaluate ODE
-                dY = control.odefun(0,Y0,P0{:});
+                dY = control.sys.odefun(0,Y0,P0{:});
                 % save results
                 dxmesh(idx) = dY(xindx);
                 dymesh(idx) = dY(yindx);
@@ -387,7 +387,7 @@ classdef bdPhasePortrait < handle
             Y0 = control.sol.y(:,end);
             
             % curent parameter values
-            P0 = {control.pardef{:,2}};
+            P0 = {control.sys.pardef{:,2}};
             
             % evaluate vector field
             for idx=1:meshlen
@@ -396,7 +396,7 @@ classdef bdPhasePortrait < handle
                 Y0(yindx) = ymesh(idx);
                 Y0(zindx) = zmesh(idx);
                 % compute ODE (assume t=0)
-                dY = control.odefun(0,Y0,P0{:});
+                dY = control.sys.odefun(0,Y0,P0{:});
                 % save results
                 dxmesh(idx) = dY(xindx);
                 dymesh(idx) = dY(yindx);

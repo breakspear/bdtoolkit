@@ -231,36 +231,6 @@ function bdLint(sys)
         disp('---');
     end
     
-    % test sys.texstr (which is an optional field)
-    if isfield(sys,'texstr')
-        disp('Testing latex strings');
-        assert(iscell(sys.texstr), 'sys.texstr must be a cell array of strings');
-        assert(size(sys.solver,1)==1 || size(sys.solver,2)==1, 'sys.texstr cell array must be one dimensional');
-        
-        % create an invisible figure for testing the latex strings
-        fig = figure('Visible','off', 'name','sys.texstr');
-        ax = axes('Parent',fig);
-                
-        % for each latex string in sys.textstr
-        for indx=1:numel(sys.texstr)
-            assert(ischar(sys.texstr{indx}), num2str(indx,'sys.texstr{%d} must be a string'));
-            disp([num2str(indx,'sys.texstr{%02d}='''), sys.texstr{indx}, '''']);
-            % the latex interpreter will generate our warnings 
-            hnd = text(0,0,sys.texstr{indx}, 'interpreter','latex', 'Parent',ax);
-            drawnow;        % must force a redraw in order to exercise the latex interpreter
-            delete(hnd);
-        end
-        
-        % Show the compiled latex exactly as it will appear in bdLatexPanel
-        text(0.01,0.98,sys.texstr, 'interpreter','latex', 'Parent',ax, 'FontSize',16, 'VerticalAlignment','top');
-        ax.XTick = [];
-        ax.YTick = [];
-        ax.Box = 'on'; 
-        
-        % make the figure visible
-        fig.Visible='on';
-    end
-    
     disp('ALL TESTS PASSED OK');
 end
 

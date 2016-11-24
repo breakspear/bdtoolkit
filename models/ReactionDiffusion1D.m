@@ -1,18 +1,16 @@
-function sys = WaveEquation1D(n)
-    % WaveEquation1D Wave Equation in one spatial dimension
-    %   The second-order Wave Equation in one spatial dimension
-    %        Dtt U = c^2 Dxx U
-    %   converted into a system of first-order equations
-    %        U' = V
-    %        V' = c^2 dxx V
-    %   where U is wave amplitude, V is the speed of the vertical 
-    %   displacement and c is the wave propagation speed. 
+function sys = ReactionDiffusion1D(n)
+    % ReactionDiffusion1D  Reaction-Diffusion equations in one dimension
+    %   Alan Turing's (1952) reaction-diffusion PDE
+    %        d_t A = f(A,B) + d_x^2 A
+    %        d_t B = g(A,B) + nu d_x^2 B
+    %   in one spatial dimension. The PDE is converted into a set of
+    %   coupled ODEs by discretising space using the method of lines.
     %
     % Example:
-    %   n = 100;                    % number of spatial nodes
-    %   sys = WaveEquation1D(n);    % construct our system
-    %   gui = bdGUI(sys);           % run the GUI application
-    
+    %   n = 200;                        % number of spatial points
+    %   sys = ReactionDiffusion1D(n);   % construct our system
+    %   gui = bdGUI(sys);               % run the Brain Dynamics GUI
+
     % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
     % All rights reserved.
     %
@@ -41,49 +39,51 @@ function sys = WaveEquation1D(n)
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
-    % Precompute the Laplacian (excluding the dx term),
-    % ... assuming periodic boundary conditions.
-    %Dxx = sparse( circshift(eye(n),1) -2*eye(n) + circshift(eye(n),-1) );  
-    % ... assuming open boundaries
-    Dxx = sparse(diag(ones(1,n-1),1) - 2*eye(n) + diag(ones(1,n-1),-1));
-    
-    % Initial conditions
-    x0 = 0.4*n;
-    x1 = 0.6*n;
-    U0 = ((1:n)>x0) .* ((1:n)<x1);
-    V0 = zeros(n,1);
+    % Precompute (part of) the Laplacian, assuming periodic boundary conditions.
+    Dxx = sparse( circshift(eye(n),1) -2*eye(n) + circshift(eye(n),-1) );
     
     % Construct the system struct
     sys.odefun = @odefun;                   % Handle to our ODE function
-    sys.pardef = {'c',1;                    % ODE parameters {'name',value}
-                  'dx',0.1};
-    sys.vardef = {'U',U0;                   % ODE variables {'name',value}
-                  'V',V0};
+    sys.pardef = {'a',1;                    % ODE parameters {'name',value}
+                  'b',2;
+                  'nu',1;
+                  'dx',1};
+    sys.vardef = {'A',rand(n,1);            % ODE variables {'name',value}
+                  'B',rand(n,1)};
     sys.solver = {'ode45',                  % matlab ODE solvers
                   'ode23',
                   'ode113'};
     sys.odeopt = odeset('RelTol',1e-6);     % default ODE solver options
     sys.tspan = [0 20];                     % default time span
-              
+
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{WaveEquation1D}';
+    sys.gui.bdLatexPanel.latex = {'\textbf{ReactionDiffusion1D}';
         '';
-        'The second-order Wave Equation';
-        '\qquad $\partial^2 U/ \partial t^2 = c^2 \; \partial^2 U / \partial x^2$';
-        'in one spatial dimension, $x \in \mathrm{R}^1.$';
-        '';
-        'The PDE is transformed into a system of first-order ODEs';
-        '\qquad $\dot U = V$';
-        '\qquad $\dot V = c^2 \; \partial_{xx} U$';
-        'by discretizing space using the method of lines.'
+        'Turings''s (1952) reaction-diffusion equations';
+        '\qquad $\dot A = f(A,B) + \partial^2 A / \partial x^2$';
+        '\qquad $\dot B = g(A,B) + \nu \; \partial^2 B / \partial x^2$';
+        'where';
+        '\qquad $A(x,t)$ is the activator,';
+        '\qquad $B(x,t)$ is the inhibitor,';
+        '\qquad $f(A,B)$ is the production rate of the activator,';
+        '\qquad $g(A,B)$ is the production rate of the inhibitor,';
+        '\qquad $\nu$ is the diffusion coefficient.';
+        'It is assumed that $f$ and $g$ are linear near equilibrium,';
+        '\qquad $f(A,B) = a A - B$';
+        '\qquad $g(A,B) = b A - B$';
         '';
         'Notes';
-        '\qquad 1. $c$ is the wave propagation speed.';
-        '\qquad 2. $\partial_{xx} U \approx \big( U_{i+1} - 2U_{i} + U_{i+1} \big) / dx^2$ is the spatial Laplacian.';
-        '\qquad 3. $dx$ is the spatial discretization step.';
-        ['\qquad 4. $n{=}',num2str(n),'$.']};
-              
+        '\qquad 1. $\partial^2 A / \partial x^2 \approx \big( A_{i+1} - 2A_{i} + A_{i+1} \big) / dx^2$.';
+        '\qquad 2. $dx$ is the spatial discretization step,';
+        '\qquad 3. Boundary conditions are periodic.';
+        '\qquad 5. The uniform solution is unstable for $a{>}b$';
+        '\qquad 6. Limit cycles occur for $a{<}b$';
+        ['\qquad 7. $n{=}',num2str(n),'$.'];
+        '';
+        'References';
+        '\qquad Turing (1952) The chemical basis of morphogenesis' };
+
     % Include the Time Portrait panel in the GUI
     sys.gui.bdTimePortrait.title = 'Time Portrait';
  
@@ -94,23 +94,26 @@ function sys = WaveEquation1D(n)
     sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';                                   
-              
-              
+    sys.gui.bdSolverPanel.title = 'Solver';         
+    
+    
     % The ODE function; using the precomputed values of Dxx
-    function dY = odefun(~,Y,c,dx)
+    function dY = odefun(~,Y,a,b,nu,dx)
         % incoming variables
         Y = reshape(Y,[],2);
-        U = Y(:,1);
-        V = Y(:,2);
+        A = Y(:,1);
+        B = Y(:,2);
         
-        % Second-order Wave Equations. Converted to a system of first-order
-        % equations that are discretized in space.
-        dV = c^2 * Dxx./dx^2 * U;
-        dU = V;
+        % rate equations
+        f = a*A - B;
+        g = b*A - B;
+        
+        % Reaction-Diffusion Equations
+        dA = f + Dxx./dx^2 * A;
+        dB = g + nu * Dxx./dx^2 * B;
         
         % return result as a vector
-        dY = [dU; dV];
+        dY = [dA;dB];
     end
 
 end

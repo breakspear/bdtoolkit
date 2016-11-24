@@ -65,20 +65,20 @@ classdef bdTimePortrait < handle
             end
             
             % map vardef entries to rows in sol
-            this.varMap = bdUtils.varMap(control.vardef);
-            this.solMap = bdUtils.solMap(control.vardef);
-            if isempty(control.auxdef)
+            this.varMap = bdUtils.varMap(control.sys.vardef);
+            this.solMap = bdUtils.solMap(control.sys.vardef);
+            if isfield(control.sys,'auxdef')
+                % map auxdef entries to rows in sal
+                this.auxMap = bdUtils.varMap(control.sys.auxdef);
+                this.salMap = bdUtils.solMap(control.sys.auxdef);
+            else
                 % construct empty maps
                 this.auxMap = bdUtils.varMap([]);
                 this.salMap = bdUtils.solMap([]);
-            else
-                % map auxdef entries to rows in sal
-                this.auxMap = bdUtils.varMap(control.auxdef);
-                this.salMap = bdUtils.solMap(control.auxdef);
             end
             
             % number of entries in vardef
-            nvardef = size(control.vardef,1);
+            nvardef = size(control.sys.vardef,1);
                         
             % construct the uitab
             this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
@@ -126,7 +126,7 @@ classdef bdTimePortrait < handle
             posw = 100;
             posh = 20;
             if nvardef>=2
-                popupval = numel(control.vardef{1,2}) + 1;
+                popupval = numel(control.sys.vardef{1,2}) + 1;
             end            
             this.popup2 = uicontrol('Style','popup', ...
                 'String', popuplist, ...

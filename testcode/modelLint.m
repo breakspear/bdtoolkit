@@ -87,7 +87,7 @@ disp '===';
 
 disp 'TESTING SwiftHohenberg1D';
 n = 400;
-dx = 0.25
+dx = 0.25;
 sys = SwiftHohenberg1D(n,dx);
 bdLint(sys);
 disp '===';

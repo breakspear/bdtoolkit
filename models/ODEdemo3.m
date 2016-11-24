@@ -64,15 +64,13 @@ function sys = ODEdemo3(varargin)
         % Prompt the user to load Kij from file. 
         info = {mfilename,'','Load the connectivity matrix, Kij'};
         Kij = bdLoadMatrix(mfilename,info);
-        
-        % if the user cancelled the operation then ...
         if isempty(Kij) 
-            sys = [];               % return an empty sys
-            return
-        end
-        
-        % pass Kij to our main function
-        sys = main(Kij);
+            % the user cancelled the operation
+            sys = [];  
+        else
+            % pass Kij to our main function
+            sys = main(Kij);
+        end        
     else
         % Pass all input arguments to our main function. 
         % Matlab will detect any parameter errors as if the
@@ -98,15 +96,17 @@ function sys = main(Kij)
               
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo3} \medskip';
-        'A network of coupled van der Pol oscillators \smallskip';
-        '\qquad $\dot U_i = V_i$ \smallskip';
-        '\qquad $\dot V_i = a\,(1 - U_i^2)\,V_i - U_i - b\,\sum_j K_{ij}\,U_j$ \smallskip';
-        'where \smallskip';
+    sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo3}';
+        '';
+        'A network of coupled van der Pol oscillators';
+        '\qquad $\dot U_i = V_i$';
+        '\qquad $\dot V_i = a\,(1 - U_i^2)\,V_i - U_i - b\,\sum_j K_{ij}\,U_j$';
+        'where';
         '\qquad $U_i(t)$ and $V_i(t)$ are the dynamic variables ($n$ x $1$),';
         '\qquad $K_{ij}$ is the connectivity matrix ($n$ x $n$),';
         '\qquad $a$ and $b$ are scalar constants,';
-        '\qquad $i{=}1 \dots n$. \medskip';
+        '\qquad $i{=}1 \dots n$.';
+        '';
         'Notes';
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$.'];
         '\qquad 2. Oscillations occur for $a>0$.';

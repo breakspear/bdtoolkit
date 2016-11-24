@@ -84,9 +84,9 @@ classdef bdSolverPanel < handle
             fig = ancestor(tabgroup,'figure');
             menuobj = uimenu('Parent',fig, 'Label','Solver');
             checkstr='on';
-            for indx = 1:numel(control.solvers)
+            for indx = 1:numel(control.sys.solver)
                 uimenu('Parent',menuobj, ...
-                    'Label',control.solvers{indx}, ...
+                    'Label',control.sys.solver{indx}, ...
                     'Tag', 'bdSolverSelector', ...
                     'Checked',checkstr, ...
                     'Callback', @(src,~) this.SolverSelect(menuobj,src,control) );
@@ -320,19 +320,19 @@ classdef bdSolverPanel < handle
                 %disp('bdSolverPanel.odePanel.renderboxes()')
                 switch control.solver
                     case {'ode45','ode23','ode113','ode15s','ode23s','ode23t','ode23tb'}
-                        AbsTol.String = num2str(odeget(control.odeopt,'AbsTol'),'%g');
-                        RelTol.String = num2str(odeget(control.odeopt,'RelTol'),'%g');
-                        InitialStep.String = num2str(odeget(control.odeopt,'InitialStep'),'%g');
-                        MaxStep.String = num2str(odeget(control.odeopt,'MaxStep'),'%g');
+                        AbsTol.String = num2str(odeget(control.sys.odeopt,'AbsTol'),'%g');
+                        RelTol.String = num2str(odeget(control.sys.odeopt,'RelTol'),'%g');
+                        InitialStep.String = num2str(odeget(control.sys.odeopt,'InitialStep'),'%g');
+                        MaxStep.String = num2str(odeget(control.sys.odeopt,'MaxStep'),'%g');
                         AbsTol.Enable = 'on';
                         RelTol.Enable = 'on';
                         InitialStep.Enable = 'on';
                         MaxStep.Enable = 'on';
                     case 'dde23'
-                        AbsTol.String = num2str(ddeget(control.ddeopt,'AbsTol'),'%g');
-                        RelTol.String = num2str(ddeget(control.ddeopt,'RelTol'),'%g');
-                        InitialStep.String = num2str(ddeget(control.ddeopt,'InitialStep'),'%g');
-                        MaxStep.String = num2str(ddeget(control.ddeopt,'MaxStep'),'%g');
+                        AbsTol.String = num2str(ddeget(control.sys.ddeopt,'AbsTol'),'%g');
+                        RelTol.String = num2str(ddeget(control.sys.ddeopt,'RelTol'),'%g');
+                        InitialStep.String = num2str(ddeget(control.sys.ddeopt,'InitialStep'),'%g');
+                        MaxStep.String = num2str(ddeget(control.sys.ddeopt,'MaxStep'),'%g');
                         AbsTol.Enable = 'on';
                         RelTol.Enable = 'on';
                         InitialStep.Enable = 'on';
@@ -393,7 +393,7 @@ classdef bdSolverPanel < handle
                         
             % render dy/dt versus time
             dydt = diff(control.sol.y,1,2);
-            nrm = sqrt( sum(dydt.^2) );
+            nrm = sqrt( sum(dydt.^2,1) );
             set(plt1, 'XData',tsteps, 'YData',nrm([1:end,end]));
             
             % render the step size versus time

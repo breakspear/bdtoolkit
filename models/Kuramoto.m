@@ -62,21 +62,25 @@ function sys = Kuramoto(Kij)
                     
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{Kuramoto} \medskip';
-        'Network of Kuramoto Oscillators\smallskip';
-        '\qquad $\dot \theta_i = \omega_i + \frac{k}{n} \sum_j K_{ij} \sin(\theta_i - \theta_j)$ \smallskip';
-        'where \smallskip';
+    sys.gui.bdLatexPanel.latex = {'\textbf{Kuramoto}';
+        '';
+        'Network of Kuramoto Oscillators';
+        '\qquad $\dot \theta_i = \omega_i + \frac{k}{n} \sum_j K_{ij} \sin(\theta_i - \theta_j)$';
+        'where';
         '\qquad $\theta_i$ is the phase of the $i^{th}$ oscillator (radians),';
         '\qquad $\omega_i$ is its natural oscillation frequency (cycles/sec),';
         '\qquad $K$ is the network connectivity matrix ($n$ x $n$),';
         '\qquad $k$ is a scaling constant,';
-        '\qquad $i,j=1 \dots n$. \medskip';
+        '\qquad $i,j=1 \dots n$';
+        '';
         'Auxillary variables';
         '\qquad $\phi_i = \theta_i - \theta_1$ is the phase of $\theta_i$ relative to $\theta_1$';                  
-        '\qquad $R = \frac{1}{n} \sum_i \exp(\mathbf{i} \theta_i)$ is the Kuramoto order parameter. \medskip';                  
+        '\qquad $R = \frac{1}{n} \sum_i \exp(\mathbf{i} \theta_i)$ is the Kuramoto order parameter.';
+        '';
         'Notes';
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$ oscillators.'];
-        '\qquad 2. $\mathbf{i} = \sqrt{-1}$ \medskip';
+        '\qquad 2. $\mathbf{i} = \sqrt{-1}$';
+        '';
         'References';
         '\qquad Kuramoto (1984) Chemical oscillations, waves and turbulence.';
         '\qquad Strogatz (2000) From Kuramoto to Crawford.';
