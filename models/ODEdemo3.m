@@ -1,4 +1,4 @@
-function sys = ODEdemo3(varargin)
+function sys = ODEdemo3(Kij)
     % ODEdemo3  Example of n coupled van der Pol equations
     %   Implements a set of n coupled van der Pol equation
     %        Ui' = Vi
@@ -59,27 +59,6 @@ function sys = ODEdemo3(varargin)
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
-    % if no input arguments were supplied then .... 
-    if nargin==0
-        % Prompt the user to load Kij from file. 
-        info = {mfilename,'','Load the connectivity matrix, Kij'};
-        Kij = bdLoadMatrix(mfilename,info);
-        if isempty(Kij) 
-            % the user cancelled the operation
-            sys = [];  
-        else
-            % pass Kij to our main function
-            sys = main(Kij);
-        end        
-    else
-        % Pass all input arguments to our main function. 
-        % Matlab will detect any parameter errors as if the
-        % main function was called from the command line.
-        sys = main(varargin{:});
-    end
-end
-    
-function sys = main(Kij)
     % determine the number of nodes from Kij
     n = size(Kij,1);
 
@@ -122,7 +101,10 @@ function sys = main(Kij)
     sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';                         
+    sys.gui.bdSolverPanel.title = 'Solver';   
+    
+    % Handle to the function that the GUI calls to construct a new system. 
+    sys.self = @self;
 end
 
 % The ODE function.
@@ -140,3 +122,16 @@ function dYdt = odefun(t,Y,Kij,a,b)
     dYdt=[dU; dV];
 end
    
+% The self function is called by the GUI to spawn a new variant of the model
+function sys = self()
+    % Prompt the user to load Kij from file. 
+    info = {mfilename,'','Load the connectivity matrix, Kij'};
+    Kij = bdLoadMatrix(mfilename,info);
+    if isempty(Kij) 
+        % the user cancelled the operation
+        sys = [];  
+    else
+        % pass Kij to our main function
+        sys = ODEdemo3(Kij);
+    end
+end

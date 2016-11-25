@@ -376,9 +376,9 @@ classdef bdSolverPanel < handle
                 % update the solver options
                 switch control.solver
                     case {'ode45','ode23','ode113','ode15s','ode23s','ode23t','ode23tb'}
-                        control.odeopt = odeset(control.odeopt,fieldname,val);
+                        control.sys.odeopt = odeset(control.sys.odeopt,fieldname,val);
                     case 'dde23'
-                        control.ddeopt = ddeset(control.ddeopt,fieldname,val);
+                        control.sys.ddeopt = ddeset(control.sys.ddeopt,fieldname,val);
                     case 'sde'
                 end
             

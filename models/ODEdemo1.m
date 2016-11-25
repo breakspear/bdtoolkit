@@ -57,7 +57,7 @@ function sys = ODEdemo1()
     sys.solver = {'ode45','ode23'};     % pertinent matlab ODE solvers
     sys.odeopt = odeset();              % default ODE solver options
     sys.tspan = [0 5];                  % default time span  
-    
+
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo1}';
@@ -71,6 +71,9 @@ function sys = ODEdemo1()
     
     % Include the Solver panel in the GUI
     sys.gui.bdSolverPanel.title = 'Solver';
+    
+    % Handle to this function. The GUI uses it to construct a new system. 
+    sys.self = str2func(mfilename);
 end
 
 % The ODE function.

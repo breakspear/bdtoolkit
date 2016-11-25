@@ -91,7 +91,10 @@ function sys = SDEdemo1()
     sys.gui.bdTimePortrait.title = 'Time Portrait';
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';                       
+    sys.gui.bdSolverPanel.title = 'Solver';
+    
+    % Handle to this function. The GUI uses it to construct a new system. 
+    sys.self = str2func(mfilename);
 end
 
 % The deterministic function.

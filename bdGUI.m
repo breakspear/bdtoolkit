@@ -47,25 +47,48 @@ classdef bdGUI
     end
     
     methods
-        % Class constructor
-        function this = bdGUI(sys,pos)
-            
-            % use default position if none specified by caller
-            if ~exist('pos','var')
-                pos = [randi(100,1,1) randi(100,1,1) 900 600];
-            end            
-            
+        % bdGUI(sys) or bdGUI()
+        function this = bdGUI(varargin)
+            switch nargin
+                case 0
+                    % prompt user to select a system file to load
+                    [filename,pathname] = uigetfile({'*.mat','MATLAB data file'},'Load system file');
+                    if filename==0
+                        % user cancelled the operation
+                        this = [];
+                        return;
+                    end
+                    % load the mat file
+                    fullname = fullfile(pathname,filename);
+                    fdata = load(fullname);
+                    if ~isfield(fdata,'sys')
+                        % the mat file does not contain a sys struct
+                        error('No system data in %s',filename);
+                    end
+                    % open the bdGUI using the sys data we just loaded
+                    this = bdGUI(fdata.sys);
+                    return
+                    
+                case 1
+                    % User has supplied a sys parameter. 
+                    % Proceed as normal.
+                    
+                otherwise
+                    error('Too many input arguments');
+            end
+
+            % Incoming sys parameter
+            sys = varargin{1};
+
             % construct figure
             this.fig = figure('Units','pixels', ...
-                'Position',pos, ...
+                'Position',[randi(100,1,1) randi(100,1,1) 900 600], ...
                 'MenuBar','none', ...
                 'Toolbar','figure');
             
-            % construct menu
-            menuobj = uimenu('Parent',this.fig, 'Label','Toolkit');
-            uimenu('Parent',menuobj, 'Label','About');
-            uimenu('Parent',menuobj, 'Label','Quit');
-            
+            % construct System menu (without any menu items)
+            menuobj = uimenu('Parent',this.fig, 'Label','System');
+
             % construct the LHS panel (using an approximate position)
             this.panel1 = uipanel(this.fig,'Units','pixels','Position',[5 5 600 600],'BorderType','none');
             this.tabgroup = uitabgroup(this.panel1);
@@ -93,15 +116,66 @@ classdef bdGUI
                 end
             end
             
+            % construct menu items
+            if isfield(sys,'self')
+                uimenu('Parent',menuobj, ...
+                       'Label','New', ...
+                       'Callback', @(~,~) this.SystemNew() );
+            else
+                uimenu('Parent',menuobj, ...
+                       'Label','New', ...
+                       'Enable', 'off');
+            end
+            uimenu('Parent',menuobj, ...
+                   'Label','Load', ...
+                   'Callback', @(~,~) this.SystemLoad() );
+            uimenu('Parent',menuobj, ...
+                   'Label','Save', ...
+                   'Callback', @(~,~) this.SystemSave() );
+
             % register a callback for resizing the figure
             set(this.fig,'SizeChangedFcn', @(~,~) this.SizeChanged());
 
             % force a recompute
             notify(this.control,'recompute');
+            
         end
     end
     
     methods (Access=private)
+
+       % Callback for System-New menu
+        function SystemNew(this)
+            if isfield(this.control.sys,'self')
+                newsys = feval(this.control.sys.self);
+                if ~isempty(newsys)
+                    bdGUI(newsys);
+                end
+            end
+        end
+         
+        % Callback for System-Load menu
+        function gui = SystemLoad(~)
+            fname = uigetfile({'*.mat','MATLAB data file'},'Load system file');
+            if fname~=0
+                fdata = load(fname,'sys');
+                if isfield(fdata,'sys')
+                    gui = bdGUI(fdata.sys);
+                else
+                    uiwait( warndlg({'Missing ''sys'' variable','System is unchanged'},'Load failed') );
+                end
+            end
+        end
+        
+        % Callback for System-Save menu
+        function SystemSave(this)
+            fname = uiputfile('*.mat','Save system file');
+            if fname~=0
+                sys = this.control.sys;
+                save(fname,'sys');
+            end
+        end
+        
         function SizeChanged(this)
             % get the new figure size
             figw = this.fig.Position(3);

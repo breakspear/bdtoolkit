@@ -97,7 +97,10 @@ function sys = DDEdemo1()
     sys.gui.bdPhasePortrait.title = 'Phase Portrait';
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';                     
+    sys.gui.bdSolverPanel.title = 'Solver'; 
+    
+    % Handle to this function. The GUI uses it to construct a new system. 
+    sys.self = str2func(mfilename);
 end
 
 % The DDE function.
