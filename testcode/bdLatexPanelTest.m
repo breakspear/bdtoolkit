@@ -1,5 +1,5 @@
 % Test function for bdStaticPanel
-function [bdstaticpanel, bdcontrol] = bdStaticPanelTest(sys)
+function [control,latexpanel1,latexpanel2] = bdStaticPanelTest(sys)
     % ensure bdControl is in the path
     if ~exist('bdControl.m','file')
         addpath ..
@@ -23,18 +23,13 @@ function [bdstaticpanel, bdcontrol] = bdStaticPanelTest(sys)
     set(fig,'SizeChangedFcn', @(~,~) SizeChanged(fig,panel1,panel2));
     
     % construct the control panel
-    bdcontrol = bdControl(panel2,sys);
+    control = bdControl(panel2,sys);
     
-    % construct the latex panel
-    latexstr = {'\textbf{Title}';
-        'Blah blah blah';
-        '$\dot y(t) = -b\; y(t)$';
-        'the end'};
-    
-    bdlatexpanel = bdLatexPanel(tabgroup1,'Latex Panel',latexstr);
+    latexpanel1 = bdLatexPanel(tabgroup1,control);
+    latexpanel2 = bdLatexPanel(tabgroup1,control);
     
     % force a recompute
-    notify(bdcontrol,'recompute');
+    notify(control,'recompute');
 end
 
 function SizeChanged(fig,panel1,panel2)

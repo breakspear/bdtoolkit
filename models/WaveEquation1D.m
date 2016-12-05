@@ -41,15 +41,26 @@ function sys = WaveEquation1D(n)
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
-    % Precompute the Laplacian (excluding the dx term),
-    % ... assuming periodic boundary conditions.
-    %Dxx = sparse( circshift(eye(n),1) -2*eye(n) + circshift(eye(n),-1) );  
-    % ... assuming open boundaries
-    Dxx = sparse(diag(ones(1,n-1),1) - 2*eye(n) + diag(ones(1,n-1),-1));
+    % Precompute the Laplacian (excluding the dx term)
+    switch 2    % edit me
+        case 1
+            % periodic boundary conditions
+            Dxx = sparse( circshift(eye(n),1) -2*eye(n) + circshift(eye(n),-1) );  
+        case 2
+            % reflecting boundaries
+            Dxx = sparse(diag(ones(1,n-1),1) - 2*eye(n) + diag(ones(1,n-1),-1));    
+            Dxx(1,2) = 0;
+            Dxx(n,n-1) = 0;
+        case 3
+            % free boundaries
+            Dxx = sparse(diag(ones(1,n-1),1) - 2*eye(n) + diag(ones(1,n-1),-1));    
+            Dxx(1,1) = -1;
+            Dxx(n,n) = -1;
+    end
     
     % Initial conditions
-    x0 = 0.4*n;
-    x1 = 0.6*n;
+    x0 = 0.2*n;
+    x1 = 0.4*n;
     U0 = ((1:n)>x0) .* ((1:n)<x1);
     V0 = zeros(n,1);
     
@@ -95,7 +106,10 @@ function sys = WaveEquation1D(n)
 
     % Include the Solver panel in the GUI
     sys.gui.bdSolverPanel.title = 'Solver';                                   
-              
+
+    % Function hook for the GUI System-New menu
+    sys.self = @self;    
+            
               
     % The ODE function; using the precomputed values of Dxx
     function dY = odefun(~,Y,c,dx)
@@ -115,3 +129,15 @@ function sys = WaveEquation1D(n)
 
 end
    
+% This function is called by the GUI System-New menu
+function sys = self()
+    % open a dialog box prompting the user for the value of n
+    n = bdEditScalars({100,'number of spatial points'}, ...
+        'New System', 'WaveEquation1D');
+    % if the user cancelled then...
+    if isempty(n)
+        sys = [];                       % return empty sys
+    else
+        sys = WaveEquation1D(round(n));  % generate a new sys
+    end
+end

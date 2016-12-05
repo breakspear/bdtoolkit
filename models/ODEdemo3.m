@@ -100,6 +100,8 @@ function sys = ODEdemo3(Kij)
     % Include the Space-Time Portrait panel in the GUI
     sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
 
+    sys.gui.bdCorrelationPanel = [];
+    
     % Include the Solver panel in the GUI
     sys.gui.bdSolverPanel.title = 'Solver';   
     

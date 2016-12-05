@@ -82,10 +82,26 @@ function sys = HopfieldNet(n)
     sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';    
+    sys.gui.bdSolverPanel.title = 'Solver';
+
+    % Function hook for the GUI System-New menu
+    sys.self = @self;
 end
 
 % The ODE function.
 function dV = odefun(t,V,Wij,Ii,b,tau)  
     dV = (-V + Wij*tanh(b*V) + Ii)./tau;
+end
+
+% This function is called by the GUI System-New menu
+function sys = self()
+    % open a dialog box prompting the user for the value of n
+    n = bdEditScalars({100,'number of neurons'}, ...
+        'New System', 'Hopfield Network');
+    % if the user cancelled then...
+    if isempty(n)
+        sys = [];                       % return empty sys
+    else
+        sys = HopfieldNet(round(n));  % generate a new sys
+    end
 end

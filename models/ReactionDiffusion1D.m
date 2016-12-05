@@ -95,7 +95,10 @@ function sys = ReactionDiffusion1D(n)
 
     % Include the Solver panel in the GUI
     sys.gui.bdSolverPanel.title = 'Solver';         
-    
+        
+    % Function hook for the GUI System-New menu
+    sys.self = @self;    
+
     
     % The ODE function; using the precomputed values of Dxx
     function dY = odefun(~,Y,a,b,nu,dx)
@@ -118,3 +121,15 @@ function sys = ReactionDiffusion1D(n)
 
 end
    
+% This function is called by the GUI System-New menu
+function sys = self()
+    % open a dialog box prompting the user for the value of n
+    n = bdEditScalars({100,'number of spatial points'}, ...
+        'New System', 'ReactionDiffusion1D');
+    % if the user cancelled then...
+    if isempty(n)
+        sys = [];                       % return empty sys
+    else
+        sys = ReactionDiffusion1D(round(n));  % generate a new sys
+    end
+end

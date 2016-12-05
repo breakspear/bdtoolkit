@@ -87,7 +87,10 @@ classdef bdGUI
                 'Toolbar','figure');
             
             % construct System menu (without any menu items)
-            menuobj = uimenu('Parent',this.fig, 'Label','System');
+            systemMenu = uimenu('Parent',this.fig, 'Label','System');
+
+            % construct Panels menu (without any menu items)
+            %panelsMenu = uimenu('Parent',this.fig, 'Label','Panels');
 
             % construct the LHS panel (using an approximate position)
             this.panel1 = uipanel(this.fig,'Units','pixels','Position',[5 5 600 600],'BorderType','none');
@@ -104,11 +107,14 @@ classdef bdGUI
 
             % load each gui panel listed in sys.gui
             if isfield(sys,'gui')
-                panels = fieldnames(sys.gui);
-                for indx = 1:numel(panels)
-                    classname = panels{indx};
+                guifields = fieldnames(sys.gui);
+                for indx = 1:numel(guifields)
+                    classname = guifields{indx};
                     if exist(classname,'class')
-                        feval(classname,this.tabgroup,this.control);
+                        % construct the panel
+                        obj = feval(classname,this.tabgroup,this.control);
+                        % add it to the panel menu
+                        %uimenu('Parent',panelsMenu, 'Label',classname);
                     else
                         dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
                         uiwait(dlg);
@@ -118,18 +124,18 @@ classdef bdGUI
             
             % construct menu items
             if isfield(sys,'self')
-                uimenu('Parent',menuobj, ...
-                       'Label','New', ...
+                uimenu('Parent',systemMenu, ...
+                       'Label','Reconfigure', ...
                        'Callback', @(~,~) this.SystemNew() );
             else
-                uimenu('Parent',menuobj, ...
-                       'Label','New', ...
+                uimenu('Parent',systemMenu, ...
+                       'Label','Reconfigure', ...
                        'Enable', 'off');
             end
-            uimenu('Parent',menuobj, ...
+            uimenu('Parent',systemMenu, ...
                    'Label','Load', ...
                    'Callback', @(~,~) this.SystemLoad() );
-            uimenu('Parent',menuobj, ...
+            uimenu('Parent',systemMenu, ...
                    'Label','Save', ...
                    'Callback', @(~,~) this.SystemSave() );
 
@@ -173,6 +179,14 @@ classdef bdGUI
             if fname~=0
                 sys = this.control.sys;
                 save(fname,'sys');
+            end
+        end
+        
+        % Callback for Panel menu item
+        function PanelMenu(this, menuobj, classname, panelname)
+            switch menuobj.Enable
+                case 'on'
+                    % Hide all objects
             end
         end
         

@@ -40,26 +40,19 @@ classdef bdLatexPanel < handle
             %    tabgroup is a handle to the parent uitabgroup object.
             %    control is a handle to the GUI control object.
 
-            % validate the sys.gui settings
-            if ~isfield(control.sys.gui,'bdLatexPanel')
-                return      % we aren't wanted so do nothing.
-            end
-            
-            % sys.gui.bdLatexPanel.title (optional)
-            if isfield(control.sys.gui.bdLatexPanel,'title')
+
+            % default sys.gui settings
+            title = 'Equations';
+            latex = {'\textbf{bdLatexPanel}'; 'Undefined \textsl{sys.gui.bdLatexPanel.latex} field'};
+
+            % sys.gui.bdLatexPanel.title
+            if isfield(control.sys.gui,'bdLatexPanel') && isfield(control.sys.gui.bdLatexPanel,'title')
                 title = control.sys.gui.bdLatexPanel.title;
-            else
-                title = 'Equations';
             end
             
-            % sys.gui.bdLatexPanel.latex (mandatory)
-            if isfield(control.sys.gui.bdLatexPanel,'latex')
+            % sys.gui.bdLatexPanel.latex
+            if isfield(control.sys.gui,'bdLatexPanel') && isfield(control.sys.gui.bdLatexPanel,'latex')
                 latex = control.sys.gui.bdLatexPanel.latex;
-            else
-                % issue a warning and return
-                dlg = warndlg({'sys.gui.bdLatexPanel.latex is undefined','The Latex Panel will not be displayed'},'bdLatexPanel','modal');
-                uiwait(dlg);
-                return
             end
             
             % construct the uitab

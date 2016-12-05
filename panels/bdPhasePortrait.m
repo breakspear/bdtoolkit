@@ -31,6 +31,7 @@ classdef bdPhasePortrait < handle
     % POSSIBILITY OF SUCH DAMAGE.
     
     properties (Access=private) 
+        fig                 % handle to parent figure
         tab                 % handle to uitab object
         ax                  % handle to plot axes
         popupx              % handle to X popup
@@ -38,9 +39,6 @@ classdef bdPhasePortrait < handle
         popupz              % handle to Z popup
         checkbox3D          % handle to 3D checkbox
         solMap              % maps rows in sol.y to entries in vardef
-        gridflag = false    % grid flag
-        vecfield = false    % vector field flag
-        initflag = true     % initial conditions flag
     end
     
     methods
@@ -65,6 +63,9 @@ classdef bdPhasePortrait < handle
                 title = 'Phase Portrait';
             end
 
+            % get handle to parent figure
+            this.fig = ancestor(tabgroup,'figure');
+
             % map vardef and auxdef entries to rows in sol and sal
             this.solMap = bdUtils.solMap(control.sys.vardef);
             
@@ -75,8 +76,6 @@ classdef bdPhasePortrait < handle
             this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
             
             % get tab geometry
-            parentx = this.tab.Position(1);
-            parenty = this.tab.Position(2);
             parentw = this.tab.Position(3);
             parenth = this.tab.Position(4);
 
@@ -154,21 +153,12 @@ classdef bdPhasePortrait < handle
                 'Parent', this.tab, ...
                 'Position',[posx posy posw posh]);
 
-            % construct menu items
-            fig = ancestor(tabgroup,'figure');
-            menuobj = uimenu('Parent',fig, 'Label','Phase Portrait');
-            uimenu('Parent',menuobj, ...
-                   'Label','Vector Field', ...
-                   'Checked','off', ...
-                   'Callback', @(src,~) this.MenuItemCallback(src,control) );          
-            uimenu('Parent',menuobj, ...
-                   'Label','Initial Conditions', ...
-                   'Checked','on', ...
-                   'Callback', @(src,~) this.MenuItemCallback(src,control) );          
-            uimenu('Parent',menuobj, ...
-                   'Label','Grid', ...
-                   'Checked','off', ...
-                   'Callback', @(src,~) this.MenuItemCallback(src,control) );          
+           
+            % construct the PhasePortrait menu (if it does not already exist)
+            obj = findobj(this.fig,'Tag','bdPhasePortraitMenu');
+            if isempty(obj)
+                bdPhasePortrait.constructMenu(this.fig,control);
+            end
             
             % register a callback for resizing the panel
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
@@ -180,54 +170,16 @@ classdef bdPhasePortrait < handle
     end
     
     methods (Access=private)   
-
-        % Menu Item Callback
-        function MenuItemCallback(this,menuitem,control)
-            switch menuitem.Label
-                case 'Grid'
-                    switch menuitem.Checked
-                        case 'on'
-                            this.gridflag = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            this.gridflag = true;
-                            menuitem.Checked='on';
-                    end
-                    
-                case 'Vector Field'
-                    switch menuitem.Checked
-                        case 'on'
-                            this.vecfield = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            this.vecfield = true;
-                            menuitem.Checked='on';
-                    end
-                    
-                case 'Initial Conditions'
-                    switch menuitem.Checked
-                        case 'on'
-                            this.initflag = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            this.initflag = true;
-                            menuitem.Checked='on';
-                    end
-            end            
-            % re-render the phase portrait
-            this.render(control);
-        end
         
         function render(this,control)
             %disp('bdPhasePortrait.render()')
+            
+            % retrieve the menu appdata
+            appdata = getappdata(this.fig,'bdPhasePortrait');
 
             % convergence test
             steadystate = convergence(control);
             
-            T1 = control.sol.x(end);
-            Y1 = control.sol.y(:,end);
-            P1 = {control.sys.pardef{:,2}};
-
             xindx = this.popupx.Value;
             yindx = this.popupy.Value;
             zindx = this.popupz.Value;
@@ -243,7 +195,7 @@ classdef bdPhasePortrait < handle
 
                 plot3(this.ax, x,y,z, 'color','k','Linewidth',1);
                 hold(this.ax, 'on');
-                if this.initflag
+                if appdata.initflag
                     plot3(this.ax, x(1),y(1),z(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
                 end
                 if steadystate
@@ -254,7 +206,7 @@ classdef bdPhasePortrait < handle
                 ylabel(this.ax,ystr, 'FontSize',16);
                 zlabel(this.ax,zstr, 'FontSize',16);
 
-                if this.vecfield
+                if appdata.vecfield
                     % compute vector field
                     xlimit = this.ax.XLim;
                     ylimit = this.ax.YLim;
@@ -270,7 +222,7 @@ classdef bdPhasePortrait < handle
                 end
                 
                 % show gridlines (if appropriate) 
-                if this.gridflag
+                if appdata.gridflag
                     grid(this.ax,'on');
                 else
                     grid(this.ax,'off');
@@ -284,7 +236,7 @@ classdef bdPhasePortrait < handle
 
                 plot(this.ax, x,y, 'color','k','Linewidth',1);
                 hold(this.ax, 'on');
-                if this.initflag
+                if appdata.initflag
                     plot(this.ax, x(1),y(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
                 end
                 if steadystate
@@ -294,7 +246,7 @@ classdef bdPhasePortrait < handle
                 xlabel(this.ax,xstr, 'FontSize',16);
                 ylabel(this.ax,ystr, 'FontSize',16);
                 
-                if this.vecfield
+                if appdata.vecfield
                     % compute vector field
                     xlimit = this.ax.XLim;
                     ylimit = this.ax.YLim;
@@ -308,7 +260,7 @@ classdef bdPhasePortrait < handle
                 end
                 
                 % show gridlines (if appropriate)
-                if this.gridflag
+                if appdata.gridflag
                     grid(this.ax,'on');
                 else
                     grid(this.ax,'off');
@@ -430,14 +382,85 @@ classdef bdPhasePortrait < handle
         
     end
     
+    
+    methods (Static)
+        
+        % The menu is static so that one menu can serve many instances of the class
+        function menuobj = constructMenu(fig,control)            
+            % init the appdata for the menu     
+            appdata = struct('gridflag',false, 'vecfield',false, 'initflag',true);
+            setappdata(fig,'bdPhasePortrait',appdata);
+            
+            % construct menu items
+            menuobj = uimenu('Parent',fig, 'Label','Phase Portrait', 'Tag','bdPhasePortraitMenu');
+            uimenu('Parent',menuobj, ...
+                   'Label','Vector Field', ...
+                   'Checked','off', ...
+                   'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );          
+            uimenu('Parent',menuobj, ...
+                   'Label','Initial Conditions', ...
+                   'Checked','on', ...
+                   'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );          
+            uimenu('Parent',menuobj, ...
+                   'Label','Grid', ...
+                   'Checked','off', ...
+                   'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );
+        end        
+        
+        % Menu Item Callback
+        function MenuCallback(fig,menuitem,control)
+            % retrieve the appdata
+            appdata = getappdata(fig,'bdPhasePortrait');
+            
+            switch menuitem.Label
+                case 'Grid'
+                    switch menuitem.Checked
+                        case 'on'
+                            appdata.gridflag = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            appdata.gridflag = true;
+                            menuitem.Checked='on';
+                    end
+                    
+                case 'Vector Field'
+                    switch menuitem.Checked
+                        case 'on'
+                            appdata.vecfield = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            appdata.vecfield = true;
+                            menuitem.Checked='on';
+                    end
+                    
+                case 'Initial Conditions'
+                    switch menuitem.Checked
+                        case 'on'
+                            appdata.initflag = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            appdata.initflag = true;
+                            menuitem.Checked='on';
+                    end
+            end 
+            
+            % save the new appdata
+            setappdata(fig,'bdPhasePortrait',appdata);
+            
+            % notify all panels to redraw
+            notify(control,'redraw');
+        end
+        
+    end
+    
 end
 
 
 % Returns TRUE if the trajectory has converged to a fixed point
 % otherwise returns FALSE.
 function flag = convergence(control)
-    dt = diff(control.sol.x([end-1:end]));
-    dY1 = diff(control.sol.y(:,[end-2:end]),1,2); 
+    dt = diff(control.sol.x(end-1:end));
+    dY1 = diff(control.sol.y(:,end-2:end),1,2); 
     dY2 = diff(dY1,1,2);
     if isempty(dY2)
         flag=false;
@@ -446,29 +469,29 @@ function flag = convergence(control)
     end
 end
     
-function vec = GetDefValues(xxxdef)
-%GetDefValues returns the values stored in a pardef or vardef cell array.
-%This function is useful for extracting the values stored in a user-defined
-%vardef array as a single vector for use by the ODE solver.
-%Usage:
-%   vec = GetDefValues(xxxdef)
-%where xxxdef is a cell array of {'name',value} pairs. 
-%Example:
-%  vardef = {'a',1;
-%            'b',[2 3 4];
-%            'c',[5 8; 6 9; 7 10]};
-%  y0 = GetDefValues(vardef);
-%  ...
-%  sol = ode45(@odefun,tspan,y0,...)
-
-    % extract the second column of xxxdef
-    vec = xxxdef(:,2);
-    
-    % convert each cell entry to a column vector
-    for indx=1:numel(vec)
-        vec{indx} = reshape(vec{indx},[],1);
-    end
-    
-    % concatenate the column vectors to a simple vector
-    vec = cell2mat(vec);
-end
+% function vec = GetDefValues(xxxdef)
+% %GetDefValues returns the values stored in a pardef or vardef cell array.
+% %This function is useful for extracting the values stored in a user-defined
+% %vardef array as a single vector for use by the ODE solver.
+% %Usage:
+% %   vec = GetDefValues(xxxdef)
+% %where xxxdef is a cell array of {'name',value} pairs. 
+% %Example:
+% %  vardef = {'a',1;
+% %            'b',[2 3 4];
+% %            'c',[5 8; 6 9; 7 10]};
+% %  y0 = GetDefValues(vardef);
+% %  ...
+% %  sol = ode45(@odefun,tspan,y0,...)
+% 
+%     % extract the second column of xxxdef
+%     vec = xxxdef(:,2);
+%     
+%     % convert each cell entry to a column vector
+%     for indx=1:numel(vec)
+%         vec{indx} = reshape(vec{indx},[],1);
+%     end
+%     
+%     % concatenate the column vectors to a simple vector
+%     vec = cell2mat(vec);
+% end

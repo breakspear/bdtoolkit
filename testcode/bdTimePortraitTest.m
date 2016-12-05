@@ -1,4 +1,4 @@
-function [bdtimeportrait, bdcontrol] = bdTimePortraitTest(sys)
+function [control, timeportrait1, timeportrait2l] = bdTimePortraitTest(sys)
     % ensure bdControl is in the path
     if ~exist('bdControl.m','file')
         addpath ..
@@ -22,13 +22,16 @@ function [bdtimeportrait, bdcontrol] = bdTimePortraitTest(sys)
     set(fig,'SizeChangedFcn', @(~,~) SizeChanged(fig,panel1,panel2));
     
     % construct the control panel
-    bdcontrol = bdControl(panel2,sys);
+    control = bdControl(panel2,sys);
     
-    % contstruct the time portrait panel
-    bdtimeportrait = bdTimePortrait(tabgroup1,'Time Portrait',sys,bdcontrol);
+    % construct the time portrait panel
+    timeportrait1 = bdTimePortrait(tabgroup1,control);
+
+    % construct another time portrait panel
+    timeportrait2 = bdTimePortrait(tabgroup1,control);
     
     % force recompute
-    notify(bdcontrol,'recompute');
+    notify(control,'recompute');
 end
 
 function SizeChanged(fig,panel1,panel2)

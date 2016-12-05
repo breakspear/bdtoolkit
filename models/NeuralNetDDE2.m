@@ -89,7 +89,10 @@ function sys = NeuralNetDDE2(n)
     sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';                  
+    sys.gui.bdSolverPanel.title = 'Solver'; 
+
+    % Function hook for the GUI System-New menu
+    sys.self = @self;
 end
 
 % The DDE function.
@@ -106,3 +109,15 @@ function y=F(x)
     y = 1./(1+exp(-x));
 end
 
+% This function is called by the GUI System-New menu
+function sys = self()
+    % open a dialog box prompting the user for the value of n
+    n = bdEditScalars({100,'number of neurons'}, ...
+        'New System', 'NeuralNetDDE2');
+    % if the user cancelled then...
+    if isempty(n)
+        sys = [];                       % return empty sys
+    else
+        sys = NeuralNetDDE2(round(n));  % generate a new sys
+    end
+end

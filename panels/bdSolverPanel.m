@@ -28,30 +28,27 @@ classdef bdSolverPanel < handle
     % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
-    properties (Access=private)
-        gridflag = false    % grid flag
+    properties (Access=private) 
+        fig             % handle to parent figure
     end
-
+ 
     methods        
         function this = bdSolverPanel(tabgroup,control)
-            % validate the sys.gui settings
-            if ~isfield(control.sys.gui,'bdSolverPanel')
-                return      % we aren't wanted so do nothing.
-            end
+            % default sys.gui settings
+            title = 'Solver';
             
-            % sys.gui.bdSolverPanel.title (optional)
-            if isfield(control.sys.gui.bdSolverPanel,'title')
+            % sys.gui.bdSolverPanel.title
+            if isfield(control.sys.gui,'bdSolverPanel') && isfield(control.sys.gui.bdSolverPanel,'title')
                 title = control.sys.gui.bdSolverPanel.title;
-            else
-                title = 'Solver';
             end
             
+            % get handle to parent figure
+            this.fig = ancestor(tabgroup,'figure');
+
             % construct the uitab
             tab = uitab(tabgroup,'title',title, 'Units','pixels');
             
             % get tab geometry
-            parentx = tab.Position(1);
-            parenty = tab.Position(2);
             parentw = tab.Position(3);
             parenth = tab.Position(4);
 
@@ -80,24 +77,11 @@ classdef bdSolverPanel < handle
             % construct panel for odeoptions
             this.odePanel(tab,control);
             
-            % construct menu items
-            fig = ancestor(tabgroup,'figure');
-            menuobj = uimenu('Parent',fig, 'Label','Solver');
-            checkstr='on';
-            for indx = 1:numel(control.sys.solver)
-                uimenu('Parent',menuobj, ...
-                    'Label',control.sys.solver{indx}, ...
-                    'Tag', 'bdSolverSelector', ...
-                    'Checked',checkstr, ...
-                    'Callback', @(src,~) this.SolverSelect(menuobj,src,control) );
-                checkstr='off';                
+            % construct the Solver menu (if it does not already exist)
+            obj = findobj(this.fig,'Tag','bdSolverPanelMenu');
+            if isempty(obj)
+                bdSolverPanel.constructMenu(this.fig,control);
             end
-            uimenu('Parent',menuobj, ...
-                'Label','Grid', ...
-                'Checked','off', ...
-                'Separator','on', ...
-                'Callback', @(src,~) this.MenuItemCallback(src,control,ax1,ax2,plt1,plt2) );          
-
                         
             % register a callback for resizing the panel
             set(tab,'SizeChangedFcn', @(~,~) this.SizeChanged(tab,ax1,ax2));
@@ -117,10 +101,7 @@ classdef bdSolverPanel < handle
             boxx = 60;
 
             % get parent geometry
-            parentx = parent.Position(1);
-            parenty = parent.Position(2);
             parentw = parent.Position(3);
-            parenth = parent.Position(4);
             
             % construct panel
             panel = uipanel('Parent',parent, ...
@@ -400,8 +381,11 @@ classdef bdSolverPanel < handle
             stepsize = diff(control.sol.x);
             set(plt2, 'XData',tsteps, 'YData',stepsize([1:end,end]));            
 
+            % retrieve the appdata
+            appdata = getappdata(this.fig,'bdSolverPanel');
+            
             % show gridlines (or not)
-            if this.gridflag
+            if appdata.gridflag
                 grid(ax1,'on');
                 grid(ax2,'on');
             else
@@ -409,39 +393,7 @@ classdef bdSolverPanel < handle
                 grid(ax2,'off')
             end
         end
-           
-        % Solver Solver Menu Item Callback
-        function SolverSelect(this,menuobj,menuitem,control)
-            % Find all solver menu items and un-check them.
-            menuitems = findobj(menuobj,'Tag','bdSolverSelector');
-            for ix=1:numel(menuitems)                
-                menuitems(ix).Checked='off';
-            end
-            
-            % Except for the newly selected one
-            menuitem.Checked = 'on';
-            control.solver = menuitem.Label;
-            
-            % Recompute using the new solver
-            notify(control,'recompute');  
-        end
-        
-        % Menu Item Callback
-        function MenuItemCallback(this,menuitem,control,ax1,ax2,plt1,plt2)
-            switch menuitem.Label
-                case 'Grid'
-                    switch menuitem.Checked
-                        case 'on'
-                            this.gridflag = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            this.gridflag = true;
-                            menuitem.Checked='on';
-                    end
-            end            
-            % re-render this panel
-            this.render(control,ax1,ax2,plt1,plt2);
-        end      
+          
         
         % Callback for tab panel resizing.
         function SizeChanged(this,tab,ax1,ax2)
@@ -463,6 +415,80 @@ classdef bdSolverPanel < handle
             ax2.Position(4) = axesh;
         end
         
-    end     
+    end
+    
+    
+    methods (Static)
+        
+        % The menu is static so that one menu can serve many instances of the class
+        function menuobj = constructMenu(fig,control)            
+            % init the appdata for the menu     
+            appdata = struct('gridflag',false);
+            setappdata(fig,'bdSolverPanel',appdata);
+            
+            % construct menu
+            menuobj = uimenu('Parent',fig, 'Label','Solver', 'Tag','bdSolverPanelMenu');
+            
+            % solver menu items
+            checkstr='on';
+            for indx = 1:numel(control.sys.solver)
+                uimenu('Parent',menuobj, ...
+                    'Label',control.sys.solver{indx}, ...
+                    'Tag', 'bdSolverSelector', ...
+                    'Checked',checkstr, ...
+                    'Callback', @(menuitem,~) bdSolverPanel.SolverMenuCallback(menuobj,menuitem,control) );
+                checkstr='off';                
+            end
+            
+            % grid menu item
+            uimenu('Parent',menuobj, ...
+                'Label','Grid', ...
+                'Checked','off', ...
+                'Separator','on', ...
+                'Callback', @(menuitem,~) bdSolverPanel.MenuCallback(fig,menuitem,control) );          
+        end        
+        
+        % Solver Solver Menu Item Callback
+        function SolverMenuCallback(menuobj,menuitem,control)
+            % Find all solver menu items and un-check them.
+            menuitems = findobj(menuobj,'Tag','bdSolverSelector');
+            for ix=1:numel(menuitems)                
+                menuitems(ix).Checked='off';
+            end
+            
+            % Except for the newly selected one
+            menuitem.Checked = 'on';
+            control.solver = menuitem.Label;
+            
+            % Recompute using the new solver
+            notify(control,'recompute');  
+        end
+
+        % Menu Item Callback
+        function MenuCallback(fig,menuitem,control)
+            % retrieve the appdata
+            appdata = getappdata(fig,'bdSolverPanel');
+            
+            switch menuitem.Label
+                case 'Grid'
+                    switch menuitem.Checked
+                        case 'on'
+                            appdata.gridflag = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            appdata.gridflag = true;
+                            menuitem.Checked='on';
+                    end
+            end 
+            
+            % save the new appdata
+            setappdata(fig,'bdSolverPanel',appdata);
+            
+            % notify all panels to redraw
+            notify(control,'redraw');
+        end
+        
+    end    
+    
 end
 

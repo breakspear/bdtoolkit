@@ -1,5 +1,5 @@
 % Test function for bdStaticPanel
-function [bdsolverpanel, bdcontrol] = bdSolverPanelTest(sys)
+function [control,solverpanel1,solverpanel2] = bdSolverPanelTest(sys)
     % ensure bdControl is in the path
     if ~exist('bdControl.m','file')
         addpath ..
@@ -22,12 +22,14 @@ function [bdsolverpanel, bdcontrol] = bdSolverPanelTest(sys)
     set(fig,'SizeChangedFcn', @(~,~) SizeChanged(fig,panel1,panel2));
     
     % construct the control panel
-    bdcontrol = bdControl(panel2,sys);
-    
-    bdsolverpanel = bdSolverPanel(tabgroup1,'Solver Panel',sys,bdcontrol);
+    control = bdControl(panel2,sys);
+
+    % construct two Solver panels
+    solverpanel1 = bdSolverPanel(tabgroup1,control);
+    solverpanel2 = bdSolverPanel(tabgroup1,control);
     
     % force a recompute
-    notify(bdcontrol,'recompute');
+    notify(control,'recompute');
 end
 
 function SizeChanged(fig,panel1,panel2)

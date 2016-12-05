@@ -73,15 +73,13 @@ classdef bdSpaceTimePortrait < handle
             this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
             
             % get tab geometry
-            parentx = this.tab.Position(1);
-            parenty = this.tab.Position(2);
             parentw = this.tab.Position(3);
             parenth = this.tab.Position(4);
 
             % plot axes
             posx = 50;
             posy = 80;
-            posw = parentw-65;
+            posw = parentw-120;
             posh = parenth-90;
             this.ax = axes('Parent',this.tab, 'Units','pixels', 'Position',[posx posy posw posh]);           
             
@@ -89,6 +87,9 @@ classdef bdSpaceTimePortrait < handle
             this.img = imagesc([],'Parent',this.ax);
             xlabel('time', 'FontSize',16);
             ylabel('node', 'FontSize',16);
+
+            % Add a colorbar
+            colorbar('peer',this.ax);
 
             % var selector
             posx = 10;
@@ -116,7 +117,7 @@ classdef bdSpaceTimePortrait < handle
         function render(this,control)
             %disp('bdSpaceTimePortrait.render()')
             varnum = this.popup.Value;
-            varstr = this.popup.String{varnum};
+            %varstr = this.popup.String{varnum};
             yindx = this.varindx{varnum};
             tend  = control.sol.x(end);
             this.t = linspace(0,tend,1001);
@@ -143,7 +144,7 @@ classdef bdSpaceTimePortrait < handle
             parenth = parent.Position(4);
             
             % resize the axes
-            this.ax.Position = [50, 80, parentw-65, parenth-90];
+            this.ax.Position = [50, 80, parentw-120, parenth-90];
         end
  
         

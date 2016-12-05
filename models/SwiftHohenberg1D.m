@@ -95,6 +95,9 @@ function sys = SwiftHohenberg(n,dx)
     % Include the Solver panel in the GUI
     sys.gui.bdSolverPanel.title = 'Solver';                      
               
+    % Function hook for the GUI System-New menu
+    sys.self = @self;    
+
     % The ODE function; using the precomputed values of Ix and Dxx
     function dU = odefun(t,U,mu,nu,dx)
         % Swift-Hoehenberg equation
@@ -103,3 +106,15 @@ function sys = SwiftHohenberg(n,dx)
 
 end
    
+% This function is called by the GUI System-New menu
+function sys = self()
+    % open a dialog box prompting the user for parameters (n,dx)
+    parm = bdEditScalars({300,'number of spatial points'; 0.25,'spatial step size'}, ...
+        'New System', 'SDEdemo2');
+    % if the user cancelled then...
+    if isempty(parm)
+        sys = [];                       % return empty sys
+    else
+        sys = SwiftHohenberg1D(round(parm(1)),parm(2));  % generate a new sys
+    end
+end

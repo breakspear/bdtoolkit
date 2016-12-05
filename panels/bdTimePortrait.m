@@ -30,6 +30,7 @@ classdef bdTimePortrait < handle
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
     properties (Access=private) 
+        fig             % handle to parent figure
         tab             % handle to uitab object
         ax1             % handle to plot 1 axes
         ax2             % handle to plot 2 axes
@@ -39,7 +40,6 @@ classdef bdTimePortrait < handle
         auxMap          % maps entries in auxdef to rows in sal
         solMap          % maps rows in sol.y to entries in vardef
         salMap          % maps rows in sal to entries in auxdef
-        gridflag = false    % grid flag
     end
     
     methods
@@ -52,17 +52,16 @@ classdef bdTimePortrait < handle
             %    title is a string defining the name given to the new tab.
             %    control is a handle to the GUI control panel.
 
-            % validate the sys.gui settings
-            if ~isfield(control.sys.gui,'bdTimePortrait')
-                return      % we aren't wanted so do nothing.
+            % default sys.gui settings
+            title = 'Time Portrait';
+
+            % sys.gui.bdTimePortrait.title
+            if isfield(control.sys.gui,'bdTimePortrait') && isfield(control.sys.gui.bdTimePortrait,'title')
+                title = control.sys.gui.bdTimePortrait.title;
             end
             
-            % sys.gui.bdTimePortrait.title (optional)
-            if isfield(control.sys.gui.bdTimePortrait,'title')
-                title = control.sys.gui.bdTimePortrait.title;
-            else
-                title = 'Time Portrait';
-            end
+            % get handle to parent figure
+            this.fig = ancestor(tabgroup,'figure');
             
             % map vardef entries to rows in sol
             this.varMap = bdUtils.varMap(control.sys.vardef);
@@ -84,8 +83,6 @@ classdef bdTimePortrait < handle
             this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
             
             % get tab geometry
-            parentx = this.tab.Position(1);
-            parenty = this.tab.Position(2);
             parentw = this.tab.Position(3);
             parenth = this.tab.Position(4);
 
@@ -138,15 +135,12 @@ classdef bdTimePortrait < handle
                 'Parent', this.tab, ...
                 'Position',[posx posy posw posh]);
             
-            % construct menu items
-            fig = ancestor(tabgroup,'figure');
-            menuobj = uimenu('Parent',fig, 'Label','Time Portrait');
-            uimenu('Parent',menuobj, ...
-                'Label','Grid', ...
-                'Checked','off', ...
-                'Separator','off', ...
-                'Callback', @(src,~) this.MenuItemCallback(src,control) );          
-            
+            % construct the TimePortrait menu (if it does not already exist)
+            obj = findobj(this.fig,'Tag','bdTimePortraitMenu');
+            if isempty(obj)
+                bdTimePortrait.constructMenu(this.fig,control);
+            end
+
             % register a callback for resizing the panel
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
             
@@ -156,14 +150,17 @@ classdef bdTimePortrait < handle
         
         function render(this,control)
             %disp('bdTimePortrait.render()')
-            
+
+            % retrieve the menu appdata
+            appdata = getappdata(this.fig,'bdTimePortrait');
+
             % render the upper and lower axes 
             renderax(this.ax1, this.popup1.Value);
             renderax(this.ax2, this.popup2.Value);            
             xlabel(this.ax2,'time', 'FontSize',14);
 
             % show gridlines (or not)
-            if this.gridflag
+            if appdata.gridflag
                 grid(this.ax1,'on');
                 grid(this.ax2,'on');
             else
@@ -229,7 +226,9 @@ classdef bdTimePortrait < handle
         
     end
     
+    
     methods (Access=private)
+ 
         % Callback for panel resizing. 
         function SizeChanged(this,parent)
             % get new parent geometry
@@ -252,22 +251,48 @@ classdef bdTimePortrait < handle
             this.render(control);
         end
         
+    end
+    
+    
+    methods (Static)
+        
+        % The menu is static so that one menu can serve many instances of the class
+        function menuobj = constructMenu(fig,control)            
+            % init the appdata for the menu     
+            appdata = struct('gridflag',false);
+            setappdata(fig,'bdTimePortrait',appdata);
+            
+            % construct menu items
+            menuobj = uimenu('Parent',fig, 'Label','Time Portrait', 'Tag','bdTimePortraitMenu');
+            uimenu('Parent',menuobj, ...
+                   'Label','Grid', ...
+                   'Checked','off', ...
+                   'Callback', @(menuitem,~) bdTimePortrait.MenuCallback(fig,menuitem,control) );
+        end        
+        
         % Menu Item Callback
-        function MenuItemCallback(this,menuitem,control)
+        function MenuCallback(fig,menuitem,control)
+            % retrieve the appdata
+            appdata = getappdata(fig,'bdTimePortrait');
+            
             switch menuitem.Label
                 case 'Grid'
                     switch menuitem.Checked
                         case 'on'
-                            this.gridflag = false;
+                            appdata.gridflag = false;
                             menuitem.Checked='off';
                         case 'off'
-                            this.gridflag = true;
+                            appdata.gridflag = true;
                             menuitem.Checked='on';
                     end
-            end            
-            % re-render this panel
-            this.render(control);
-        end              
+            end 
+            
+            % save the new appdata
+            setappdata(fig,'bdTimePortrait',appdata);
+            
+            % notify all panels to redraw
+            notify(control,'redraw');
+        end
         
     end
     

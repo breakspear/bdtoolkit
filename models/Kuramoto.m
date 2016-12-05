@@ -52,9 +52,9 @@ function sys = Kuramoto(Kij)
     sys.vardef = {'theta',2*pi*rand(n,1)};  % ODE variables {'name',value}
     sys.auxdef = {'phi',zeros(n,1);         % AUX variables {'name',value}
                   'R',0};
-    sys.solver = {'ode45',                  % pertinent matlab ODE solvers
-                  'ode23',
-                  'ode113',
+    sys.solver = {'ode45', ...              % pertinent matlab ODE solvers
+                  'ode23', ...
+                  'ode113', ...
                   'ode15s'};
     sys.tspan = [0 100];                    % default time span [begin end]
     sys.odeopt = odeset('RelTol',1e-6, ...  % default ODE solver options
@@ -74,7 +74,7 @@ function sys = Kuramoto(Kij)
         '\qquad $i,j=1 \dots n$';
         '';
         'Auxillary variables';
-        '\qquad $\phi_i = \theta_i - \theta_1$ is the phase of $\theta_i$ relative to $\theta_1$';                  
+        '\qquad $\phi_i = \sin( \theta_i - \theta_1 )$ is the sinusoid of the phase of $\theta_i$ relative to $\theta_1$';                  
         '\qquad $R = \frac{1}{n} \sum_i \exp(\mathbf{i} \theta_i)$ is the Kuramoto order parameter.';
         '';
         'Notes';
@@ -94,6 +94,9 @@ function sys = Kuramoto(Kij)
 
     % Include the Space-Time Portrait panel in the GUI
     sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+
+    % Include the Corelation panel in the GUI
+    sys.gui.bdCorrelationPanel.title = 'Correlation';
 
     % Include the Solver panel in the GUI
     sys.gui.bdSolverPanel.title = 'Solver';                
@@ -117,8 +120,9 @@ end
 % Here we compute the auxillary variables sin(theta) and the order parameter R.
 function aux = auxfun(t,theta,Kij,k,omega)
     n = size(theta,1);
-    phi = theta - ones(n,1)*theta(1,:);           % (nx1) vector
+    %phi = theta - ones(n,1)*theta(1,:);           % (nxt) vector
     %phi = mod(phi+pi,2*pi)-pi;                   % wrap phi at [-pi,pi]
+    phi = sin(theta - ones(n,1)*theta(1,:));      % (nxt) vector
     R = abs(sum(exp(1i*theta),1))./n;             % (1xt) vector
     aux = [phi; R];
 end
