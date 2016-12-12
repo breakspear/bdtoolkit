@@ -61,16 +61,12 @@ function sys = HindmarshRose(n)
     sys.vardef = {'x',rand(n,1);        % ODE variables {'name',value}
                   'y',rand(n,1);
                   'z',rand(n,1)};
-    sys.solver = {'ode45',              % pertinent matlab ODE solvers
-                  'ode23',
-                  'ode113',
-                  'ode15s',
-                  'ode23s',
-                  'ode23t',
-                  'ode23tb'};
-    sys.odeopt = odeset();              % default ODE solver options
     sys.tspan = [0 1000];               % default time span [begin end]
               
+    % Specify ODE solvers and default options
+    sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
+    sys.odeoption = odeset('RelTol',1e-6);              % ODE solver options
+
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{HindmarshRose}';

@@ -44,9 +44,12 @@ function sys = SDEdemo2(n)
                   'mu',1;
                   'sigma',0.5};
     sys.vardef = {'Y',5*ones(n,1)};     % SDE variables {'name',value}
-    sys.solver = {'sde'};               % The SDE solver
     sys.tspan = [0 10];                 % default time span  
-              
+           
+   % Specify SDE solvers and default options
+    sys.sdesolver = {@sde00};                           % SDE solvers
+    sys.sdeoption = odeset('InitialStep',0.01);          % SDE solver options
+
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo2}';
@@ -99,6 +102,6 @@ function sys = self()
     if isempty(n)
         sys = [];                       % return empty sys
     else
-        sys = SDEdemo2(round(n));  % generate a new sys
+        sys = SDEdemo2(round(n));       % generate a new sys
     end
 end

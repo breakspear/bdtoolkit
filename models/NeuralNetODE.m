@@ -10,7 +10,10 @@
 %   
 % Example:
 %   n = 20;                     % number of neurons
-%   sys = NeuralNetODE(n);      % construct the system struct
+%   Kij = 0.5*rand(n);          % random symmetric coupling
+%   Kij = Kij + Kij';           % force symmetry
+%   Kij(1:n+1:end) = 0;         % no self-coupling
+%   sys = NeuralNetODE(Kij);    % construct the system struct
 %   gui = bdGUI(sys);           % open the Brain Dynamics GUI
 %
 
@@ -41,12 +44,10 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = NeuralNetODE(n)
-    % Random symmetric connection matrix with no self coupling
-    Kij = 0.5*rand(n);      % random connections
-    Kij = Kij + Kij';       % force symmetry
-    Kij(1:n+1:end) = 0;     % zero the diagonal
-    
+function sys = NeuralNetODE(Kij)
+    % determine the number of nodes from Kij
+    n = size(Kij,1);
+
     % Construct the system struct
     sys.odefun = @odefun;               % Handle to our ODE function
     sys.pardef = {'Kij',Kij;            % ODE parameters {'name',value}
@@ -55,16 +56,12 @@ function sys = NeuralNetODE(n)
                   'b',1;
                   'tau',10};
     sys.vardef = {'V',rand(n,1)};       % ODE variables {'name',value}
-    sys.solver = {'ode45';              % pertinent matlab ODE solvers
-                  'ode23';
-                  'ode113';
-                  'ode15s';
-                  'ode23s';
-                  'ode23t';
-                  'ode23tb'};
-    sys.odeopt = odeset();              % default ODE solver options
     sys.tspan = [0 1000];               % default time span [begin end]
               
+    % Specify ODE solvers and default options
+    sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
+    sys.odeoption = odeset('RelTol',1e-6);              % ODE solver options
+
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{NeuralNetODE}';
@@ -110,15 +107,16 @@ function y=F(x)
     y = 1./(1+exp(-x));
 end
 
-% This function is called by the GUI System-New menu
+% The self function is called by the GUI to reconfigure the model
 function sys = self()
-    % open a dialog box prompting the user for the value of n
-    n = bdEditScalars({100,'number of neurons'}, ...
-        'New System', 'NeuralNetODE');
-    % if the user cancelled then...
-    if isempty(n)
-        sys = [];                       % return empty sys
+    % Prompt the user to load Kij from file. 
+    info = {mfilename,'','Load the connectivity matrix, Kij'};
+    Kij = bdLoadMatrix(mfilename,info);
+    if isempty(Kij) 
+        % the user cancelled the operation
+        sys = [];  
     else
-        sys = NeuralNetODE(round(n));  % generate a new sys
+        % pass Kij to our main function
+        sys = NeuralNetODE(Kij);
     end
 end

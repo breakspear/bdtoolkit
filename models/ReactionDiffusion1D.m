@@ -50,11 +50,11 @@ function sys = ReactionDiffusion1D(n)
                   'dx',1};
     sys.vardef = {'A',rand(n,1);            % ODE variables {'name',value}
                   'B',rand(n,1)};
-    sys.solver = {'ode45',                  % matlab ODE solvers
-                  'ode23',
-                  'ode113'};
-    sys.odeopt = odeset('RelTol',1e-6);     % default ODE solver options
     sys.tspan = [0 20];                     % default time span
+
+    % Specify ODE solvers and default options
+    sys.odesolver = {@ode45,@ode23,@ode113};     % ODE solvers
+    sys.odeoption = odeset('RelTol',1e-6);       % ODE solver options
 
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
@@ -70,8 +70,10 @@ function sys = ReactionDiffusion1D(n)
         '\qquad $g(A,B)$ is the production rate of the inhibitor,';
         '\qquad $\nu$ is the diffusion coefficient.';
         'It is assumed that $f$ and $g$ are linear near equilibrium,';
-        '\qquad $f(A,B) = a A - B$';
-        '\qquad $g(A,B) = b A - B$';
+        '\qquad $f(A,B) = a A - B$,';
+        '\qquad $g(A,B) = b A - B$.';
+        'Hence this is not a pattern-forming system but rather';
+        'a study of when the uniform solution loses stability.';
         '';
         'Notes';
         '\qquad 1. $\partial^2 A / \partial x^2 \approx \big( A_{i+1} - 2A_{i} + A_{i+1} \big) / dx^2$.';

@@ -33,9 +33,10 @@ classdef bdControl < handle
     
     properties
         sys         % user-supplied system definition
-        solver      % active solver
         sol = []    % solution struct returned by the matlab solver
-        sal = []    % auxiliary solutions computed from sol.y by user-defined solfun
+        solx = []   % auxiliary variables (computed by sys.auxfun)
+        solvermap   % maps the solver functions to name and type strings
+        solveridx   % index of the active solver
     end
     
     properties (Access=private)
@@ -56,8 +57,11 @@ classdef bdControl < handle
             % working copy of the system struct
             this.sys = sys;
             
+            % contrsuct the solver map
+            this.solvermap = bdUtils.solverMap(sys); 
+            
             % currently active solver
-            this.solver = sys.solver{1};            
+            this.solveridx = 1;            
             
             % remember the parent figure
             this.fig = ancestor(panel,'figure');
@@ -495,119 +499,7 @@ classdef bdControl < handle
             % listen for recompute events
             addlistener(this,'recompute',@(~,~) RecomputeListener(this));
         end
-        
-        function sol = solve(this)
-            %disp('bdControl.solve()');
-
-            y0 = GetDefValues(this.sys.vardef);          
-            switch this.solver
-                case 'ode45'
-                    % Integrate using the matlab ode45 solver.
-                    % We use the OutputFcn to track progress and detect halt events.
-                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
-                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
-                    sol = ode45(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
-                case 'ode23'
-                    % Integrate using the matlab ode23 solver.
-                    % We use the OutputFcn to track progress and detect halt events.
-                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
-                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
-                    sol = ode23(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
-                case 'ode113'
-                    % Integrate using the matlab ode113 solver.
-                    % We use the OutputFcn to track progress and detect halt events.
-                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
-                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
-                    sol = ode113(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
-                case 'ode15s'
-                    % Integrate using the matlab ode15s solver.
-                    % We use the OutputFcn to track progress and detect halt events.
-                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
-                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
-                    sol = ode15s(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
-                case 'ode23s'
-                    % Integrate using the matlab ode23s solver.
-                    % We use the OutputFcn to track progress and detect halt events.
-                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
-                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
-                    sol = ode23s(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
-                case 'ode23t'
-                    % Integrate using the matlab ode23t solver.
-                    % We use the OutputFcn to track progress and detect halt events.
-                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
-                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
-                    sol = ode23t(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
-                case 'ode23tb'
-                    % Integrate using the matlab ode23tb solver.
-                    % We use the OutputFcn to track progress and detect halt events.
-                    odeopt = odeset(this.sys.odeopt, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
-                    tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
-                    sol = ode23tb(this.sys.odefun, tspan, y0, odeopt, this.sys.pardef{:,2}); 
-                case 'dde23'
-                    lags = GetDefValues(this.sys.lagdef); 
-                    sol = dde23(this.sys.ddefun, lags, y0, this.sys.tspan, this.sys.ddeopt, this.sys.pardef{:,2});
-                case 'sde'
-                    % SDE solver uses fixed-step Euler method
-                    sol.solver = 'sde';
-                    dt = 0.001;         % TODO: FIX ME
-                    sqrtdt = sqrt(dt);
-                    sol.x = this.sys.tspan(1):dt:this.sys.tspan(2);
-                    tcount = numel(sol.x);
-                    sol.y = NaN(numel(y0),tcount);
-                    sol.yp = sol.y;
-                    sol.y(:,1) = y0;
-                    for indx=2:tcount
-                        t = sol.x(indx);
-                        y = sol.y(:,indx-1);
-                        F = this.sys.odefun(t,y,this.sys.pardef{:,2});
-                        G = this.sys.sdefun(t,y,this.sys.pardef{:,2});
-                        sol.yp(:,indx) = F*dt + sqrtdt*G;
-                        sol.y(:,indx) = y + sol.yp(:,indx);
-                    end
-                    sol.stats.nsteps = tcount;
-                    sol.stats.nfailed = 0;
-                    sol.stats.nfevals = tcount;
-                otherwise
-                    error(['Unknown solver ''',this.solver,'''']);
-            end
-            
-            % compute the auxillary variables
-            if isfield(this.sys,'auxfun')
-                this.sal = this.sys.auxfun(sol.x,sol.y,this.sys.pardef{:,2});
-            end
-        end
-        
-        function [y,yp] = deval(this,tdomain,yindx)
-            % number of variables in y
-            n = size(this.sol.y,1);
-            
-            % yindx is an optional argument
-            if nargin<3
-                yindx = 1:n;
-            end
-            
-            switch this.sol.solver
-                case 'sde'
-                    % our custom solver, so we must do the interpolation ourselves.
-                    if any(yindx<0) || any(yindx>n)
-                        error('bdControl.deval(tdomain,yindx): yindex is out of bounds');
-                    end  
-                    % Annoyingly, interp1() transposes the output when the
-                    % input is a matrix but not a vector.
-                    if size(yindx,2)==1
-                        % Here the input is a VECTOR so we DON'T transpose the output.
-                        y  = interp1(this.sol.x, this.sol.y(yindx,:)', tdomain); 
-                        yp = interp1(this.sol.x, this.sol.yp(yindx,:)', tdomain); 
-                    else
-                        % Here the input ia a MATRIX so we DO transpose the output.
-                        y  = interp1(this.sol.x, this.sol.y(yindx,:)', tdomain)'; 
-                        yp = interp1(this.sol.x, this.sol.yp(yindx,:)', tdomain)'; 
-                    end
-                otherwise
-                    % use standard MATLAB deval for standard MATLAB solvers
-                    [y,yp] = deval(this.sol,tdomain,yindx);
-            end
-        end
+               
     end
     
     
@@ -682,7 +574,7 @@ classdef bdControl < handle
         % Callback for ODE parameter vector widget
         function VectorParameter(this,barObj,name,parindx)
             this.VectorCallback(barObj,name);
-            this.sys.pardef{parindx,2} = reshape(barObj.YData, size(this.syspardef{parindx,2}));
+            this.sys.pardef{parindx,2} = reshape(barObj.YData, size(this.sys.pardef{parindx,2}));
             notify(this,'recompute');
         end
 
@@ -747,7 +639,7 @@ classdef bdControl < handle
         
         % Listener for the compute flag
         function RecomputeListener(this)
-            
+            % Do nothing if the HALT button is active
             if this.hlt.Value
                 return
             end
@@ -755,9 +647,27 @@ classdef bdControl < handle
             % Change mouse cursor to hourglass
             set(this.fig,'Pointer','watch');
             drawnow;
+
+            % determine the active solver
+            solverfunc = this.solvermap(this.solveridx).solverfunc;
+            solvertype = this.solvermap(this.solveridx).solvertype;
             
-            % call the solver
-            this.sol = this.solve();
+            % We use the ODE OutputFcn to track progress in our solver
+            % and to detect halt events. We specify tspan so that OutputFcn
+            % is called 11 times. These correspond to 0%, 10%, ... , 100%
+            % progress of the solver.
+            tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
+            switch solvertype
+                case 'odesolver'
+                    this.sys.odeoption = odeset(this.sys.odeoption, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                case 'ddesolver'
+                    this.sys.ddeoption = ddeset(this.sys.ddeoption, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                case 'sdesolver'
+                    this.sys.sdeoption = odeset(this.sys.sdeoption, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+            end
+
+            % Call the solver
+            [this.sol,this.solx] = bdSolve(this.sys,tspan,solverfunc,solvertype);
             
             % notify all listeners that a redraw is required
             notify(this,'redraw');
@@ -815,29 +725,4 @@ function val = ScalarVectorMatrix(X)
     end
 end
 
-function vec = GetDefValues(xxxdef)
-%GetDefValues returns the values stored in a pardef or vardef cell array.
-%This function is useful for extracting the values stored in a user-defined
-%vardef array as a single vector for use by the ODE solver.
-%Usage:
-%   vec = GetDefValues(xxxdef)
-%where xxxdef is a cell array of {'name',value} pairs. 
-%Example:
-%  vardef = {'a',1;
-%            'b',[2 3 4];
-%            'c',[5 8; 6 9; 7 10]};
-%  y0 = GetDefValues(vardef);
-%  ...
-%  sol = ode45(@odefun,tspan,y0,...)
 
-    % extract the second column of xxxdef
-    vec = xxxdef(:,2);
-    
-    % convert each cell entry to a column vector
-    for indx=1:numel(vec)
-        vec{indx} = reshape(vec{indx},[],1);
-    end
-    
-    % concatenate the column vectors to a simple vector
-    vec = cell2mat(vec);
-end

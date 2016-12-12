@@ -9,15 +9,13 @@
 %        V is an (nx1) vector of firing rates
 %        Ii the injection current applied to the ith neuron
 %        tau is a time constant
-%   This example is very computationally expensive so small n are
-%   recommended (say n=5). The reason it is expensive is because the
-%   DDE solver must evaluate V(t) at n^2 time lags. Since V(t) is itself
-%   an nx1 vector, the DDE is effectively evaluating n^3 values of V at
-%   each step.
+%   This model is very computationally expensive because the
+%   DDE solver must evaluate V(t) at n^2 time lags. Consequently it is
+%   only recommended for very small networks (say n=5).
 %
 % Example: Using the Brain Dynamics Toolbox
-%   n = 5;                      % number of neurons
-%   sys = NeuralNetDDE2(n);     % construct the system struct
+%   Kij = rand(5);              % random network
+%   sys = NeuralNetDDE2(Kij);   % construct the system struct
 %   gui = bdGUI(sys);           % Open the Brain Dynamics GUI
 %
 
@@ -48,10 +46,9 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = NeuralNetDDE3(n)
-    % Random symmetric coupling matrix
-    Kij = 0.5*rand(n,n);
-    Kij = Kij + Kij';
+function sys = NeuralNetDDE3(Kij)
+    % determine the number of nodes from Kij
+    n = size(Kij,1);
 
     % Construct the system struct
     sys.ddefun = @ddefun;               % Handle to our DDE function
@@ -61,10 +58,12 @@ function sys = NeuralNetDDE3(n)
                   'tau',10};
     sys.lagdef = {'lags',rand(n,n)};    % DDE lag parameters {'name',value}
     sys.vardef = {'V',rand(n,1)};       % DDE variables {'name',value}
-    sys.solver = {'dde23'};             % pertinent matlab DDE solvers
-    sys.ddeopt = ddeset();              % default DDE solver options
     sys.tspan = [0 20];                 % default time span [begin end]
-    
+
+    % Specify DDE solvers and default options
+    sys.ddesolver = {@dde23};                   % DDE solvers
+    sys.ddeoption = odeset('RelTol',1e-6);      % DDE solver options
+
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{NeuralNetDDE3}';
@@ -131,15 +130,16 @@ function y=F(x)
     y = 1./(1+exp(-x));
 end
 
-% This function is called by the GUI System-New menu
+% The self function is called by the GUI to reconfigure the model
 function sys = self()
-    % open a dialog box prompting the user for the value of n
-    n = bdEditScalars({5,'number of neurons'}, ...
-        'New System', 'NeuralNetDDE3');
-    % if the user cancelled then...
-    if isempty(n)
-        sys = [];                       % return empty sys
+    % Prompt the user to load Kij from file. 
+    info = {mfilename,'','Load the connectivity matrix, Kij'};
+    Kij = bdLoadMatrix(mfilename,info);
+    if isempty(Kij) 
+        % the user cancelled the operation
+        sys = [];  
     else
-        sys = NeuralNetDDE3(round(n));  % generate a new sys
+        % pass Kij to our main function
+        sys = NeuralNetODE(Kij);
     end
 end

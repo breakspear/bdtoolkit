@@ -52,13 +52,12 @@ function sys = Kuramoto(Kij)
     sys.vardef = {'theta',2*pi*rand(n,1)};  % ODE variables {'name',value}
     sys.auxdef = {'phi',zeros(n,1);         % AUX variables {'name',value}
                   'R',0};
-    sys.solver = {'ode45', ...              % pertinent matlab ODE solvers
-                  'ode23', ...
-                  'ode113', ...
-                  'ode15s'};
     sys.tspan = [0 100];                    % default time span [begin end]
-    sys.odeopt = odeset('RelTol',1e-6, ...  % default ODE solver options
-                        'MaxStep',0.1);
+
+    % Specify ODE solvers and default options
+    sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};      % ODE solvers
+    sys.odeoption = odeset('RelTol',1e-6, 'MaxStep',0.1);   % ODE solver options
+                
                     
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 

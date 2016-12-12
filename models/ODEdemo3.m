@@ -12,15 +12,33 @@ function sys = ODEdemo3(Kij)
     %   sys = ODEdemo3(Kij);                % construct the system struct
     %   gui = bdGUI(sys);                   % open the Brain Dynamics GUI
     % 
-    % Example 2: Calling ODE45 manually
+    % Example 2: Using the Brain Dynamics command-line solver
+    %   n = 20;                                             % number of nodes
+    %   Kij = circshift(eye(n),1) + ...                     % nearest-neighbour
+    %         circshift(eye(n),-1);                         % coupling
+    %   sys = ODEdemo3(Kij);                                % system struct
+    %   sys.pardef = bdSetValue(sys.pardef,'a',1);          % set 'a' parameter
+    %   sys.pardef = bdSetValue(sys.pardef,'b',1.3);        % set 'b' parameter
+    %   sys.vardef = bdSetValue(sys.vardef,'U',rand(n,1));  % set 'y1' variable
+    %   sys.vardef = bdSetValue(sys.vardef,'V',rand(n,1));  % set 'y2' variable
+    %   sys.tspan = [0 10];                                 % set time domain
+    %   sol = bdSolve(sys);                                 % solve
+    %   tplot = 0:0.1:10;                                   % plot time domain
+    %   U = bdEval(sol,tplot,1:n);                          % U solution
+    %   V = bdEval(sol,tplot,(1:n)+n);                      % V solution
+    %   plot(tplot,U,'b', tplot,V,'r');                     % plot the result
+    %   xlabel('time'); ylabel('U (blue), V (red)');        % axis labels
+    %
+    % Example 3: Calling ODE45 manually
     %   n = 20;                                      % number of nodes
-    %   Kij = circshift(eye(n),1) + circshift(eye(n),-1);
-    %   sys = ODEdemo3(Kij);                         % construct the system
+    %   Kij = circshift(eye(n),1) + ...              % nearest-neighbour
+    %         circshift(eye(n),-1);                  % coupling
+    %   sys = ODEdemo3(Kij);                         % system struct
     %   odefun = sys.odefun;                         % ODE function handle
     %   [~,a,b] = deal(sys.pardef{:,2});             % default parameters
     %   [U0,V0] = deal(sys.vardef{:,2});             % initial conditions
     %   Y0=[U0;V0];                                  % concatenate as a column
-    %   odeopt = sys.odeopt;                         % default solver options
+    %   odeopt = sys.odeoption;                      % default solver options
     %   tspan = sys.tspan;                           % default time span
     %   sol = ode45(odefun,tspan,Y0,odeopt,Kij,a,b); % call the matlab solver
     %   tsol = tspan(1):0.1:tspan(2);                % time domain of interest
@@ -69,10 +87,12 @@ function sys = ODEdemo3(Kij)
                   'b',0.2};
     sys.vardef = {'U',rand(n,1);            % ODE variables {'name',value}
                   'V',rand(n,1)};
-    sys.solver = {'ode45','ode23','ode113'};% pertinent matlab ODE solvers
-    sys.odeopt = odeset('RelTol',1e-6);     % default ODE solver options
     sys.tspan = [0 100];                    % default time span
               
+    % Specify ODE solvers and default options
+    sys.odesolver = {@ode45,@ode23,@ode113};    % ODE solvers
+    sys.odeoption = odeset('RelTol',1e-6);      % ODE solver options
+
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo3}';

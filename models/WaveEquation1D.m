@@ -70,12 +70,12 @@ function sys = WaveEquation1D(n)
                   'dx',0.1};
     sys.vardef = {'U',U0;                   % ODE variables {'name',value}
                   'V',V0};
-    sys.solver = {'ode45',                  % matlab ODE solvers
-                  'ode23',
-                  'ode113'};
-    sys.odeopt = odeset('RelTol',1e-6);     % default ODE solver options
     sys.tspan = [0 20];                     % default time span
-              
+        
+    % Specify ODE solvers and default options
+    sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
+    sys.odeoption = odeset('RelTol',1e-6,'InitialStep',0.00001);   % ODE solver options
+
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{WaveEquation1D}';

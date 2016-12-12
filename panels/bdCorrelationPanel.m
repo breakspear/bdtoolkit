@@ -120,12 +120,18 @@ classdef bdCorrelationPanel < handle
         function render(this,control)
             %disp('bdCorrelationPanel.render()')
             
-            % We must interpolate the solution to ensure that the time steps
-            % are equidistant before computing the signal correlation.
+            % Cross-correlation assumes equi-spaced time steps. However
+            % many of our solver are auto-steppers, so we must interpolate
+            % the solution to ensure that our time steps are equi-spaced.
+            % How we interpolate depends on the type of solver.
+
+            % Determine the type of the active solver
+            solvertype = control.solvermap(control.solveridx).solvertype;
+
             % We must also be mindful that interpolating solutions from
             % stochastic differential eauations is fraught because they
             % involve random processes.
-            switch control.solver
+            switch solvertype
                 case 'sde'
                     % Stochastic Differential Equations draw on random
                     % processes which cannot be meaningfully inter-
@@ -156,20 +162,22 @@ classdef bdCorrelationPanel < handle
                 solrows = this.varMap(popindx).solindx;                
                 
                 % interpolate the solution
-                Y = control.deval(tinterp,solrows)';                
+                %Y = control.deval(tinterp,solrows)';                
+                Y = bdEval(control.sol,tinterp,solrows);
             else
                 % the popup index refers to an auxilary variable 
                 solrows = this.auxMap(popindx-nvardef).solindx;
                 
                 % interpolate the aux solution
-                Y = interp1(control.sol.x,control.sal(solrows,:)',tinterp);                
+                %Y = interp1(control.sol.x,control.sal(solrows,:)',tinterp);                
+                Y = bdEval(control.solx,tinterp,solrows);
             end
             
             % compute the cross correlation
             if size(Y,2)==1
                 this.R = 1;
             else
-                this.R = corr(Y);
+                this.R = corr(Y');
                 nanindx = isnan(this.R);
                 this.R(nanindx) = 1;
             end

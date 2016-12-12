@@ -59,10 +59,12 @@ function sys = SwiftHohenberg(n,dx)
                   'nu',3.0;
                   'dx',0.25};
     sys.vardef = {'U',U0};                  % ODE variables {'name',value}
-    sys.solver = {'ode45','ode23','ode113'};% pertinent matlab ODE solvers
-    sys.odeopt = odeset();     % default ODE solver options
     sys.tspan = [0 20];                     % default time span
-              
+         
+    % Specify ODE solvers and default options
+    sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
+    sys.odeoption = odeset('RelTol',1e-6);              % ODE solver options
+
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{SwiftHohenberg1D}';
@@ -110,7 +112,7 @@ end
 function sys = self()
     % open a dialog box prompting the user for parameters (n,dx)
     parm = bdEditScalars({300,'number of spatial points'; 0.25,'spatial step size'}, ...
-        'New System', 'SDEdemo2');
+        'New System', mfilename);
     % if the user cancelled then...
     if isempty(parm)
         sys = [];                       % return empty sys

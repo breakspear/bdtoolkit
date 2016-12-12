@@ -1,10 +1,10 @@
-function bdLint(sys)
-    % BdLint - checks the format of a sys struct for the Brain Dynamics Toolkit.
-    % Use bdLint to check the validty of a sys struct for a custom model.
+function bdVerify(sys)
+    % BdVerify - checks the format of a sys struct for the Brain Dynamics Toolkit.
+    % Use bdVerify to check the validty of a sys struct for a custom model.
     %
     % Example:
     %   >> sys = ODEdemo1();
-    %   >> bdLint(sys);
+    %   >> bdVerify(sys);
     %   Calling Y = sys.odefun(t,Y0,a,b)
     %   where t=0 and Y0 is size [1 1]
     %   returns Y as size [1 1]
@@ -46,7 +46,6 @@ function bdLint(sys)
     % check the existence of basic fields in the sys struct
     assert(isfield(sys,'pardef'), 'sys.pardef does not exist');
     assert(isfield(sys,'vardef'), 'sys.vardef does not exist');
-    assert(isfield(sys,'solver'), 'sys.solver does not exist');
     assert(isfield(sys,'tspan'), 'sys.tspan does not exist');
     
     % check that odefun is a function handle (if it has been defined)
@@ -98,27 +97,45 @@ function bdLint(sys)
         assert(isnumeric(sys.vardef{indx,2}), num2str(indx,'sys.vardef{%d,2} must be numeric'));
     end
     
-    % solver-specific checks
-    assert(iscell(sys.solver), 'sys.solver must be a cell array');
-    assert(size(sys.solver,1)==1 || size(sys.solver,2)==1, 'sys.solver cell array must be one dimensional');
-    for indx=1:numel(sys.solver)
-        assert(ischar(sys.solver{indx}), num2str(indx,'sys.solver{%d} must be a string'));
-        switch sys.solver{indx}
-            case {'ode45','ode23','ode113','ode15s','ode23s','ode23t','ode23tb'}
-                assert(isfield(sys,'odefun'), ['sys.odefun must be defined for solver ', sys.solver{indx}]); 
-                assert(isfield(sys,'odeopt'), ['sys.odeopt must be defined for solver ', sys.solver{indx}]); 
-                assert(isstruct(sys.odeopt), 'sys.odeopt must be a struct (see odeset)');
-            case 'dde23'
-                assert(isfield(sys,'ddefun'), ['sys.ddefun must be defined for solver ', sys.solver{indx}]); 
-                assert(isfield(sys,'ddeopt'), ['sys.ddeopt must be defined for solver ', sys.solver{indx}]); 
-                assert(isstruct(sys.ddeopt), 'sys.ddeopt must be a struct (see ddeset)');
-            case 'sde'
-                assert(isfield(sys,'odefun'), ['sys.odefun must be defined for solver ', sys.solver{indx}]); 
-                assert(isfield(sys,'sdefun'), ['sys.sdefun must be defined for solver ', sys.solver{indx}]); 
-            otherwise
-                error('sys.solver{%d} has an illegal value',indx);
+    % ODE solver checks
+    if isfield(sys,'odesolver')
+        assert(iscell(sys.odesolver), 'sys.odesolver must be a cell array');
+        assert(size(sys.odesolver,1)==1 || size(sys.odesolver,2)==1, 'sys.odesolver cell array must be one dimensional');
+        for indx=1:numel(sys.odesolver)
+            assert(isa(sys.odesolver{indx},'function_handle')), num2str(indx,'sys.odesolver{%d} must be a function handle');
         end
+        assert(isfield(sys,'odefun'), 'sys.odefun must be defined for odesolver'); 
+        assert(isfield(sys,'odeoption'), 'sys.odeoption must be defined for odesolver'); 
+        assert(isstruct(sys.odeoption), 'sys.odeoption must be a struct (see odeset)');
     end
+        
+    % DDE solver checks
+    if isfield(sys,'ddesolver')
+        assert(iscell(sys.ddesolver), 'sys.ddesolver must be a cell array');
+        assert(size(sys.ddesolver,1)==1 || size(sys.ddesolver,2)==1, 'sys.ddesolver cell array must be one dimensional');
+        for indx=1:numel(sys.ddesolver)
+            assert(isa(sys.ddesolver{indx},'function_handle')), num2str(indx,'sys.ddesolver{%d} must be a function handle');
+        end
+        assert(isfield(sys,'ddefun'), 'sys.ddefun must be defined for ddesolver'); 
+        assert(isfield(sys,'ddeoption'), 'sys.ddeoption must be defined for ddesolver'); 
+        assert(isstruct(sys.ddeoption), 'sys.ddeoption must be a struct (see ddeset)');
+    end
+        
+    % SDE solver checks
+    if isfield(sys,'sdesolver')
+        assert(iscell(sys.sdesolver), 'sys.sdesolver must be a cell array');
+        assert(size(sys.sdesolver,1)==1 || size(sys.sdesolver,2)==1, 'sys.sdesolver cell array must be one dimensional');
+        for indx=1:numel(sys.sdesolver)
+            assert(isa(sys.sdesolver{indx},'function_handle')), num2str(indx,'sys.sdesolver{%d} must be a function handle');
+        end
+        assert(isfield(sys,'odefun'), 'sys.odefun must be defined for sdesolver'); 
+        assert(isfield(sys,'sdefun'), 'sys.sdefun must be defined for sdesolver'); 
+        assert(isfield(sys,'sdeoption'), 'sys.sdeoption must be defined for sdesolver'); 
+        assert(isstruct(sys.sdeoption), 'sys.sdeoption must be a struct');
+    end
+    
+    % check that at least one of odesolver, ddesolver, sdesolver exist
+    assert( (isfield(sys,'odesolver') || isfield(sys,'ddesolver') || isfield(sys,'sdesolver')), 'Missing sys.odesolver, sys.ddesolver or sys.sdesolver');
     
     % check sys.tspan
     assert(isnumeric(sys.tspan),'sys.tspan must be numeric');
@@ -132,7 +149,7 @@ function bdLint(sys)
             parnames = sprintf('%s,',sys.pardef{:,1});
         end
         t = sys.tspan(1);
-        Y0 = GetDefValues(sys.vardef);        
+        Y0 = bdGetValues(sys.vardef);        
         disp(['Calling Y = sys.odefun(t,Y0,',parnames(1:end-1),') where']);
         disp(['t is size [', num2str(size(t)), ']']);
         disp(['Y0 is size [', num2str(size(Y0)), ']']);
@@ -156,8 +173,8 @@ function bdLint(sys)
             parnames = sprintf('%s,',sys.pardef{:,1});
         end
         t = sys.tspan(1);
-        Y0 = GetDefValues(sys.vardef);
-        lags = GetDefValues(sys.lagdef);
+        Y0 = bdGetValues(sys.vardef);
+        lags = bdGetValues(sys.lagdef);
         n = size(Y0,1);
         l = size(lags,1);
         Z = Y0*ones(1,l);
@@ -186,7 +203,7 @@ function bdLint(sys)
             parnames = sprintf('%s,',sys.pardef{:,1});
         end
         t = sys.tspan(1);
-        Y0 = GetDefValues(sys.vardef);        
+        Y0 = bdGetValues(sys.vardef);        
         disp(['Calling G = sys.sdefun(t,Y0,',parnames(1:end-1),') where']);
         disp(['t is size [', num2str(size(t)), ']']);
         disp(['Y0 is size [', num2str(size(Y0)), ']']);
@@ -213,7 +230,7 @@ function bdLint(sys)
         tcount = 11;
         t = linspace(sys.tspan(1), sys.tspan(2), tcount);
         % generate faux Y values by replicating the initial conditions 
-        Y0 = GetDefValues(sys.vardef);
+        Y0 = bdGetValues(sys.vardef);
         Y = Y0(:,ones(1,tcount));
         % call the auxfun
         disp(['Calling Yaux = sys.auxfun(t,Y,',parnames(1:end-1),') where']);
@@ -235,29 +252,29 @@ function bdLint(sys)
 end
 
 
-function vec = GetDefValues(xxxdef)
-%GetDefValues returns the values stored in a pardef or vardef cell array.
-%This function is useful for extracting the values stored in a user-defined
-%vardef array as a single vector for use by the ODE solver.
-%Usage:
-%   vec = GetDefValues(xxxdef)
-%where xxxdef is a cell array of {'name',value} pairs. 
-%Example:
-%  vardef = {'a',1;
-%            'b',[2 3 4];
-%            'c',[5 8; 6 9; 7 10]};
-%  y0 = GetDefValues(vardef);
-%  ...
-%  sol = ode45(@odefun,tspan,y0,...)
-
-    % extract the second column of xxxdef
-    vec = xxxdef(:,2);
-    
-    % convert each cell entry to a column vector
-    for indx=1:numel(vec)
-        vec{indx} = reshape(vec{indx},[],1);
-    end
-    
-    % concatenate the column vectors to a simple vector
-    vec = cell2mat(vec);
-end
+% function vec = GetDefValues(xxxdef)
+% %GetDefValues returns the values stored in a pardef or vardef cell array.
+% %This function is useful for extracting the values stored in a user-defined
+% %vardef array as a single vector for use by the ODE solver.
+% %Usage:
+% %   vec = GetDefValues(xxxdef)
+% %where xxxdef is a cell array of {'name',value} pairs. 
+% %Example:
+% %  vardef = {'a',1;
+% %            'b',[2 3 4];
+% %            'c',[5 8; 6 9; 7 10]};
+% %  y0 = GetDefValues(vardef);
+% %  ...
+% %  sol = ode45(@odefun,tspan,y0,...)
+% 
+%     % extract the second column of xxxdef
+%     vec = xxxdef(:,2);
+%     
+%     % convert each cell entry to a column vector
+%     for indx=1:numel(vec)
+%         vec{indx} = reshape(vec{indx},[],1);
+%     end
+%     
+%     % concatenate the column vectors to a simple vector
+%     vec = cell2mat(vec);
+% end

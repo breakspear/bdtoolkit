@@ -13,31 +13,10 @@
 %   where F(t,y) is implemented by sys.odefun(t,y,a,b)
 %   and G(t,y) is implemented by sys.sdefun(t,y,a,b).
 %
-% Example 1: Using the Brain Dynamics GUI
+% Example: Using the Brain Dynamics GUI
 %   sys = SDEdemo1();       % construct the system struct
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 % 
-% Example 2: Implementing the Euler method by hand
-%   sys = SDEdemo1();                       % construct the system struct
-%   odefun = sys.odefun;                    % the deterministic function
-%   sdefun = sys.sdefun;                    % the stochastic function
-%   [mu,sigma] = deal(sys.pardef{:,2});     % default parameters
-%   [Y0] = deal(sys.vardef{:,2});           % initial conditions
-%   dt = 0.1;                               % Euler time step
-%   tdomain = 0:dt:10;                      % time domain
-%   tcount = numel(tdomain);                % number of time steps
-%   Y = zeros(numel(Y0),tcount);            % allocate storage for result
-%   Y(:,1) = Y0;                            % initial conditions
-%   for tindx = 2:numel(tdomain)            % for each time step....
-%       t = tdomain(tindx);                 %     current time step 
-%       y = Y(:,tindx-1);                   %     value of Y(t-dt)
-%       F = odefun(t,y,mu,sigma);           %     deterministic part
-%       G = sdefun(t,y,mu,sigma);           %     stochastic part
-%       Y(:,tindx) = y + F*dt + sqrt(dt)*G; %     Euler step
-%   end                                     % end loop
-%   plot(tdomain,Y);                        % plot the result
-%   xlabel('time'); ylabel('y');
-%
 
 % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
 % All rights reserved.
@@ -73,9 +52,12 @@ function sys = SDEdemo1()
     sys.pardef = {'mu',  -0.1;          % SDE parameters {'name',value}
                   'sigma',0.1};
     sys.vardef = {'Y',5};               % SDE variables {'name',value}
-    sys.solver = {'sde'};               % The SDE solver
     sys.tspan = [0 10];                 % default time span
               
+   % Specify SDE solvers and default options
+    sys.sdesolver = {@sde00};                       % SDE solvers
+    sys.sdeoption = odeset('InitialStep',0.01);     % SDE solver options    
+
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo1}';

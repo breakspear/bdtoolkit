@@ -1,11 +1,12 @@
 # Brain Dynamics Toolbox
-The Brain Dynamics Toolbox is a graphical user interface to the matlab ODE and DDE solvers. It also includes its own built-in SDE solvers. The toolbox provides a convenient user interface for exploring dynamical systems by forward simulation. Users can implement their own dynamical equations (as matlab scripts) and use the toolbox graphical application (bdGUI) to view phase portraits and other plots in real-time. The plotting tools are modular so that users can create their own custom plots if they wish. The user interface is designed for dynamical systems with large numbers of variables and parameters, as is often the case in dynamical models of the brain. Hence the name, *Brain Dynamics Toolbox*.
+The Brain Dynamics Toolbox provides a convenient graphical user interface for exploring dynamical systems in MATLAB.  Users implement their own dynamical equations (as matlab scripts) and use the toolbox graphical interface to view phase portraits and other plots in real-time. The same models can also be run as MATLAB scripts without the graphics interface. The toolbox includes solvers for Ordinary Differential Equations (ODE), Delay Differential Equations (DDE) and Stochastic Differential Equations (SDE). The plotting tools are modular so that users can create custom plots according to their needs. Custom solver routines can also be used. The user interface is designed for dynamical systems with large numbers of variables and parameters, as is often the case in dynamical models of the brain. Hence the name, *Brain Dynamics Toolbox*.
  
 ## Getting Started
-The main toolbox scripts are located in the *bdtoolkit* directory. The plotting tools (panels) are kept separately in the *panels* directory. A selection of pre-defined models can be found in the *models* directory. All of these directories should be in your matlab PATH variable. You may then run the *bdGUI* application and load one of the pre-defined models (eg bdtoolkit/models/HindmarshRose.mat) using the *System-Load* menu.
+The main toolbox scripts are located in the top level of the *bdtoolkit* directory. The solver routines (*solvers*) and plotting tools (*panels*) are located in their own subdirectories.  The *models* subdirectory contains example dynamical systems. All of these directories should be in your matlab PATH variable. You may then run the *bdGUI* application and load one of the pre-defined models (eg HindmarshRose.mat) using the *System-Load* menu.
 
 ```matlab
     >> addpath bdtoolkit
+    >> addpath bdtoolkit/solvers
     >> addpath bdtoolkit/panels
     >> addpath bdtoolkit/models
     >> bdGUI
@@ -18,13 +19,13 @@ A typical system struct has the following fields:
 
 ```matlab
     sys.odefun = @odefun;      % Handle to our ODE function
-    sys.pardef = {'a',1;       % ODE parameters {'name', value}
-                  'b',2};
-    sys.vardef = {'y',0};      % ODE variables {'name',value}
-    sys.solver = {'ode45',     % matlab solvers
-                  'ode23'};
-    sys.odeopt = odeset();     % ODE solver options
-    sys.tspan = [0 5];         % default time span 
+    sys.pardef = {'a',-1;      % ODE parameters {'name', value}
+                  'b',0.01};
+    sys.vardef = {'y',rand};   % ODE variables {'name',value}
+    sys.tspan = [0 5];         % solution time span    
+    sys.odesolver = {@ode45,   % matlab ODE solvers
+                     @ode23} 
+    sys.odeoption = odeset('RelTol',1e-6);
 ```
 
 The *sys.odefun* field is a function handle to a user-defined function of the form:
@@ -48,7 +49,7 @@ The toolkit ships with a collection of pre-defined models in the *bdtoolkit/mode
 
 ## Panels
 
-The plotting tools (panels) are loaded by the GUI in accordance with the contents of the `sys.gui` field in the model's system structure. The top-level field names correspond to the classes defined in the *bdtoolkit/panels* directory. For example, the following snippet tells the bdGUI application to load the *bdTimePortrait*, *bdPhasePortrait* and *bdSolver* panels. It also specifies the (optional) title strings for those panels.
+The plotting tools (panels) are loaded by the GUI in accordance with the contents of `sys.gui` in the model's system structure. The top-level field names correspond to the classes defined in the *bdtoolkit/panels* directory. The following snippet tells the bdGUI application to load the *bdTimePortrait*, *bdPhasePortrait* and *bdSolver* panels.
 
 ```matlab
     sys.gui.bdTimePortrait.title = 'Time Portrait';
@@ -56,7 +57,7 @@ The plotting tools (panels) are loaded by the GUI in accordance with the content
     sys.gui.bdSolverPanel.title = 'Solver';
 ```
 
-The *bdLatexPanel* is typically the first panel loaded by each model. It uses latex to display the relevant mathematical equations. Each line of latex code is defined separately in a cell array that is stored in the `sys.gui.bdLatexPanel.latex` field.   
+The *bdLatexPanel* is typically the first panel loaded by any model. It uses *latex* to display the relevant mathematical equations. The user defines the relevant latex code in *sys.gui.bdLatexPanel.latex* as a cell array of strings. Each cell corresponds to one line of latex output. The following example is from *ODEdemo1.m*.
 
 ```matlab
     sys.gui.bdLatexPanel.title = 'Equations'; 
@@ -66,16 +67,24 @@ The *bdLatexPanel* is typically the first panel loaded by each model. It uses la
         '\qquad $\dot Y(t) = a\,Y(t) + b\,t$';
         'where $a$ and $b$ are scalar constants.'};
 ```
-All panels are different so consult the documentation of each class regarding the specific field names.
 
 ## Useful utilities
-The `bdLint` function is a helpful tool for validating the system structure of a new model. It checks that the various fields of the sys struct are properly defined. It also calls the user-defined function handle(s) to verify that they return data in the proper format.
+The `bdVerify(sys)` function is a helpful tool for validating the system structure of a new model. It checks that the various fields of the sys struct are properly defined. It also tests the user-defined function handle(s) to verify that they return data in the proper format. Any new model should be tested with *bdVerify* as standard practice.
+
+The `bdSolve(sys)` function solves a user-supplied model without invoking the graphic user interface. It is useful for batch processing.
+
+The `bdSetValue(xxxdef,name,val)` function provides a convenient method to set the value of parameter in any of the *pardef*, *vardef* or *lagdef* cell arrays in a *sys* struct. 
+
+Likewise, `bdGetValue(xxxdef,name)` provides a convenient method to read a value from a *pardef*, *vardef* or *lagdef* cell array.
   
-The `bdLoadMatrix` function is useful for loading matrix data from a matlab file or importing it from a data file of another format.
+The `bdLoadMatrix(name,msg)` function is useful for loading matrix data from a matlab file or importing it from a data file of another format.
 
-The `bdEditVector` and `bdEditMatrix` functions are useful for interactively editing vector and matrix data.
+The `bdEditScalars(pardef,name,descr)`, `bdEditVector(indata,name,columnName)` and `bdEditMatrix(inata,name)` functions are useful for interactively editing scalars, vectors and matrix data respectively.
 
-## Author
-Stewart Heitmann <heitmann@ego.id.au>
+## Going Further
+The best way to proceed is to inspect the example code in the *models* directory. In particular, *ODEdemo1* demonstrates an introductory Ordinary Differential Equation. Likewise, *DDEdemo1* demonstrates an introductory Delay Differential Equation and *SDEdemo1* deomstrates an introductory Stochastic Differential Equation
 
-25th Nov 2016
+-
+**Stewart Heitmann** <heitmann@ego.id.au>
+
+12th Dec 2016

@@ -8,7 +8,10 @@
 %
 % Example:
 %   n = 20;                 % number of neurons
-%   sys = HopfieldNet(n);   % construct the system struct
+%   Wij = 0.5*rand(n);      % random connectivity
+%   Wij = Wij + Wij';       % with symmetric connections (Wij=Wji)
+%   Wij(1:n+1:end) = 0;     % and non self coupling (zero diagonal)
+%   sys = HopfieldNet(Wij); % construct the system struct
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 %
 
@@ -39,12 +42,10 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = HopfieldNet(n)
-    % Random symmetric connection matrix with no self coupling
-    Wij = 0.5*rand(n);      % random connections
-    Wij = Wij + Wij';       % force symmetry
-    Wij(1:n+1:end) = 0;     % zero the diagonal
-    
+function sys = HopfieldNet(Wij)
+    % determine the number of nodes from Wij
+    n = size(Wij,1);
+
     % Construct the system struct
     sys.odefun = @odefun;               % Handle to our ODE function
     sys.pardef = {'Wij',Wij;            % ODE parameters {'name',value}
@@ -52,10 +53,12 @@ function sys = HopfieldNet(n)
                   'b',1;
                   'tau',10};
     sys.vardef = {'V',rand(n,1)};       % ODE variables {'name',value}
-    sys.solver = {'ode45'};             % pertinent matlab ODE solvers
-    sys.odeopt = odeset();              % default ODE solver options
     sys.tspan = [0 200];               % default time span [begin end]
-    
+
+    % Specify ODE solvers and default options
+    sys.odesolver = {@ode45,@ode113,@odeEuler};     % ODE solvers
+    sys.odeoption = odeset('RelTol',1e-6);          % ODE solver options
+ 
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{HopfieldNet}';
@@ -93,15 +96,16 @@ function dV = odefun(t,V,Wij,Ii,b,tau)
     dV = (-V + Wij*tanh(b*V) + Ii)./tau;
 end
 
-% This function is called by the GUI System-New menu
+% The self function is called by the GUI to reconfigure the model
 function sys = self()
-    % open a dialog box prompting the user for the value of n
-    n = bdEditScalars({100,'number of neurons'}, ...
-        'New System', 'Hopfield Network');
-    % if the user cancelled then...
-    if isempty(n)
-        sys = [];                       % return empty sys
+    % Prompt the user to load Wij from file. 
+    info = {mfilename,'','Load the connectivity matrix, Wij'};
+    Wij = bdLoadMatrix(mfilename,info);
+    if isempty(Wij) 
+        % the user cancelled the operation
+        sys = [];  
     else
-        sys = HopfieldNet(round(n));  % generate a new sys
+        % pass Kij to our main function
+        sys = HopfieldNet(Wij);
     end
 end

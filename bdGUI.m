@@ -83,6 +83,8 @@ classdef bdGUI
             % construct figure
             this.fig = figure('Units','pixels', ...
                 'Position',[randi(100,1,1) randi(100,1,1) 900 600], ...
+                'name', 'Brain Dynamics Toolbox', ...
+                'NumberTitle','off', ...
                 'MenuBar','none', ...
                 'Toolbar','figure');
             
@@ -175,10 +177,19 @@ classdef bdGUI
         
         % Callback for System-Save menu
         function SystemSave(this)
-            fname = uiputfile('*.mat','Save system file');
+            [fname,pname] = uiputfile('*.mat','Save system file');
             if fname~=0
                 sys = this.control.sys;
-                save(fname,'sys');
+                if isfield(sys,'odeoption')
+                    sys.odeoption = odeset(sys.odeoption,'OutputFcn',[]);
+                end
+                if isfield(sys,'ddeoption')
+                    sys.ddeoption = ddeset(sys.ddeoption,'OutputFcn',[]);
+                end
+                if isfield(sys,'sdeoption')
+                    sys.sdeoption = odeset(sys.sdeoption,'OutputFcn',[]);
+                end
+                save(fullfile(pname,fname),'sys');
             end
         end
         

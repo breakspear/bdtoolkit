@@ -121,8 +121,7 @@ classdef bdSpaceTimePortrait < handle
             yindx = this.varindx{varnum};
             tend  = control.sol.x(end);
             this.t = linspace(0,tend,1001);
-            %this.Y = deval(control.sol,this.t,yindx);
-            this.Y = control.deval(this.t,yindx);
+            this.Y = bdEval(control.sol,this.t,yindx);
             this.img.CData = this.Y;
             this.img.XData = this.t;
             this.img.YData = yindx - yindx(1) + 1;

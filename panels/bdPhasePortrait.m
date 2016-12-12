@@ -273,9 +273,12 @@ classdef bdPhasePortrait < handle
         % Evaluate the 2D vector field 
         function [xmesh,ymesh,dxmesh,dymesh] = VectorField2D(this,control,xindx,yindx,xlimit,ylimit)
             %disp('bdPhasePortrait.VectorField2D()');
-    
+
+            % Determine the type of the active solver
+            solvertype = control.solvermap(control.solveridx).solvertype;
+
             % Do not compute vector fields for delay differential equations 
-            if strcmp(control.solver,'dde23')
+            if strcmp(solvertype,'ddesolver')
                 xmesh=[];
                 ymesh=[];
                 dxmesh=[];
@@ -313,9 +316,12 @@ classdef bdPhasePortrait < handle
         % Evaluate the 3D vector field 
         function [xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh] = VectorField3D(this,control,xindx,yindx,zindx,xlimit,ylimit,zlimit)
             %disp('bdPhasePortrait.VectorField3D()');
+
+            % Determine the type of the active solver
+            solvertype = control.solvermap(control.solveridx).solvertype;
             
             % Do not compute vector fields for delay differential equations 
-            if strcmp(control.solver,'dde23')
+            if strcmp(solvertype,'ddesolver')
                 xmesh=[];
                 ymesh=[];
                 zmesh=[];

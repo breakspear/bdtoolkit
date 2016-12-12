@@ -1,6 +1,6 @@
 % DDEdemo1  Example Delay Differential Equations with constant delays 
 %   This is based on the simple example of Wille' and Baker for DDE23.
-%   Extra parameters (a,b,c,d) have been icnluded for demonstration.
+%   Extra parameters (a,b,c,d) have been included for demonstration.
 %   
 %   The differential equations
 %
@@ -15,13 +15,31 @@
 %   sys = DDEdemo1();       % construct the system struct
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 % 
+% Example 2: Using the Brain Dynamics command-line solver
+%   sys = DDEdemo1();                               % get system struct
+%   sys.pardef = bdSetValue(sys.pardef,'a',-1);     % set 'a' parameter
+%   sys.pardef = bdSetValue(sys.pardef,'b', 1);     % set 'b' parameter
+%   sys.pardef = bdSetValue(sys.pardef,'c',-1);     % set 'c' parameter
+%   sys.pardef = bdSetValue(sys.pardef,'d', 1);     % set 'd' parameter
+%   sys.lagdef = bdSetValue(sys.lagdef,'tau1',  1); % set 'tau1' lag value
+%   sys.lagdef = bdSetValue(sys.lagdef,'tau2',0.2); % set 'tau2' lag value
+%   sys.vardef = bdSetValue(sys.vardef,'y1',rand);  % 'y1' initial value
+%   sys.vardef = bdSetValue(sys.vardef,'y2',rand);  % 'y2' initial value
+%   sys.vardef = bdSetValue(sys.vardef,'y3',rand);  % 'y3' initial value
+%   sys.tspan = [0 10];                             % set time domain
+%   sol = bdSolve(sys);                             % solve
+%   tplot = 0:0.1:10;                               % plot time domain
+%   Y = bdEval(sol,tplot);                          % extract solution
+%   plot(tplot,Y);                                  % plot the result
+%   xlabel('time'); ylabel('y');
+%
 % Example 2: Calling DDE23 manually
 %   sys = DDEdemo1();                       % construct the system struct
 %   ddefun = sys.ddefun;                    % get DDE function handle
 %   [a,b,c,d] = deal(sys.pardef{:,2});      % default parameter values
 %   [tau1,tau2] = deal(sys.lagdef{:,2});    % default lag values
 %   [y1,y2,y3] = deal(sys.vardef{:,2});     % default initial conditions
-%   ddeopt = sys.ddeopt;                    % default DDE options
+%   ddeopt = sys.ddeoption;                 % default DDE options
 %   tspan = sys.tspan;                      % default time span
 %   sol = dde23(ddefun,[tau1;tau2],[y1;y2;y3],tspan,ddeopt,a,b,c,d);
 %   t = linspace(tspan(1),tspan(2),1000);   % time domain of interest
@@ -69,10 +87,12 @@ function sys = DDEdemo1()
     sys.vardef = {'y1',1;               % DDE variables {'name',value}
                   'y2',1;
                   'y3',1};
-    sys.solver = {'dde23'};             % pertinent matlab DDE solvers
-    sys.ddeopt = ddeset();              % default DDE solver options
     sys.tspan = [0 20];                 % default time span 
 
+    % Specify DDE solvers and default options
+    sys.ddesolver = {@dde23};                  % DDE solvers
+    sys.ddeoption = ddeset('RelTol',1e-6);     % DDE solver options    
+    
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{DDEdemo1}';

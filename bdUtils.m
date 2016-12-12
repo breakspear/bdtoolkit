@@ -70,6 +70,124 @@ classdef bdUtils
             end            
         end
         
+%         % Returns all values in xxxdef as one monolithic column vector
+%         % where xxxdef is a cell array of {'name',value} pairs. 
+%         % It applies to pardef, vardef, lagdef and auxdef arrays.
+%         function vec = getValues(xxxdef)
+%             % extract the second column of vardef
+%             vec = xxxdef(:,2);
+% 
+%             % convert each cell entry to a column vector
+%             for indx=1:numel(vec)
+%                 vec{indx} = reshape(vec{indx},[],1);
+%             end
+% 
+%             % concatenate the column vectors to a simple vector
+%             vec = cell2mat(vec);
+%         end
+%         
+%         % Return the value of the named entry in xxxdef 
+%         function val = getValue(xxxdef,name)
+%             val = [];
+%             nvar = size(xxxdef,1);
+%             for indx=1:nvar
+%                 if strmcp(xxxdef{indx,1},name)==0
+%                     val = xxxdef{indx,2};
+%                     return
+%                 end
+%             end
+%             warning('bdUtils.getValue() failed to find a matching name');
+%         end
+%         
+%         % Set the value of the named entry in xxxdef
+%         function setValue(xxxdef,name,val)
+%             nvar = size(xxxdef,1);
+%             for indx=1:nvar
+%                 if strcmp(xxxdef{indx,1},name)==0
+%                     xxxdef{indx,2} = val;
+%                     return
+%                 end
+%             end
+%             warning('dbUtils.setValue() failed to find a matching name');
+%         end
+
+        % Return the type (odesolver,ddesolver,sdesolver) of the given
+        % solver function handle. If the solver is not supported by the
+        % sys struct then returns 'unsupported'.
+        % Examples:
+        %    solverType(sys,@ode45) returns 'odesolver'
+        %    solverType(sys,@dde23) returns 'ddesolver'
+        function typestr = solverType(sys,solver)
+            % Case of an ODE solver (eg ode45)
+            if isfield(sys,'odesolver')
+                for idx = 1:numel(sys.odesolver)
+                    odesolver = sys.odesolver{idx};
+                    if isequal(solver,odesolver)
+                        typestr = 'odesolver';
+                        return
+                    end
+                end
+            end
+
+            % Case of a DDE solver (eg dde23)
+            if isfield(sys,'ddesolver')
+                for idx = 1:numel(sys.ddesolver)
+                    ddesolver = sys.ddesolver{idx};
+                    if isequal(solver,ddesolver)
+                        typestr = 'ddesolver';
+                        return
+                    end
+                end
+            end
+
+            % Case of an SDE solver.
+            if isfield(sys,'sdesolver')
+                for idx = 1:numel(sys.sdesolver)
+                    sdesolver = sys.sdesolver{idx};
+                    if isequal(solver,sdesolver)
+                        typestr = 'sdesolver';
+                        return
+                    end
+                end    
+            end
+           
+            % No match found
+            typestr = 'unsupported';
+        end
+
+        
+        % Utility function to construct a map of the solvers defined in sys.
+        % The map is an array of structs with fields describing the name,
+        % function handle and type of solver, as in:
+        %    map.solvername = 'ode45'
+        %    map.solverfunc = @ode45
+        %    map.solvertype = 'odesolver'
+        function map = solverMap(sys)
+            map = struct('solvername',{}, 'solverfunc',{}, 'solvertype',{});
+            if isfield(sys,'odesolver')
+                for idx = 1:numel(sys.odesolver)
+                    func = sys.odesolver{idx};
+                    name = func2str(func);
+                    map(end+1) = struct('solvername',name, 'solverfunc',func, 'solvertype','odesolver');
+                end
+            end
+            if isfield(sys,'ddesolver')
+                for idx = 1:numel(sys.ddesolver)
+                    func = sys.ddesolver{idx};
+                    name = func2str(func);
+                    map(end+1) = struct('solvername',name, 'solverfunc',func, 'solvertype','ddesolver');
+                end
+            end
+            if isfield(sys,'sdesolver')
+                for idx = 1:numel(sys.sdesolver)
+                    func = sys.sdesolver{idx};
+                    name = func2str(func);
+                    map(end+1) = struct('solvername',name, 'solverfunc',func, 'solvertype','sdesolver');
+                end
+            end
+end
+
+        
     end
     
 end

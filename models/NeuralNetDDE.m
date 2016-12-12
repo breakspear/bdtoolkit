@@ -14,45 +14,25 @@
 %        theta is the firing threshold
 %        tau is the time constant of the dynamics 
 %
-% Example 1: Using the Brain Dynamics Toolbox
+% Example 1: Using the Brain Dynamics graphic interface
 %   n = 20;                     % number of neurons
 %   sys = NeuralNetDDE(n);      % construct the system struct
 %   gui = bdGUI(sys);           % Open the Brain Dynamics GUI
 %
-% Example 2: Calling MATLAB dde23 directly
-%   n = 20;                     % number of neurons
-%   sys = NeuralNetDDE(n);      % system definition
-%
-%   % get the dde function handles from sys
-%   ddefun = sys.ddefun;
-%
-%   % get the default parameter values from sys
-%   [Aij,Bij,Cij,a,b,c,Ie,tau]=deal(sys.pardef{:,2});
-% 
-%   % get the default lag parameters from sys
-%   [d1,d2]=deal(sys.lagdef{:,2});
-%   lags=[d1;d2];
-% 
-%   % get the default initial conditions from sys
-%   [V0]=deal(sys.vardef{:,2});
-%
-%   % get the default time span from sys
-%   tspan = sys.tspan;     
-% 
-%   % get the default dde solver options from sys
-%   ddeopt = sys.ddeopt;
-% 
-%   % Integrate using dde23. We use the initial conditions in V0 as the
-%   % historical values of V(t) for t<0.
-%   sol = dde23(ddefun,lags,V0,tspan,ddeopt,Aij,Bij,Cij,a,b,c,Ie,tau);
-%
-%   % extract the results
-%   textract = 0:0.1:tspan(end);
-%   [V,dV] = deval(sol,textract); 
-% 
-%   % plot the results
-%   plot(textract,V);
-%
+% Example 2: Using the Brain Dynamics command-line solver
+%   n = 20;                                                % number of nodes
+%   sys = NeuralNetDDE(n);                                 % system struct
+%   sys.pardef = bdSetValue(sys.pardef,'a',0.01);          % 'a' parameter
+%   sys.pardef = bdSetValue(sys.pardef,'Iext',rand(n,1));  % 'Iext' parameter
+%   sys.lagdef = bdSetValue(sys.lagdef,'d1',0.1);          % 'd1' lag
+%   sys.lagdef = bdSetValue(sys.lagdef,'d2',0.15);         % 'd2' lag
+%   sys.vardef = bdSetValue(sys.vardef,'V',rand(n,1));     % 'V' initial values
+%   sys.tspan = [0 200];                                   % integration time span
+%   sol = bdSolve(sys);                                    % call the solver
+%   tplot = 0:1:200;                                       % time domain of interest
+%   V = bdEval(sol,tplot);                                 % extract solution
+%   plot(tplot,V);                                         % plot the result
+%   xlabel('time'); ylabel('V');                           % axis labels
 
 % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
 % All rights reserved.
@@ -108,7 +88,11 @@ function sys = NeuralNetDDE(n)
     sys.solver = {'dde23'};             % pertinent matlab DDE solvers
     sys.ddeopt = ddeset();              % default DDE solver options
     sys.tspan = [0 200];                % default time span [begin end]
-    
+
+    % Specify DDE solvers and default options
+    sys.ddesolver = {@dde23};                           % DDE solvers
+    sys.ddeoption = ddeset('RelTol',1e-6);              % DDE solver options
+
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{NeuralNetDDE}';

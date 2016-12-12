@@ -8,12 +8,23 @@ function sys = ODEdemo1()
     %   sys = ODEdemo1();       % construct the system struct
     %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
     % 
-    % Example 2: Using ODE45 manually
-    %   sys = ODEdemo1();                         % construct the system struct
+    % Example 2: Using the Brain Dynamics command-line solver
+    %   sys = ODEdemo1();                               % get system struct
+    %   sys.pardef = bdSetValue(sys.pardef,'a',-0.1);   % set 'a' parameter
+    %   sys.vardef = bdSetValue(sys.vardef,'y',rand);   % set 'y' variable
+    %   sys.tspan = [0 10];                             % set time domain
+    %   sol = bdSolve(sys);                             % solve
+    %   tplot = 0:0.1:10;                               % plot time domain
+    %   Y = bdEval(sol,tplot);                          % extract solution
+    %   plot(tplot,Y);                                  % plot the result
+    %   xlabel('time'); ylabel('y');
+    %    
+    % Example 3: Using ODE45 manually
+    %   sys = ODEdemo1();                         % get the system struct
     %   odefun = sys.odefun;                      % ODE function handle
     %   [a,b] = deal(sys.pardef{:,2});            % default parameters
     %   [Y0] = deal(sys.vardef{:,2});             % initial conditions
-    %   odeopt = sys.odeopt;                      % default solver options
+    %   odeopt = sys.odeoption;                   % default solver options
     %   tspan = sys.tspan;                        % default time span
     %   sol = ode45(odefun,tspan,Y0,odeopt,a,b);  % call the matlab solver
     %   tsol = tspan(1):0.1:tspan(2);             % time domain of interest
@@ -51,13 +62,15 @@ function sys = ODEdemo1()
 
     % Construct the system struct
     sys.odefun = @odefun;               % Handle to our ODE function
-    sys.pardef = {'a',1;                % ODE parameters {'name',value}
-                  'b',2};
-    sys.vardef = {'y',0};               % ODE variables {'name',value}
-    sys.solver = {'ode45','ode23'};     % pertinent matlab ODE solvers
-    sys.odeopt = odeset();              % default ODE solver options
-    sys.tspan = [0 5];                  % default time span  
+    sys.pardef = {'a',-1;               % ODE parameters {'name',value}
+                  'b',0.01};
+    sys.vardef = {'y',rand};            % ODE variables {'name',value}
+    sys.tspan = [0 20];                 % default time span  
 
+    % Specify ODE solvers and default options
+    sys.odesolver = {@ode45,@ode23,@odeEuler};  % ODE solvers
+    sys.odeoption = odeset('RelTol',1e-6);      % ODE solver options
+    
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo1}';
@@ -80,4 +93,4 @@ end
 function dYdt = odefun(t,Y,a,b)  
     dYdt = a*Y + b*t;
 end
-    
+

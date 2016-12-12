@@ -299,26 +299,27 @@ classdef bdSolverPanel < handle
             % Listener function for updating the edit boxes
             function renderboxes
                 %disp('bdSolverPanel.odePanel.renderboxes()')
-                switch control.solver
-                    case {'ode45','ode23','ode113','ode15s','ode23s','ode23t','ode23tb'}
-                        AbsTol.String = num2str(odeget(control.sys.odeopt,'AbsTol'),'%g');
-                        RelTol.String = num2str(odeget(control.sys.odeopt,'RelTol'),'%g');
-                        InitialStep.String = num2str(odeget(control.sys.odeopt,'InitialStep'),'%g');
-                        MaxStep.String = num2str(odeget(control.sys.odeopt,'MaxStep'),'%g');
+                solvertype = control.solvermap(control.solveridx).solvertype;
+                switch solvertype
+                    case 'odesolver'
+                        AbsTol.String = num2str(odeget(control.sys.odeoption,'AbsTol'),'%g');
+                        RelTol.String = num2str(odeget(control.sys.odeoption,'RelTol'),'%g');
+                        InitialStep.String = num2str(odeget(control.sys.odeoption,'InitialStep'),'%g');
+                        MaxStep.String = num2str(odeget(control.sys.odeoption,'MaxStep'),'%g');
                         AbsTol.Enable = 'on';
                         RelTol.Enable = 'on';
                         InitialStep.Enable = 'on';
                         MaxStep.Enable = 'on';
-                    case 'dde23'
-                        AbsTol.String = num2str(ddeget(control.sys.ddeopt,'AbsTol'),'%g');
-                        RelTol.String = num2str(ddeget(control.sys.ddeopt,'RelTol'),'%g');
-                        InitialStep.String = num2str(ddeget(control.sys.ddeopt,'InitialStep'),'%g');
-                        MaxStep.String = num2str(ddeget(control.sys.ddeopt,'MaxStep'),'%g');
+                    case 'ddesolver'
+                        AbsTol.String = num2str(ddeget(control.sys.ddeoption,'AbsTol'),'%g');
+                        RelTol.String = num2str(ddeget(control.sys.ddeoption,'RelTol'),'%g');
+                        InitialStep.String = num2str(ddeget(control.sys.ddeoption,'InitialStep'),'%g');
+                        MaxStep.String = num2str(ddeget(control.sys.ddeoption,'MaxStep'),'%g');
                         AbsTol.Enable = 'on';
                         RelTol.Enable = 'on';
                         InitialStep.Enable = 'on';
                         MaxStep.Enable = 'on';
-                    case 'sde'
+                    case 'sdesolver'
                         AbsTol.Enable = 'off';
                         RelTol.Enable = 'off';
                         InitialStep.Enable = 'on';
@@ -334,9 +335,9 @@ classdef bdSolverPanel < handle
             % Callback for user input to the edit boxes
             function editboxCallback(uibox,fieldname)
                 %disp('bdSolverPanel.odePanel.editboxCallback()')
-                % convert the edit box string into an odeopt value
+                % convert the edit box string into an odeoption value
                 if isempty(uibox.String)
-                    val = [];               % use an empty odeopt value for an empty edit box
+                    val = [];               % use an empty odeoption value for an empty edit box
                 else    
                     % get the incoming value from a non-empty edit box
                     val = str2double(uibox.String);
@@ -355,14 +356,21 @@ classdef bdSolverPanel < handle
                 uibox.Value = val;
                 
                 % update the solver options
-                switch control.solver
-                    case {'ode45','ode23','ode113','ode15s','ode23s','ode23t','ode23tb'}
-                        control.sys.odeopt = odeset(control.sys.odeopt,fieldname,val);
-                    case 'dde23'
-                        control.sys.ddeopt = ddeset(control.sys.ddeopt,fieldname,val);
-                    case 'sde'
+%                 switch control.solver
+%                     case {'ode45','ode23','ode113','ode15s','ode23s','ode23t','ode23tb'}
+%                         control.sys.odeoption = odeset(control.sys.odeoption,fieldname,val);
+%                     case 'dde23'
+%                         control.sys.ddeopt = ddeset(control.sys.ddeopt,fieldname,val);
+%                     case 'sde'
+%                 end
+                switch control.solvermap(control.solveridx).solvertype
+                    case 'odesolver'
+                        control.sys.odeoption = odeset(control.sys.odeoption,fieldname,val);
+                    case 'ddesolver'
+                        control.sys.ddeoption = ddeset(control.sys.ddeoption,fieldname,val);
+                    case 'sdesolver'
                 end
-            
+
                 % recompute
                 notify(control,'recompute');
             end           
@@ -379,7 +387,8 @@ classdef bdSolverPanel < handle
             
             % render the step size versus time
             stepsize = diff(control.sol.x);
-            set(plt2, 'XData',tsteps, 'YData',stepsize([1:end,end]));            
+            set(plt2, 'XData',tsteps, 'YData',stepsize([1:end,end]));
+            ylim(ax2,[0 max(stepsize)*1.1]); 
 
             % retrieve the appdata
             appdata = getappdata(this.fig,'bdSolverPanel');
@@ -431,10 +440,19 @@ classdef bdSolverPanel < handle
             
             % solver menu items
             checkstr='on';
-            for indx = 1:numel(control.sys.solver)
+%             for indx = 1:numel(control.sys.solver)
+%                 uimenu('Parent',menuobj, ...
+%                     'Label',control.sys.solver{indx}, ...
+%                     'Tag', 'bdSolverSelector', ...
+%                     'Checked',checkstr, ...
+%                     'Callback', @(menuitem,~) bdSolverPanel.SolverMenuCallback(menuobj,menuitem,control) );
+%                 checkstr='off';                
+%             end
+             for indx = 1:numel(control.solvermap)
                 uimenu('Parent',menuobj, ...
-                    'Label',control.sys.solver{indx}, ...
+                    'Label',control.solvermap(indx).solvername, ...
                     'Tag', 'bdSolverSelector', ...
+                    'UserData', indx, ...
                     'Checked',checkstr, ...
                     'Callback', @(menuitem,~) bdSolverPanel.SolverMenuCallback(menuobj,menuitem,control) );
                 checkstr='off';                
@@ -456,9 +474,11 @@ classdef bdSolverPanel < handle
                 menuitems(ix).Checked='off';
             end
             
-            % Except for the newly selected one
+            % Now check the newly selected menu item
             menuitem.Checked = 'on';
-            control.solver = menuitem.Label;
+
+            % Set the index of the active solver in the control object
+            control.solveridx = menuitem.UserData;
             
             % Recompute using the new solver
             notify(control,'recompute');  
