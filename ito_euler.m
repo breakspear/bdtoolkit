@@ -37,11 +37,11 @@
 % Arguments:
 % f	Function handle for drift coefficient function.
 % G	Function handle for diffusion coefficient function.
-%         f and G define the Ito equation dy = f(y, t)dt + G(y, t)dW 
+%         f and G define the Ito equation dy = f(t,y)dt + G(t,y)dW 
 % y0	A vector of initial conditions.
 % dW    Optional array giving a specific realization of the m independent
-%         Wiener processes (for advanced use). If not provided, Wiener increments
-%         will be generated randomly.
+%         Wiener processes (for advanced use). If not provided, Wiener
+%         increments will be generated randomly.
 % options  Structure of optional parameters that change the default integration properties.
 %
 % References:
@@ -49,38 +49,30 @@
 % Kloeden and Platen (1999) Numerical Solution of Differential Equations
 function sol = ito_euler(f, G, tspan, y0, varargin)
     p = inputParser;
+    p.KeepUnmatched = true;
     addRequired(p, 'f', @(x)isa(x,'function_handle'));
     addRequired(p, 'f', @(x)isa(x,'function_handle'));
     addRequired(p, 'tspan', @(x)validateattributes(x, {'numeric'}, {'size', [2]}));
     addRequired(p, 'y0', @isnumeric);
-    addOptional(p, 'dW', @isnumeric);
+    addOptional(p, 'dW', false, @isnumeric);
     addParameter(p, 'InitialStep', 0.0005, @(x)isscalar(x)&&x>0);
     parse(p, f, G, tspan, y0, varargin{:});
     h = p.Results.InitialStep;
-    [d, m] = sde_validate(f, G, y0, tspan)
-    x = tspan(0):h:tspan(2);
-    N = numel(x);
-    dW = deltaW(N - 1, m, h);
+    dW = p.Results.dW; % false if user did not provide dW
+    otherParams = struct2cell(p.Unmatched);
+    [d, m] = sdeValidate(f, G, tspan, y0, h, dW, otherParams)
+    x = tspan(1):h:tspan(2);
+    N = floor((tspan(2) - tspan(1))./h) + 1;
+    assert(N==numel(x));
+    if isequal(dW, false)
+        dW = wiener(N - 1, m, h);
+    end
     y = [y0, NaN(d, N)];
     for n = 1:(N-1)
         tn = x(n);
         yn = y(n);
         dWn = dW(n,:)
-        y(n+1) = yn + f(yn, tn).*h + G(yn, tn)*dWn
+        y(n+1) = yn + f(tn,yn,otherParams).*h + G(tn,yn,otherParams)*dWn
     end
     sol = struct('x',x,'y',y,'solver','ito_euler')
-end
-
-
-% Validate arguments and infer dimensionality
-function [d,m] = sde_validate(f, G, y0, tspan)
-    % TODO
-    error('work in progress')
-end
-
-
-% Generate sequence of Wiener increments for m independent Wiener processes
-% for each of N time intervals of length h.
-function deltaW = deltaW(N, m, h)
-    deltaW = sqrt(h).*randn(N, m)
 end
