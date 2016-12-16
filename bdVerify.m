@@ -132,6 +132,15 @@ function bdVerify(sys)
         assert(isfield(sys,'sdefun'), 'sys.sdefun must be defined for sdesolver'); 
         assert(isfield(sys,'sdeoption'), 'sys.sdeoption must be defined for sdesolver'); 
         assert(isstruct(sys.sdeoption), 'sys.sdeoption must be a struct');
+        assert(isfield(sys.sdeoption,'NoiseSources'), 'sys.sdeoption.NoiseSources must be defined for sdesolver');
+        assert(isnumeric(sys.sdeoption.NoiseSources), 'sys.sdeoption.NoiseSources must be a numeric value');
+        assert(numel(sys.sdeoption.NoiseSources)==1, 'sys.sdeoption.NoiseSources must be a scalar value');
+        assert(mod(sys.sdeoption.NoiseSources,1)==0, 'sys.sdeoption.NoiseSources must be an integer value');
+        % Validate sys.sdeoption.randn (if it exists)
+        if isfield(sys.sdeoption,'randn') && ~isempty(sys.sdeoption.randn)
+            [m,tcount] = size(sys.sdeoption.randn);
+            assert(m==sys.sdeoption.NoiseSources, 'Number of rows in sys.sdeoption.randn must equal sys.sdeoption.NoiseSources'); 
+        end
     end
     
     % check that at least one of odesolver, ddesolver, sdesolver exist
@@ -214,7 +223,9 @@ function bdVerify(sys)
         end
         G = sys.sdefun(t,Y0,sys.pardef{:,2});
         disp(num2str(size(G),'returns G as size [%d %d]'));      
-        assert(size(G,2)==1, 'sys.sdefun must return G as a column vector');        
+        assert(size(G,1)==size(Y0,1), 'sys.sdefun must return G with the same row dim as Y0');      
+        assert(size(G,2)==sys.sdeoption.NoiseSources, 'sys.sdefun must return G with col dim equal to sys.sdeoption.NoiseSources');      
+        
         disp('sys.sdefun format is OK');
         disp('---');
     end

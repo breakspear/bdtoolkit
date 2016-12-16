@@ -13,10 +13,36 @@
 %   where F(t,y) is implemented by sys.odefun(t,y,a,b)
 %   and G(t,y) is implemented by sys.sdefun(t,y,a,b).
 %
-% Example: Using the Brain Dynamics GUI
+% Example 1: Using the Brain Dynamics GUI
 %   sys = SDEdemo1();       % construct the system struct
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 % 
+% Example 2: Using the Brain Dynamics command-line solver
+%   sys = SDEdemo1();                                 % get system struct
+%   sys.pardef = bdSetValue(sys.pardef,'mu',-0.1);    % 'mu' parameter
+%   sys.pardef = bdSetValue(sys.pardef,'sigma',0.1);  % 'sigma' parameter
+%   sys.vardef = bdSetValue(sys.vardef,'Y',rand);     % 'Y' initial value
+%   sys.tspan = [0 10];                               % time domain
+%   sol = bdSolve(sys);                               % solve
+%   t = sol.x;                                        % time steps
+%   Y = sol.y;                                        % solution variables
+%   dW = sol.dW;                                      % noise samples
+%   ax = plotyy(t,Y, t,dW);                           % plot the result
+%   xlabel('time');
+%   ylabel(ax(1),'Y');
+%   ylabel(ax(2),'dW');
+%
+% Example 3: Using pre-generated (fixed) random walks
+%   sys = SDEdemo1();                             % get system struct
+%   sys.sdeoption.randn = randn(1,101);           % our random sequences
+%   sys.tspan = [0 10];                           % time domain
+%   sol1 = bdSolve(sys);                          % solve
+%   sol2 = bdSolve(sys);                          % solve (again)
+%   plotyy(sol1.x,sol1.y, sol1.x,sol1.dW);        % plot 1st result
+%   hold on
+%   plotyy(sol2.x,sol2.y, sol2.x,sol2.dW);        % plot 2nd result
+%   hold off                                      
+%   std(sol1.y - sol2.y)                          % results are identical
 
 % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
 % All rights reserved.
@@ -55,8 +81,9 @@ function sys = SDEdemo1()
     sys.tspan = [0 10];                 % default time span
               
    % Specify SDE solvers and default options
-    sys.sdesolver = {@sde00};                       % SDE solvers
-    sys.sdeoption = odeset('InitialStep',0.01);     % SDE solver options    
+    sys.sdesolver = {@sde00};           % Pertinent SDE solvers
+    sys.sdeoption.InitialStep = 0.01;   % SDE solver step size (optional)
+    sys.sdeoption.NoiseSources = 1;     % Number of Weiner noise processes
 
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
@@ -80,11 +107,11 @@ function sys = SDEdemo1()
 end
 
 % The deterministic function.
-function dY = odefun(t,Y,a,b)  
-    dY = a*Y;
+function F = odefun(t,Y,a,b)  
+    F = a*Y;
 end
 
 % The stochastic function.
-function dW = sdefun(t,Y,a,b)  
-    dW = b*Y.*randn;
+function G = sdefun(t,Y,a,b)  
+    G = b*Y;
 end

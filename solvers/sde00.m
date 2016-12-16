@@ -1,24 +1,62 @@
 %sde00  Solve stochastic differential equations using the fixed-step Euler method.
+%   odefun is a function handle to the determinsitic part of the SDE
+%   sdefun is a function handle to the noise coeeficients of the SDE
+%   tspan=[t0 t1] is the time span of the integration.
+%   dW is an (mxt) vector of preomputed Weiner noise processes (optional)
+%   y0 in an (nx1) vector of initial conditions
+%   options is a structure of SDE solver options (see sdeset)
+%   vargargin represents the additional parameters passed to odefun and sdefun.
 function sol = sde00(odefun,sdefun,tspan,y0,options,varargin)
-    % The InitialStep option defines our time step
-    dt = odeget(options,'InitialStep');
-    if isempty(dt)
-        % Default InitialStep
-        dt = (tspan(end) - tspan(1))/100;
-        %warning('Step size is undefined. Using InitialStep=%g',dt);
+    % Get the number of noise sources (Weiner processes).
+    if isfield(options,'NoiseSources')
+        m = options.NoiseSources;
+    else
+        error('options.NoiseSources is undefined');
     end
     
-    % precompute srqt(dt)
-    sqrtdt = sqrt(dt);
+    % Get the time step from the InitialStep option (if it exists)
+    if isfield(options,'InitialStep')
+        dt = options.InitialStep;
+    else
+        % Default to 101 steps in tspan
+        dt = (tspan(end) - tspan(1))/100;
+    end
+        
+    % If random number sequences have been by supplied by the user then we
+    % use the size of that sequence to determine the step size dt and 
+    % the number of noise sources m.
+    % This value of dt overrides that given by the InitialStep option.
+    % However the value of m must match the NoiseSources option exactly.
+    if isfield(options,'randn') && ~isempty(options.randn)
+        % The rows of dW determine the number of noise sources (m).
+        % The cols of dW determine the number of time steps (tcount).
+        [mm,tcount] = size(options.randn);
 
+        % The number of time steps in tspan determine the step size (dt)
+        dt = (tspan(end) - tspan(1))/(tcount-1);
+        
+        % Assert that m matches the NoiseSources option
+        assert(mm==m,'The number of rows in options.randn must equal options.NoiseSources');
+    end
+    
     % span the time domain in fixed steps
     sol.x = tspan(1):dt:tspan(end);
     tcount = numel(sol.x);
-
+    
     % allocate space for the results
     sol.y = NaN(numel(y0),tcount);      % values of y(t)
     sol.yp = sol.y;                     % values of dy(t)/dt
 
+    % compute the Weiner processes
+    if isfield(options,'randn') && ~isempty(options.randn)
+        % The user has supplied us with random samples,
+        % we only need scale it by sqrt(dt)
+        sol.dW = sqrt(dt) .* options.randn;
+    else
+        % Generate the Weiner noise (scaled by sqrt(dt))
+        sol.dW = sqrt(dt) .* randn(m,tcount);
+    end
+    
     % miscellaneous output
     sol.solver = mfilename;
     sol.extdata.odefun = odefun;
@@ -41,7 +79,7 @@ function sol = sde00(odefun,sdefun,tspan,y0,options,varargin)
         
     % Fixed-step Euler method
     sol.y(:,1) = y0;
-    sol.yp(:,1) = odefun(sol.x(1), y0, varargin{:})*dt + sdefun(sol.x(1), y0, varargin{:})*sqrtdt;
+    sol.yp(:,1) = odefun(sol.x(1), y0, varargin{:})*dt + sdefun(sol.x(1), y0, varargin{:})*sol.dW(:,1);
     for indx=2:tcount        
         % Execute the OutputFcn whenever the time step reaches the next
         % time point listed in tspan. Ordinarily, there would be multiple
@@ -67,8 +105,8 @@ function sol = sde00(odefun,sdefun,tspan,y0,options,varargin)
         G = sdefun(sol.x(indx), sol.y(:,indx-1), varargin{:});
 
         % Euler step
-        sol.yp(:,indx) = F*dt + sqrtdt*G;                         % y'(t) = F()*dt + G*sqrt(dt)
-        sol.y(:,indx) = sol.y(:,indx-1) + sol.yp(:,indx);         % y(t) = y(t-1) + y'(t)       
+        sol.yp(:,indx) = F*dt + G*sol.dW(:,indx);            % y'(t) = F(t)*dt + G*dW(t)
+        sol.y(:,indx) = sol.y(:,indx-1) + sol.yp(:,indx);    % y(t) = y(t-1) + y'(t)       
     end
     
     % Execute the OutputFcn for the last entry in tspan.

@@ -663,7 +663,8 @@ classdef bdControl < handle
                 case 'ddesolver'
                     this.sys.ddeoption = ddeset(this.sys.ddeoption, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
                 case 'sdesolver'
-                    this.sys.sdeoption = odeset(this.sys.sdeoption, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                    this.sys.sdeoption.OutputFcn = @this.odeplot;
+                    this.sys.sdeoption.OutputSel = [];                    
             end
 
             % Call the solver

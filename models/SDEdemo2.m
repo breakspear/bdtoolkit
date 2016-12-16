@@ -4,10 +4,37 @@
 %   for i=1..n.
 %
 % Example 1: Using the Brain Dynamics GUI
-%   n = 20;                 % number of equations
+%   n = 20;                 % number of processes
 %   sys = SDEdemo2(n);      % construct the system struct
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
+% 
+% Example 2: Using the Brain Dynamics command-line solver
+%   n = 20;                                            % num of processes
+%   sys = SDEdemo2(n);                                 % get system struct
+%   sys.pardef = bdSetValue(sys.pardef,'mu',0.5);      % 'mu' parameter
+%   sys.pardef = bdSetValue(sys.pardef,'sigma',0.1);   % 'sigma' parameter
+%   sys.vardef = bdSetValue(sys.vardef,'Y',rand(n,1)); % 'Y' initial values
+%   sys.tspan = [0 10];                                % time domain
+%   sol = bdSolve(sys);                                % solve
+%   t = sol.x;                                         % time steps
+%   Y = sol.y;                                         % solution variables
+%   dW = sol.dW;                                       % noise samples
+%   subplot(1,2,1); 
+%   plot(t,Y); xlabel('time'); ylabel('Y');            % plot time trace 
+%   subplot(1,2,2);
+%   histfit(dW(:)); xlabel('dW'); ylabel('count');     % noise histogram
 %
+% Example 3: Using pre-generated (fixed) random walks
+%   n = 20;                                       % number of processes
+%   sys = SDEdemo2(n);                            % get system struct
+%   sys.sdeoption.randn = randn(n,101);           % our random sequences
+%   sys.tspan = [0 10];                           % time domain
+%   sol1 = bdSolve(sys);                          % solve
+%   sol2 = bdSolve(sys);                          % solve (again)
+%   figure
+%   plot(sol1.x,sol1.y,'b');  title('sol1');      % plot 1st result in blue
+%   figure
+%   plot(sol2.x,sol2.y,'r');  title('sol2');      % plot 2nd result in red                                      
 
 % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
 % All rights reserved.
@@ -40,15 +67,16 @@ function sys = SDEdemo2(n)
     % Construct the system struct
     sys.odefun = @odefun;               % Handle to our deterministic function
     sys.sdefun = @sdefun;               % Handle to our stochastic function
-    sys.pardef = {'theta',0.1;          % SDE parameters {'name',value}
-                  'mu',1;
+    sys.pardef = {'theta',1;            % SDE parameters {'name',value}
+                  'mu',0.5;
                   'sigma',0.5};
     sys.vardef = {'Y',5*ones(n,1)};     % SDE variables {'name',value}
     sys.tspan = [0 10];                 % default time span  
            
    % Specify SDE solvers and default options
-    sys.sdesolver = {@sde00};                           % SDE solvers
-    sys.sdeoption = odeset('InitialStep',0.01);          % SDE solver options
+    sys.sdesolver = {@sde00};           % Pertinent SDE solvers
+    sys.sdeoption.InitialStep = 0.01;   % SDE solver step size (optional)
+    sys.sdeoption.NoiseSources = n;     % Number of Weiner noise processes
 
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
@@ -84,13 +112,13 @@ function sys = SDEdemo2(n)
 end
 
 % The deterministic function.
-function dY = odefun(t,Y,theta,mu,sigma)  
-    dY = theta .* (mu - Y);
+function F = odefun(t,Y,theta,mu,sigma)  
+    F = theta .* (mu - Y);
 end
 
 % The stochastic function.
-function dW = sdefun(t,Y,theta,mu,sigma)
-    dW = sigma.*randn(size(Y));
+function G = sdefun(t,Y,theta,mu,sigma)
+    G = sigma .* eye(numel(Y));
 end
 
 % This function is called by the GUI System-New menu

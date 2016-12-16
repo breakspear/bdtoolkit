@@ -181,7 +181,7 @@ classdef bdSolverPanel < handle
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
-                'TooltipString', 'Suggested initial step size', ...
+                'TooltipString', 'Initial step size', ...
                 'Parent', panel, ...
                 'Callback', @(hObj,~) editboxCallback(hObj,fieldname), ...
                 'Position',[boxx 10 boxw boxh]);
@@ -320,6 +320,9 @@ classdef bdSolverPanel < handle
                         InitialStep.Enable = 'on';
                         MaxStep.Enable = 'on';
                     case 'sdesolver'
+                        if isfield(control.sys.sdeoption,'InitialStep')
+                            InitialStep.String = num2str(control.sys.sdeoption.InitialStep,'%g');
+                        end
                         AbsTol.Enable = 'off';
                         RelTol.Enable = 'off';
                         InitialStep.Enable = 'on';
@@ -356,19 +359,13 @@ classdef bdSolverPanel < handle
                 uibox.Value = val;
                 
                 % update the solver options
-%                 switch control.solver
-%                     case {'ode45','ode23','ode113','ode15s','ode23s','ode23t','ode23tb'}
-%                         control.sys.odeoption = odeset(control.sys.odeoption,fieldname,val);
-%                     case 'dde23'
-%                         control.sys.ddeopt = ddeset(control.sys.ddeopt,fieldname,val);
-%                     case 'sde'
-%                 end
                 switch control.solvermap(control.solveridx).solvertype
                     case 'odesolver'
-                        control.sys.odeoption = odeset(control.sys.odeoption,fieldname,val);
+                        control.sys.odeoption = setfield(control.sys.odeoption,fieldname,val);
                     case 'ddesolver'
-                        control.sys.ddeoption = ddeset(control.sys.ddeoption,fieldname,val);
+                        control.sys.ddeoption = setfield(control.sys.ddeoption,fieldname,val);
                     case 'sdesolver'
+                        control.sys.sdeoption = setfield(control.sys.sdeoption,fieldname,val);
                 end
 
                 % recompute

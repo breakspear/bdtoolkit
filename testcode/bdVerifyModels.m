@@ -42,6 +42,11 @@ sys = SDEdemo2(n);
 bdVerify(sys);
 disp '===';
 
+disp 'TESTING SDEdemo3';
+sys = SDEdemo3;
+bdVerify(sys);
+disp '===';
+
 disp 'TESTING NeuralNetODE';
 n = 13;
 sys = NeuralNetODE(n);
