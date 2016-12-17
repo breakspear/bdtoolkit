@@ -74,7 +74,7 @@ function sys = SDEdemo2(n)
     sys.tspan = [0 10];                 % default time span  
            
    % Specify SDE solvers and default options
-    sys.sdesolver = {@sde00};           % Pertinent SDE solvers
+    sys.sdesolver = {@sdeIto};          % Pertinent SDE solvers
     sys.sdeoption.InitialStep = 0.01;   % SDE solver step size (optional)
     sys.sdeoption.NoiseSources = n;     % Number of Weiner noise processes
 

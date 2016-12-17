@@ -41,6 +41,7 @@ classdef bdControl < handle
     
     properties (Access=private)
         fig         % handle of parent figure
+        hld         % handle to HOLD button
         hlt         % handle to HALT button
         cpustart    % cpu start time
         cpu         % handle to cpu clock
@@ -179,7 +180,44 @@ classdef bdControl < handle
                             'Position',[boxw+5 panelh-(yoffset-15) posw-boxw-10 boxh]);
                 end
             end
-           
+                       
+            % SDE random-hold widgets (if applicable)
+            if isfield(sys,'sdefun')
+                % next row
+                yoffset = yoffset + 1.5*rowh;                    
+                
+                 % lag title
+                uicontrol('Style','text', ...
+                    'String','Noise Process', ...
+                    'HorizontalAlignment','left', ...
+                    'FontUnits','pixels', ...
+                    'FontSize',12, ...
+                    'FontWeight','bold', ...
+                    'Parent', panel, ...
+                    'UserData', yoffset, ...
+                    'Tag', 'bdControlWidget', ...
+                    'Position',[0 panelh-yoffset posw boxh]);
+
+                % next row
+                yoffset = yoffset + 0.9*rowh;                    
+
+                % HOLD button
+                this.hld = uicontrol('Style','radio', ...
+                    'String','Hold', ...
+                    'Value', (isfield(sys.sdeoption,'randn') && ~isempty(sys.sdeoption.randn) ), ...
+                    'HorizontalAlignment','left', ...
+                    'FontUnits','pixels', ...
+                    'FontSize',12, ...
+                    'FontWeight','normal', ...
+                    'ForegroundColor', 'k', ...
+                    'Parent', panel, ...
+                    'UserData', yoffset, ...
+                    'Tag', 'bdControlWidget', ...
+                    'ToolTipString', 'Hold the noise fixed', ...
+                    'Callback', @(~,~) this.HoldCallback(), ...
+                    'Position',[0 panelh-yoffset 2*boxw+5 boxh]);  
+            end
+            
             % DDE lag widgets (if applicable)
             if isfield(sys,'lagdef')
                 % next row
@@ -446,11 +484,11 @@ classdef bdControl < handle
                 'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
 
             % next row
-            yoffset = yoffset + boxh - 5;                        
+            yoffset = yoffset + boxh;                        
 
             % CPU time 
             this.cpu = uicontrol('Style','text',...
-                'String','CPU 0.0s', ...
+                'String','0.0s', ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',14, ...
@@ -476,7 +514,7 @@ classdef bdControl < handle
                 'Position',[boxw+5 panelh-yoffset boxw boxh]);
 
             % next row
-            yoffset = yoffset + 1.5*boxh;                        
+            yoffset = yoffset + 1.25*boxh;                        
 
             % HALT button
             this.hlt = uicontrol('Style','radio', ...
@@ -664,11 +702,20 @@ classdef bdControl < handle
                     this.sys.ddeoption = ddeset(this.sys.ddeoption, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
                 case 'sdesolver'
                     this.sys.sdeoption.OutputFcn = @this.odeplot;
-                    this.sys.sdeoption.OutputSel = [];                    
-            end
+                    this.sys.sdeoption.OutputSel = [];      
+             end
 
             % Call the solver
             [this.sol,this.solx] = bdSolve(this.sys,tspan,solverfunc,solvertype);
+            
+            % Hold the SDEnoise if the HOLD button is 'on'
+            switch solvertype
+                case 'sdesolver'
+                    if this.hld.Value==1 && isempty(this.sys.sdeoption.randn) 
+                         dt = this.sol.x(2) - this.sol.x(1);
+                         this.sys.sdeoption.randn = this.sol.dW ./ sqrt(dt);
+                    end
+            end
             
             % notify all listeners that a redraw is required
             notify(this,'redraw');
@@ -699,11 +746,19 @@ classdef bdControl < handle
             status = this.hlt.Value;
         end
 
+        % HOLD button callback
+        function HoldCallback(this)
+            if this.hld.Value==1
+                dt = this.sol.x(2) - this.sol.x(1);
+                this.sys.sdeoption.randn = this.sol.dW ./ sqrt(dt);
+            else
+                this.sys.sdeoption.randn = [];
+            end
+        end
+        
         % HALT button callback
         function HaltCallback(this)
             if this.hlt.Value==1
-                %this.cpu.String = '0.00s';
-                %this.pro.String = '0%';
                 this.cpu.ForegroundColor = [0.5 0.5 0.5];
             else
                 this.cpu.ForegroundColor = [0 0 0];

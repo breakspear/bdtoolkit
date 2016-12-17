@@ -1,12 +1,87 @@
-%sde00  Solve stochastic differential equations using the fixed-step Euler method.
-%   odefun is a function handle to the determinsitic part of the SDE
-%   sdefun is a function handle to the noise coeeficients of the SDE
-%   tspan=[t0 t1] is the time span of the integration.
-%   dW is an (mxt) vector of preomputed Weiner noise processes (optional)
-%   y0 in an (nx1) vector of initial conditions
-%   options is a structure of SDE solver options (see sdeset)
-%   vargargin represents the additional parameters passed to odefun and sdefun.
-function sol = sde00(odefun,sdefun,tspan,y0,options,varargin)
+%sdeIto  Solve Ito stochastic differential equation, Euler-Maruyama method.
+%   SOL = sdeIto(ODEFUN,SDEFUN,TSPAN,Y0,OPTIONS,...)
+%   uses the Euler-Marayuma method to integrate a system of stochastic
+%   differential equations of the form 
+%      dy = F(t,y,...)*dt + G(t,y,...)*dW(t)
+%   where F(t,y,...)*dt is the deterministic part and G(t,y,...)*dW(t) is
+%   the stochastic part. dW(t) is a Weiner (Brownian) noise process.
+%   The differential equations are assumed to be derived with Ito calculus.
+% 
+%   The method integrates the equations for time span TSPAN=[T0 TFINAL]
+%   from initial conditions Y0. ODEFUN and SDEFUN are handles to the
+%   user-defined F(t,y,...)and G(t,y,...) functions,  for example:
+%
+%   function f = odefun(t,Y,theta,mu,sigma)  
+%       f = theta .* (mu - Y);          % returns an (nx1) column vector
+%   end
+%
+%   function g = sdefun(t,Y,theta,mu,sigma)
+%       g = sigma .* eye(numel(Y));     % returns an (nxn) matrix
+%   end
+%
+%   Note that ODEFUN must return an (nx1) column vector whereas SDEFUN
+%   must return an (nxm) matrix of noise coefficients. The solver
+%   matrix multiplies the noise coefficicents by the (mx1) noise terms
+%   in dW(t) to obtain an (nx1) column vector.
+%
+%   Solver-specific options are passed via the OPTIONS struct, of which,
+%   only the NOISESOURCES field is mandatory.
+%
+%   OPTIONS =
+%      NoiseSources: [m]           number of noise processes in dW
+%       InitialStep: [dt]          integrator time step (optional)
+%             randn: [mxt]         pre-generated random noise (optional)
+%         OutputFcn: @(t,Y,flag)   handle to user-defined output function
+%
+%   The solution is returned in the SOL struct as per ode45, ode23, etc.
+%   Interpolating the solution is possible (using bdEval) but it is not
+%   recommended because interpolation of a stochastic process is meaning-
+%   less. The values of y(t) and y'(t) can instead be read directly from
+%   the struct.
+%
+%   SOL =
+%       x: [1xt]  time points
+%       y: [nxt]  y(t) values
+%      yp: [nxt]  y'(t) values
+%      dW: [mxt]  Weiner noise samples
+%
+%  The Weiner noise is computed as dW=sqrt(dt)*randn(m,t) where m is
+%  the number of Weiner processes (NoiseSources) and t is the number
+%  of time points in the solution. The time points [T0:dt:TFINAL]
+%  are equi-spaced with dt defined by the INITIALSTEP option. If 
+%  INITIALSTEP is undefined then the solver defaults to 101 time steps
+%  by setting dt=(TFINAL-T0)/100. 
+%
+%  Alternatvely, the user may supply pre-computed random samples via the
+%  RANDN field of the OPTIONS struct. Those random samples must be drawn
+%  from a Normal distribution using the Matlab RANDN(m,t) function. The
+%  INITIALSTEP option is ignored becasue the step size dt=(TFINAL-T0)/(t-1)
+%  is determined by TSPAN=[T0 TFINAL] and the number of time points (t)
+%  in RANDN.
+%
+%EXAMPLE:
+%  % anonymous versions of the F() and G() functions shown above.
+%  odefun = @(t,Y,theta,mu,sigma) theta.*(mu - Y);
+%  sdefun = @(t,Y,theta,mu,sigma) sigma .* eye(numel(Y));
+%  tspan = [0 10];                  % time domain
+%  n = 13;                          % number of equations
+%  Y0 = ones(n,1);                  % initial conditions
+%  options.NoiseSources = n;        % number of noise sources
+%  options.InitialStep = 0.01;      % step size, dt
+%  theta = 1;                       % model-specific parameter
+%  mu = -1;                         % model-specific parameter
+%  sigma = 0.5;                     % model-specific parameter
+%  sol = sdeIto(odefun,sdefun,tspan,Y0,options,theta,mu,sigma);
+%  T = sol.x;                       % solution time points
+%  Y = sol.y;                       % solution values y(t)
+%  plot(T,Y);                       % plot the results
+%
+%SEE ALSO
+%  SDEdemo1, SDEdemo2 and SDEdemo3 in the Brain Dynamics Toolkit
+%
+%AUTHORS
+%  Matthew Aburn, Stewart Heitmann (2016)
+function sol = sdeIto(odefun,sdefun,tspan,y0,options,varargin)
     % Get the number of noise sources (Weiner processes).
     if isfield(options,'NoiseSources')
         m = options.NoiseSources;

@@ -36,13 +36,14 @@ function sys = SDEdemo3()
     sys.tspan = [0 5];              % default time span
     
     % Specify SDE solvers and default options
-    sys.sdesolver = {@sde00};           % Pertinent SDE solvers
+    sys.sdesolver = {@sdeIto};          % Pertinent SDE solvers
     sys.sdeoption.InitialStep = 0.005;  % SDE solver step size (optional)
     sys.sdeoption.NoiseSources = 1;     % Number of Weiner noise processes
 
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo3}';
+        '';
         'An Ito stochastic differential equation';
         '\qquad $dy = -(a + y\,b^2)(1-y^2)\,dt + b(1-y^2)\,dW_t$';
         'where';

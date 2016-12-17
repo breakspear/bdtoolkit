@@ -366,6 +366,7 @@ classdef bdSolverPanel < handle
                         control.sys.ddeoption = setfield(control.sys.ddeoption,fieldname,val);
                     case 'sdesolver'
                         control.sys.sdeoption = setfield(control.sys.sdeoption,fieldname,val);
+                        control.sys.sdeoption.randn = [];
                 end
 
                 % recompute
