@@ -154,16 +154,15 @@ function sol = sdeIto(odefun,sdefun,tspan,y0,options,varargin)
         
     % Fixed-step Euler method
     sol.y(:,1) = y0;
-    sol.yp(:,1) = odefun(sol.x(1), y0, varargin{:})*dt + sdefun(sol.x(1), y0, varargin{:})*sol.dW(:,1);
-    for indx=2:tcount        
+    for indx=1:tcount-1        
         % Execute the OutputFcn whenever the time step reaches the next
         % time point listed in tspan. Ordinarily, there would be multiple
         % Euler steps between calls to OutputFcn. Nonetheless, a single
         % Euler step might (perversely) span multiple time points in tspan.
         % Hence the while loop.
-        while ~isempty(OutputFcn) && sol.x(indx-1)>=tspan(tspanidx)
+        while ~isempty(OutputFcn) && sol.x(indx)>=tspan(tspanidx)
             % call the output function
-            status = OutputFcn(sol.x(indx-1),sol.y(:,indx-1),'');
+            status = OutputFcn(sol.x(indx),sol.y(:,indx),'');
             if status==1
                 % User has cancelled the operation.
                 sol.stats.nsteps = indx;
@@ -176,15 +175,20 @@ function sol = sdeIto(odefun,sdefun,tspan,y0,options,varargin)
         end
 
         % Call the user-supplied functions
-        F = odefun(sol.x(indx), sol.y(:,indx-1), varargin{:});
-        G = sdefun(sol.x(indx), sol.y(:,indx-1), varargin{:});
+        F = odefun(sol.x(indx), sol.y(:,indx), varargin{:});
+        G = sdefun(sol.x(indx), sol.y(:,indx), varargin{:});
 
         % Euler step
-        sol.yp(:,indx) = F*dt + G*sol.dW(:,indx);            % y'(t) = F(t)*dt + G*dW(t)
-        sol.y(:,indx) = sol.y(:,indx-1) + sol.yp(:,indx);    % y(t) = y(t-1) + y'(t)       
+        sol.yp(:,indx) = F*dt + G*sol.dW(:,indx);            % dy(t) = F(t,y(t))*dt + G(t,y(t))*dW(t)
+        sol.y(:,indx+1) = sol.y(:,indx) + sol.yp(:,indx);    % y(t+1) = y(t) + dy(t)       
     end
     
-    % Execute the OutputFcn for the last entry in tspan.
+    % Complete the final Euler step
+    F = odefun(sol.x(end), sol.y(:,end), varargin{:});
+    G = sdefun(sol.x(end), sol.y(:,end), varargin{:});
+    sol.yp(:,end) = F*dt + G*sol.dW(:,end);
+
+    % Execute the OutputFcn for the final entry in tspan.
     if ~isempty(OutputFcn)
         % call the output function
         status = OutputFcn(sol.x(end),sol.y(:,end),'');
@@ -194,8 +198,7 @@ function sol = sdeIto(odefun,sdefun,tspan,y0,options,varargin)
             sol.stats.nfailed = 0;
             sol.stats.nfevals = tcount;
             return
-        end
-        
+        end        
         % cleanup the OutputFcn
         OutputFcn([],[],'done');
     end
