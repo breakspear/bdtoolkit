@@ -1,5 +1,5 @@
 function sys = ReactionDiffusion1D(n)
-    % ReactionDiffusion1D  Reaction-Diffusion equations in one dimension
+    % ReactionDiffusion1D  Reaction-Diffusion equations in one spatial dimension
     %   Alan Turing's (1952) reaction-diffusion PDE
     %        d_t A = f(A,B) + d_x^2 A
     %        d_t B = g(A,B) + nu d_x^2 B
@@ -10,8 +10,11 @@ function sys = ReactionDiffusion1D(n)
     %   n = 200;                        % number of spatial points
     %   sys = ReactionDiffusion1D(n);   % construct our system
     %   gui = bdGUI(sys);               % run the Brain Dynamics GUI
-
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    %
+    % Authors
+    %   Stewart Heitmann (2016a)
+    
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

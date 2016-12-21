@@ -1,14 +1,17 @@
 function outdata = bdEditMatrix(data,name)
-    % bdEditMatrix opens a dialog box for editing matrix data.
-    % Usage:
+    %bdEditMatrix Dialog box for editing matrix data.
+    %Usage:
     %    outdata = bdEditMatrix(indata,name)
-    % where
+    %where
     %    'indata' is the initial matrix data (nxn)
     %    'name' is the title of the dialog box (text)
-    % Returns the edited data in 'outdata'. If the user cancels the operation
-    % then the returned data is identical to the initial data. 
+    %Returns the edited data in 'outdata'. If the user cancels the operation
+    %then the returned data is identical to the initial data. 
+    % 
+    %AUTHORS
+    %  Stewart Heitmann (2016a)
 
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

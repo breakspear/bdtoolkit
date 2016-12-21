@@ -1,5 +1,5 @@
 function sys = ODEdemo2()
-    % ODEdemo2  Example van der Pol equation
+    % ODEdemo2  Van der Pol equation
     %   Implements the van der Pol equation
     %        y1'(t) = y2(t)
     %        y2'(t) = a*(1-y1^2)*y2 - y1
@@ -35,8 +35,11 @@ function sys = ODEdemo2()
     %   plot(tsol,Y);                             % plot the result
     %   xlabel('time');
     %   ylabel('y');
+    %
+    % Authors
+    %   Stewart Heitmann (2016a)
 
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

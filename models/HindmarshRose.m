@@ -1,4 +1,4 @@
-% HindmarshRose Network of Hindmars-Rose neurons
+% HindmarshRose Hindmarsh-Rose neural network
 % The Hindmarsh-Rose equations
 %    x' = y - a*x.^3 + b*x.^2 - z + I - gs*(x-Vs).*Inet;
 %    y' = c - d*x.^2 - y;
@@ -12,8 +12,11 @@
 %   sys = HindmarshRose(n);     % construct the system struct
 %   gui = bdGUI(sys);           % open the Brain Dynamics GUI
 %
+% Authors
+%   Stewart Heitmann (2016a)
 
-% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

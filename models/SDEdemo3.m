@@ -1,5 +1,9 @@
-% SDEdemo3
-% Copyright (c) 2016, Matthew Aburn, QIMR Berghofer Medical Research Institute
+% SDEdemo3 Ito Stochastic Differential Equation
+%
+% Authors
+%   Matthew Aburn (2016a)
+ 
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

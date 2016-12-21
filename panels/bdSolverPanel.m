@@ -1,7 +1,13 @@
 classdef bdSolverPanel < handle
-    %bdSolverPanel - a GUI tab panel for displaying solver options.
-    
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    %bdSolverPanel - Brain Dynamics GUI panel for solver options.
+    %
+    %SYS OPTIONS
+    %   sys.gui.bdSolverPanel.title      Name of the panel (optional)
+    %
+    %AUTHORS
+    %  Stewart Heitmann (2016a)
+
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

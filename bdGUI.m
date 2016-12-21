@@ -1,13 +1,16 @@
 classdef bdGUI
-    %bdGUI - The Brain Dynamics Toolbox graphic User Interface.
-    %   Opens a dynamical system model (sys) which the user can
-    %   interactively explore in a graphical user interface.
+    %bdGUI - The Brain Dynamics Toolbox Graphic User Interface.
+    %   Opens a dynamical system model (sys) with the Brain Dynamics
+    %   Toolbox graphical user interface.
     %   
-    %   Example:
-    %      sys = ODEdemo1();
-    %      bdGUI(sys);
-    
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    %EXAMPLE
+    %   sys = ODEdemo1();
+    %   gui = bdGUI(sys);
+    %
+    %AUTHORS
+    %  Stewart Heitmann (2016a)
+
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

@@ -1,8 +1,15 @@
 classdef bdCorrelationPanel < handle
-    %bdCorrelationPanel - a GUI tab panel for cross-correlations.
+    %bdCorrelationPanel - Brain Dynamics GUI panel for cross-correlations.
+    %   Displays cross-correlations between variables of a dynamical
+    %   system.
     %
+    %SYS OPTIONS
+    %   sys.gui.bdCorrelationPanel.title      Name of the panel (optional)
+    %
+    %AUTHORS
+    %  Stewart Heitmann (2016a)
 
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

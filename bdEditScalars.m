@@ -1,18 +1,21 @@
-% bdEditScalars opens a dialog box for editing scalar values.
-% Usage:
+%bdEditScalars  Dialog box for editing scalar values.
+%Usage:
 %    outdata = bdEditScalars(pardef,name,descr)
-% where
+%where
 %    'pardeg' is a cell array of {value,'text'} pairs
 %    'name' is the title of the dialog box (text)
 %    'descr' is the description of the content (text)
-% Returns the edited data in 'outdata'. If the user cancels the operation
-% then the returned as empty.
+%Returns the edited data in 'outdata'. If the user cancels the operation
+%then the returned as empty.
 %
-% Example:
+%EXAMPLE
 %    outdata = bdEditScalars({1,'a'; 2,'b'; 3,'c'}, ...
 %       'My Title', 'My Descrition Text')
+%
+%AUTHORS
+%  Stewart Heitmann (2016a)
 
-% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

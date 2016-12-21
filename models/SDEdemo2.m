@@ -35,8 +35,11 @@
 %   plot(sol1.x,sol1.y,'b');  title('sol1');      % plot 1st result in blue
 %   figure
 %   plot(sol2.x,sol2.y,'r');  title('sol2');      % plot 2nd result in red                                      
+%
+% Authors
+%   Stewart Heitmann (2016a)
 
-% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

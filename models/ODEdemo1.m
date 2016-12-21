@@ -1,5 +1,5 @@
 function sys = ODEdemo1()
-    % ODEdemo1  Example ordinary differential equation
+    % ODEdemo1  Simple Ordinary Differential Equation
     %   Implements the simple ordinary differential equation
     %        y'(t) = a*Y + b*t
     %   for use with the Brain Dynamics toolbox.
@@ -31,8 +31,11 @@ function sys = ODEdemo1()
     %   Y = deval(sol,tsol);                      % extract the solution
     %   plot(tsol,Y);                             % plot the result
     %   xlabel('time'); ylabel('y');
+    %
+    % Authors
+    %   Stewart Heitmann (2016a)
 
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

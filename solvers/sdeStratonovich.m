@@ -1,6 +1,6 @@
-%sdeIto  Solve Ito SDE using the Euler-Maruyama method.
-%   SOL = sdeIto(ODEFUN,SDEFUN,TSPAN,Y0,OPTIONS,...)
-%   uses the Euler-Marayuma method to integrate a system of stochastic
+%sdeStratonovich  Solve Stratonovich SDE using the Stratonovich-Heun method
+%   SOL = sdeStratonovich(ODEFUN,SDEFUN,TSPAN,Y0,OPTIONS,...)
+%   uses the Stratonovich-Huen method to integrate a system of stochastic
 %   differential equations of the form 
 %      dy = F(t,y,...)*dt + G(t,y,...)*dW(t)
 %   where F(t,y,...)*dt is the deterministic part and G(t,y,...)*dW(t) is
@@ -71,7 +71,7 @@
 %  theta = 1;                       % model-specific parameter
 %  mu = -1;                         % model-specific parameter
 %  sigma = 0.5;                     % model-specific parameter
-%  sol = sdeIto(odefun,sdefun,tspan,Y0,options,theta,mu,sigma);
+%  sol = sdeStratonovich(odefun,sdefun,tspan,Y0,options,theta,mu,sigma);
 %  T = sol.x;                       % solution time points
 %  Y = sol.y;                       % solution values y(t)
 %  plot(T,Y);                       % plot the results
@@ -110,7 +110,7 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.   
-function sol = sdeIto(odefun,sdefun,tspan,y0,options,varargin)
+function sol = sdeStratonovich(odefun,sdefun,tspan,y0,options,varargin)
     % Get the number of noise sources (Weiner processes).
     if isfield(options,'NoiseSources')
         m = options.NoiseSources;
@@ -181,7 +181,7 @@ function sol = sdeIto(odefun,sdefun,tspan,y0,options,varargin)
     % tspan to the last.
     tspanidx = 1;           % Current index of tspan
         
-    % Fixed-step Euler method
+    % Fixed-step Stratonovich-Huen method
     sol.y(:,1) = y0;
     for indx=1:tcount-1        
         % Execute the OutputFcn whenever the time step reaches the next
@@ -203,20 +203,32 @@ function sol = sdeIto(odefun,sdefun,tspan,y0,options,varargin)
             tspanidx = tspanidx+1;
         end
 
-        % Call the user-supplied functions
-        F = odefun(sol.x(indx), sol.y(:,indx), varargin{:});
-        G = sdefun(sol.x(indx), sol.y(:,indx), varargin{:});
-
-        % Euler step
-        sol.yp(:,indx) = F*dt + G*sol.dW(:,indx);            % dy(t) = F(t,y(t))*dt + G(t,y(t))*dW(t)
-        sol.y(:,indx+1) = sol.y(:,indx) + sol.yp(:,indx);    % y(t+1) = y(t) + dy(t)       
+        % Stratonovich-Huen step
+        tn = sol.x(indx);
+        tnp1 = sol.x(indx+1);
+        yn = sol.y(:,indx);
+        dWn = sol.dW(:,indx);
+        fn = odefun(tn, yn, varargin{:});
+        Gn = sdefun(tn, yn, varargin{:});
+        ybar = yn + fn*dt + Gn*dWn;
+        fnbar = odefun(tnp1, ybar, varargin{:});
+        Gnbar = sdefun(tnp1, ybar, varargin{:});
+        sol.yp(:,indx) = 0.5*(fn + fnbar)*dt + 0.5*(Gn + Gnbar)*dWn;
+        sol.y(:,indx+1) = yn + sol.yp(:,indx);
     end
-    
-    % Complete the final Euler step
-    F = odefun(sol.x(end), sol.y(:,end), varargin{:});
-    G = sdefun(sol.x(end), sol.y(:,end), varargin{:});
-    sol.yp(:,end) = F*dt + G*sol.dW(:,end);
 
+    % Complete the final Stratonovich-Huen step
+    tn = sol.x(end);
+    tnp1 = tn+dt;
+    yn = sol.y(:,end);
+    dWn = sol.dW(:,end);
+    fn = odefun(tn, yn, varargin{:});
+    Gn = sdefun(tn, yn, varargin{:});
+    ybar = yn + fn*dt + Gn*dWn;
+    fnbar = odefun(tnp1, ybar, varargin{:});
+    Gnbar = sdefun(tnp1, ybar, varargin{:});
+    sol.yp(:,end) = 0.5*(fn + fnbar)*dt + 0.5*(Gn + Gnbar)*dWn;
+    
     % Execute the OutputFcn for the final entry in tspan.
     if ~isempty(OutputFcn)
         % call the output function

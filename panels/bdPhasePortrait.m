@@ -1,8 +1,14 @@
 classdef bdPhasePortrait < handle
-    %bdPhasePortrait - a GUI tab panel for displaying phase portraits.
+    %bdPhasePortrait Brain Dynamics GUI panel for phase portraits.
     %   Displays 2D and 3D trajectories in the Brain Dynamics Toolbox GUI.
+    %
+    %SYS OPTIONS
+    %   sys.gui.bdPhasePortrait.title      Name of the panel (optional)
+    %
+    %AUTHORS
+    %  Stewart Heitmann (2016a)
 
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

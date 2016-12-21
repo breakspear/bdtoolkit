@@ -1,9 +1,16 @@
 classdef bdLatexPanel < handle
-    %bdLatexPanel - a GUI tab panel for displaying latex equations.
+    %bdLatexPanel - Brain Dynamics GUI panel for Latex equations.
     %   Displays mathematical equations in the Brain Dynamics Toolbox GUI
     %   using the MATLAB built-in latex interpreter.
-    
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    %
+    %SYS OPTIONS
+    %   sys.gui.bdLatexPanel.title      String name of the panel (optional)
+    %   sys.gui.bdLatexPanel.latex      Cell array of latex strings
+    %
+    %AUTHORS
+    %  Stewart Heitmann (2016a)
+
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

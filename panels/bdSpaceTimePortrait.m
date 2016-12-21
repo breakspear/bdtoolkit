@@ -1,9 +1,14 @@
 classdef bdSpaceTimePortrait < handle
-    %bdSpaceTimePortrait - a GUI tab panel for displaying space-time plots.
+    %bdSpaceTimePortrait Brain Dynamics GUI panel for space-time plots.
     %   Displays space-time plots in the Brain Dynamics Toolbox GUI.
     %
+    %SYS OPTIONS
+    %   sys.gui.bdSpaceTimePortrait.title    Name of the panel (optional)
+    %
+    %AUTHORS
+    %  Stewart Heitmann (2016a)
 
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

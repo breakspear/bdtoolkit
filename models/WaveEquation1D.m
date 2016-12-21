@@ -12,8 +12,11 @@ function sys = WaveEquation1D(n)
     %   n = 100;                    % number of spatial nodes
     %   sys = WaveEquation1D(n);    % construct our system
     %   gui = bdGUI(sys);           % run the GUI application
+    %
+    % Authors
+    %   Stewart Heitmann (2016a)
     
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

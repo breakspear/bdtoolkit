@@ -1,9 +1,11 @@
 classdef bdControl < handle
-    % bdControl  Control panel for the Brain Dynamics Toolbox.
-    %   This class is part of the toolbox graphic user interface.
-    %   It is not intended to be called directly by users.
-    
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    %bdControl  Control panel for the Brain Dynamics Toolbox.
+    %  Internal toolbox object not intended to be called by end-users.
+    % 
+    %AUTHORS
+    %  Stewart Heitmann (2016a)
+
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

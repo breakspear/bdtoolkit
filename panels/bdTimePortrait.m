@@ -1,8 +1,14 @@
 classdef bdTimePortrait < handle
-    %bdTimePortrait - a GUI tab panel for displaying time plots.
+    %bdTimePortrait  Brain Dynamics GUI panel for time plots.
     %   Displays time plots in the Brain Dynamics Toolbox GUI.
+    %
+    %SYS OPTIONS
+    %   sys.gui.bdTimePortrait.title        Name of the panel (optional)
+    %
+    %AUTHORS
+    %  Stewart Heitmann (2016a)
 
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

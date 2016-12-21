@@ -43,8 +43,11 @@
 %   plotyy(sol2.x,sol2.y, sol2.x,sol2.dW);        % plot 2nd result
 %   hold off                                      
 %   std(sol1.y - sol2.y)                          % results are identical
+%
+% Authors
+%   Stewart Heitmann (2016a)
 
-% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

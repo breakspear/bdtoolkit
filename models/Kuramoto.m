@@ -1,4 +1,4 @@
-% Kuramoto - Coupled Phase Oscillators
+% Kuramoto - Kuramoto Phase Oscillator Network
 %   Constructs a Kuramoto network with n nodes.
 %       theta_i' = omega_i + SUM_j Kij*sin(theta_i-theta_j)
 %   where 
@@ -12,8 +12,10 @@
 %   sys = Kuramoto(Kij);    % construct the system struct
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 %
+% Authors
+%   Stewart Heitmann (2016a)
 
-% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

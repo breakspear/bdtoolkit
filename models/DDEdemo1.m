@@ -1,4 +1,4 @@
-% DDEdemo1  Example Delay Differential Equations with constant delays 
+% DDEdemo1  Delay Differential Equations with constant delays 
 %   This is based on the simple example of Wille' and Baker for DDE23.
 %   Extra parameters (a,b,c,d) have been included for demonstration.
 %   
@@ -48,8 +48,10 @@
 %   xlabel('time');
 %   legend('y1','y2','y3');
 %
+% Authors
+%   Stewart Heitmann (2016a)
 
-% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

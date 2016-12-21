@@ -1,23 +1,26 @@
 function outdata = bdLoadMatrix(name,info)
-    % bdLoadMatrix opens a dialog box for loading matrix data from file.
-    % Usage:
-    %    outdata = bdLoadMatrix(name,msg)
-    % where
-    %    name is the title of the dialog box
-    %    info is a multi-line string displayed to the user
+    %bdLoadMatrix Dialog box for loading matrix data from file.
+    %Usage:
+    %   outdata = bdLoadMatrix(name,msg)
+    %where
+    %   name is the title of the dialog box
+    %   info is a multi-line string displayed to the user
     %
-    % Returns: 
-    %    outdata the user-selected matrix or [] if the user cancels. 
+    %RETURNS 
+    %   outdata the user-selected matrix or [] if the user cancels. 
     %
-    % Example:
-    %    name = 'mymodel';
-    %    info = {'My Model','','Load the connectivity matrix, Kij'};
-    %    Kij = bdLoadMatrix(name,info);
-    %    if isempty(Kij)
-    %       disp('User cancelled the operation');
-    %    end
- 
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    %EXAMPLE
+    %   name = 'mymodel';
+    %   info = {'My Model','','Load the connectivity matrix, Kij'};
+    %   Kij = bdLoadMatrix(name,info);
+    %   if isempty(Kij)
+    %      disp('User cancelled the operation');
+    %   end
+    %
+    %AUTHORS
+    %  Stewart Heitmann (2016a)
+
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

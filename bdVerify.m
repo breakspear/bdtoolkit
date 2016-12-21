@@ -1,18 +1,21 @@
 function bdVerify(sys)
-    % BdVerify - checks the format of a sys struct for the Brain Dynamics Toolkit.
-    % Use bdVerify to check the validty of a sys struct for a custom model.
+    %BdVerify - Verify the format of a sys struct.
+    %Use bdVerify to check the validty of a Brain Dynamics sys struct.
     %
-    % Example:
-    %   >> sys = ODEdemo1();
-    %   >> bdVerify(sys);
-    %   Calling Y = sys.odefun(t,Y0,a,b)
-    %   where t=0 and Y0 is size [1 1]
-    %   returns Y as size [1 1]
-    %   sys.odefun format is OK
-    %   ---
-    %   ALL TESTS PASSED OK
-
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    %EXAMPLE
+    %  >> sys = ODEdemo1();
+    %  >> bdVerify(sys);
+    %  Calling Y = sys.odefun(t,Y0,a,b)
+    %  where t=0 and Y0 is size [1 1]
+    %  returns Y as size [1 1]
+    %  sys.odefun format is OK
+    %  ---
+    %  ALL TESTS PASSED OK
+    %
+    %AUTHORS
+    %  Stewart Heitmann (2016a)
+    
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

@@ -1,4 +1,4 @@
-% HopfieldNet  Continuous Hopfield betwork
+% HopfieldNet  Continuous Hopfield network
 %   Constructs a continuous Hopfield network with n nodes.
 %       tau * V' = -V + W*F(V) + I
 %   where V is (nx1) vector on neuron potentials,
@@ -14,8 +14,10 @@
 %   sys = HopfieldNet(Wij); % construct the system struct
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 %
+% Authors
+%   Stewart Heitmann (2016a)
 
-% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

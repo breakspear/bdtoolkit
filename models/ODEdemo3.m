@@ -1,5 +1,5 @@
 function sys = ODEdemo3(Kij)
-    % ODEdemo3  Example of n coupled van der Pol equations
+    % ODEdemo3  System of N coupled van der Pol equations
     %   Implements a set of n coupled van der Pol equation
     %        Ui' = Vi
     %        Vi' = a*(1-Ui^2)*Vi - Ui - b*Kij*Ui
@@ -48,8 +48,11 @@ function sys = ODEdemo3(Kij)
     %   plot(tsol,U); xlabel('time'); ylabel('U');   % plot the U solution
     %   subplot(2,1,2); 
     %   plot(tsol,V); xlabel('time'); ylabel('V');   % plot the V solution
+    %
+    % Authors
+    %   Stewart Heitmann (2016a)
 
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

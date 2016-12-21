@@ -1,4 +1,4 @@
-% NeuralNetDDE3 - Neural network with constant transmission delays
+% NeuralNetDDE3  Neural network with connection-specific transmission delays
 %   Implements an extreme time-delayed firing-rate neural network
 %        tau * V'(t) = -V(t) + F(a*Kij*V(t-dij) + Ii)
 %   where each connection ij has a specific time delay, dij.
@@ -18,8 +18,10 @@
 %   sys = NeuralNetDDE2(Kij);   % construct the system struct
 %   gui = bdGUI(sys);           % Open the Brain Dynamics GUI
 %
+% Authors
+%   Stewart Heitmann (2016a)
 
-% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

@@ -1,4 +1,79 @@
-%odeEuler  Solve differential equations using the fixed-step Euler method.
+%odeEuler  Solve ODE using the fixed-step Euler method.
+%   SOL = odeEuler(ODEFUN,TSPAN,Y0,OPTIONS,...)
+%   uses a fixed-step Euler method to integrate a system of Ordinary 
+%   Differential Equations of the form 
+%      dy/dt = F(t,y,...)
+% 
+%   The method integrates the equations for time span TSPAN=[T0 TFINAL]
+%   from initial conditions Y0. ODEFUN is a handle to the user-defined
+%   F(t,y,...) function which an (nx1) vector Y and retruns an (nx1)
+%   vector dYdt, for example:
+%
+%   function dY = odefun(t,Y,theta,mu)  
+%       dY = theta .* (mu - Y);
+%   end
+%
+%   Solver-specific options are passed via the OPTIONS struct.
+%
+%   OPTIONS =
+%       InitialStep: [dt]          integrator time step (optional)
+%         OutputFcn: @(t,Y,flag)   handle to user-defined output function
+%
+%   The solution is returned in the SOL struct as per ode45, ode23, etc.
+%   The solution variables can be interpolated using bdEval.
+%
+%   SOL =
+%       x: [1xt]  time points
+%       y: [nxt]  y(t) values
+%      yp: [nxt]  y'(t) values
+%
+%EXAMPLE
+%  % anonymous versions of F() function shown above.
+%  odefun = @(t,Y,theta,mu) theta.*(mu - Y);
+%  tspan = [0 10];                  % time domain
+%  n = 13;                          % number of equations
+%  Y0 = ones(n,1);                  % initial conditions
+%  options.InitialStep = 0.01;      % step size, dt
+%  theta = 1;                       % model-specific parameter
+%  mu = -1;                         % model-specific parameter
+%  sol = odeEuler(odefun,tspan,Y0,options,theta,mu);
+%  T = linspace(0,10,100);          % time domain of interest
+%  Y = bdEval(sol,T);               % interpolate
+%  plot(T,Y);                       % plot the results
+%
+%SEE ALSO
+%  ODEdemo1, ODEdemo2 and ODEdemo3
+%
+%AUTHORS
+%  Stewart Heitmann (2016a)
+
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
+% All rights reserved.
+%
+% Redistribution and use in source and binary forms, with or without
+% modification, are permitted provided that the following conditions
+% are met:
+%
+% 1. Redistributions of source code must retain the above copyright
+%    notice, this list of conditions and the following disclaimer.
+% 
+% 2. Redistributions in binary form must reproduce the above copyright
+%    notice, this list of conditions and the following disclaimer in
+%    the documentation and/or other materials provided with the
+%    distribution.
+%
+% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+% "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+% LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+% FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+% COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+% INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+% BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+% LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+% CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+% LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+% ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+% POSSIBILITY OF SUCH DAMAGE.   
 function sol = odeEuler(ode,tspan,y0,options,varargin)
     % The InitialStep option defines our time step
     dt = odeget(options,'InitialStep');

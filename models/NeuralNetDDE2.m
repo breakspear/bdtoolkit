@@ -1,4 +1,4 @@
-% NeuralNetDDE Simple neural network with constant transmission delays
+% NeuralNetDDE2  Neural network with neuron-specific transmission delays
 %   Implements a general time-delayed firing-rate neural network
 %        tau * Vi'(t) = -Vi(t) + F(k*Kij*Vi(t-di) + Ii)
 %   where each neuron has a specific time delay
@@ -15,8 +15,10 @@
 %   sys = NeuralNetDDE2(n);     % construct the system struct
 %   gui = bdGUI(sys);           % Open the Brain Dynamics GUI
 %
+% Authors
+%   Stewart Heitmann (2016a)
 
-% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

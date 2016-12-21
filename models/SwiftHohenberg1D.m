@@ -1,5 +1,5 @@
-function sys = SwiftHohenberg(n,dx)
-    % SwiftHohenberg  Discretised Partial Differential Equation
+function sys = SwiftHohenberg1D(n,dx)
+    % SwiftHohenberg1D  Discretised Swift-Hohenberg PDE
     %   The Swift-Hohenberg problem
     %        d_t u(x,t) = -(1+d_x^2) u(x,t) - mu*u + nu*u^3 - u^5
     %   discretised in space as a set of coupled ODEs
@@ -14,8 +14,11 @@ function sys = SwiftHohenberg(n,dx)
     %   sys = SwiftHohenberg1D(n,dx);   % construct the system struct
     %   gui = bdGUI(sys);               % open the Brain Dynamics GUI
     %
+    %
+    % Authors
+    %   Stewart Heitmann (2016a)
 
-    % Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

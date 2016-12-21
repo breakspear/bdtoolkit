@@ -1,8 +1,10 @@
 # Brain Dynamics Toolbox
+*Version 2016a* 
+
 The Brain Dynamics Toolbox provides a convenient graphical user interface for exploring dynamical systems in MATLAB.  Users implement their own dynamical equations (as matlab scripts) and use the toolbox graphical interface to view phase portraits and other plots in real-time. The same models can also be run as MATLAB scripts without the graphics interface. The toolbox includes solvers for Ordinary Differential Equations (ODE), Delay Differential Equations (DDE) and Stochastic Differential Equations (SDE). The plotting tools are modular so that users can create custom plots according to their needs. Custom solver routines can also be used. The user interface is designed for dynamical systems with large numbers of variables and parameters, as is often the case in dynamical models of the brain. Hence the name, *Brain Dynamics Toolbox*.
- 
+
 ## Getting Started
-The main toolbox scripts are located in the top level of the *bdtoolkit* directory. The solver routines (*solvers*) and plotting tools (*panels*) are located in their own subdirectories.  The *models* subdirectory contains example dynamical systems. All of these directories should be in your matlab PATH variable. You may then run the *bdGUI* application and load one of the pre-defined models (eg HindmarshRose.mat) using the *System-Load* menu.
+The toolbox requires MATLAB 2014b or better. Unzip the toolbox files into a directory of your choosing. The main toolbox scripts are located in the top level of the *bdtoolkit* directory. The solver routines (*solvers*) and plotting tools (*panels*) are located in their own subdirectories.  The *models* subdirectory contains example dynamical systems. All of these directories should be in your matlab PATH variable. You may then run the *bdGUI* application and load one of the pre-defined models (eg HindmarshRose.mat) using the *System-Load* menu.
 
 ```matlab
     >> addpath bdtoolkit
@@ -84,7 +86,21 @@ The `bdEditScalars(pardef,name,descr)`, `bdEditVector(indata,name,columnName)` a
 ## Going Further
 The best way to proceed is to inspect the example code in the *models* directory. In particular, *ODEdemo1* demonstrates an introductory Ordinary Differential Equation. Likewise, *DDEdemo1* demonstrates an introductory Delay Differential Equation and *SDEdemo1* deomstrates an introductory Stochastic Differential Equation
 
--
-**Stewart Heitmann** <heitmann@ego.id.au>
+## BSD License
+This software is freely available under the 2-clause BSD license.  
 
-12th Dec 2016
+> Copyright (C) 2016, Queensland Institute of Medical Research (QIMR).
+> All rights reserved.
+> 
+> Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+> 
+>1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+>
+>2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+>
+>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+## Authors
+* Stewart Heitmann, <heitmann@ego.id.au>
+* Matthew Aburn
+

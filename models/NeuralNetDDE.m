@@ -1,4 +1,4 @@
-% NeuralNetDDE Simple neural network with constant transmission delays
+% NeuralNetDDE Neural network with constant transmission delays
 %   Implements a simple time-delayed firing-rate neural network  
 %        tau * V'(t) = -V(t) + F(Ia + Ib + Ic + Iapp - theta)
 %   where
@@ -33,8 +33,11 @@
 %   V = bdEval(sol,tplot);                                 % extract solution
 %   plot(tplot,V);                                         % plot the result
 %   xlabel('time'); ylabel('V');                           % axis labels
+%
+% Authors
+%   Stewart Heitmann (2016a)
 
-% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

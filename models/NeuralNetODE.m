@@ -1,4 +1,4 @@
-% NeuralNetODE Simple firing-rate neural network
+% NeuralNetODE Firing-rate neural network
 %   Constructs a simple firing-rate neural network 
 %        tau * V' = -V + F(k*Kij*V + I - b)
 %   where V is a (nx1) vector of firing rates,
@@ -16,8 +16,10 @@
 %   sys = NeuralNetODE(Kij);    % construct the system struct
 %   gui = bdGUI(sys);           % open the Brain Dynamics GUI
 %
+% Authors
+%   Stewart Heitmann (2016a)
 
-% Copyright (c) 2016, Stewart Heitmann <heitmann@ego.id.au>
+% Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
