@@ -94,7 +94,8 @@ function sys = ODEdemo3(Kij)
               
     % Specify ODE solvers and default options
     sys.odesolver = {@ode45,@ode23,@ode113};    % ODE solvers
-    sys.odeoption = odeset('RelTol',1e-6);      % ODE solver options
+    sys.odeoption.RelTol = 1e-6;                % ODE solver options
+    sys.odeoption.AbsTol = 1e-6;                % see odeset 
 
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 

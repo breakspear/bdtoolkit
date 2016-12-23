@@ -20,14 +20,15 @@ The brain dynamics toolkit uses the Matlab ODE and DDE solvers to integrate (sol
 A typical system struct has the following fields:
 
 ```matlab
-    sys.odefun = @odefun;      % Handle to our ODE function
-    sys.pardef = {'a',-1;      % ODE parameters {'name', value}
+    sys.odefun = @odefun;         % Handle to our ODE function
+    sys.pardef = {'a',-1;         % ODE parameters {'name', value}
                   'b',0.01};
-    sys.vardef = {'y',rand};   % ODE variables {'name',value}
-    sys.tspan = [0 5];         % solution time span    
-    sys.odesolver = {@ode45,   % matlab ODE solvers
+    sys.vardef = {'y',rand};      % ODE variables {'name',value}
+    sys.tspan = [0 5];            % solution time span    
+    sys.odesolver = {@ode45,      % matlab ODE solvers
                      @ode23} 
-    sys.odeoption = odeset('RelTol',1e-6);
+    sys.odeoption.RelTol = 1e-6;  % solver options
+    sys.odeoption.AbsTol = 1e-6;  % same as odeset
 ```
 
 The *sys.odefun* field is a function handle to a user-defined function of the form:
@@ -89,9 +90,6 @@ The best way to proceed is to inspect the example code in the *models* directory
 ## BSD License
 This software is freely available under the 2-clause BSD license.  
 
-> Copyright (C) 2016, QIMR Berghofer Medical Research Institute
-> All rights reserved.
-> 
 > Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 > 
 >1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
