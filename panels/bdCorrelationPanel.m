@@ -136,19 +136,20 @@ classdef bdCorrelationPanel < handle
             solvertype = control.solvermap(control.solveridx).solvertype;
 
             % We must also be mindful that interpolating solutions from
-            % stochastic differential eauations is fraught because they
-            % involve random processes.
+            % stochastic differential equations is difficult because the value
+            % returned must be drawn from a specific distribution dependent on
+            % any already determined surrounding points and time- and state-
+            % dependent diffusion rate.
             switch solvertype
                 case 'sde'
-                    % Stochastic Differential Equations draw on random
-                    % processes which cannot be meaningfully inter-
-                    % polated. We know the SDE solver uses fixed time
-                    % steps so we use the solver's own time steps as our
-                    % interpolant time steps.
+                    % We have not yet implemented correct interpolation of 
+                    % stochastic processes. We know the SDE solver uses
+                    % fixed time steps so we use the solver's own time steps
+                    % as our interpolant time steps.
                     tinterp = find(control.sol.x>=0);
 
                 otherwise
-                    % We assume that interpolation is meaningful for all
+                    % We assume that interpolation is correct for all
                     % other solvers. We choose the number of time
                     % steps of the interpolant to be similar to the
                     % number of steps chosen by the solver. This avoids
