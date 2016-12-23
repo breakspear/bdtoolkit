@@ -1,6 +1,9 @@
 % SDEdemo3 Ito Stochastic Differential Equation
+%   An example scalar system with multiplicative noise.
+%     dy = -(a + y*b^2)*(1-y^2)*dt + b(1-y^2)*dW
 %
 % Authors
+%   Stewart Heitmann (2016a)
 %   Matthew Aburn (2016a)
  
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
@@ -42,7 +45,7 @@ function sys = SDEdemo3()
     % Specify SDE solvers and default options
     sys.sdesolver = {@sdeIto};          % Pertinent SDE solvers
     sys.sdeoption.InitialStep = 0.005;  % SDE solver step size (optional)
-    sys.sdeoption.NoiseSources = 1;     % Number of Weiner noise processes
+    sys.sdeoption.NoiseSources = 1;     % Number of Wiener noise processes
 
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
@@ -52,8 +55,7 @@ function sys = SDEdemo3()
         '\qquad $dy = -(a + y\,b^2)(1-y^2)\,dt + b(1-y^2)\,dW_t$';
         'where';
         '\qquad $y(t)$ is the dynamic variable,';
-        '\qquad $a$ and $b$ are scalar constants,';
-        '\qquad $dW_t$ is a Weiner process.'};
+        '\qquad $a$ and $b$ are scalar constants.'};
     
     % Include the Time Portrait panel in the GUI
     sys.gui.bdTimePortrait.title = 'Time Portrait';

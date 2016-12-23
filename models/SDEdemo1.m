@@ -1,15 +1,15 @@
 % SDEdemo1 Geometric Brownian motion
-%   Stochastic Differential Equation (SDE)
+%   Ito Stochastic Differential Equation (SDE)
 %        dy(t) = mu*y(t)*dt + sigma*y(t)*dW(t)
 %   decribing geometric Brownian motion. The Brain Dynamics toolbox
 %   requires the determeinstic and stochastic parts of the SDE to be
-%   implemented separately. In this case, the deterministic part is  
+%   implemented separately. In this case, the deterministic coefficient is  
 %        F(t,y) = mu*y(t)
-%   and the stochastic part is
-%        G(t,y) = sigma*y(t)*randn
+%   and the stochastic coefficient is
+%        G(t,y) = sigma*y(t)
 %   The toolbox numerically integrates the combined equations using the
-%   fixed step Euler method. Specifically, each step is computed as
-%        dy(t+dt) = F(t,y)*dt + sqrt(dt)*G(t,y) 
+%   fixed step Euler-Maruyama method. Specifically, each step is computed as
+%        dy(t) = F(t,y)*dt + G(t,y)*sqrt(dt)*randn()
 %   where F(t,y) is implemented by sys.odefun(t,y,a,b)
 %   and G(t,y) is implemented by sys.sdefun(t,y,a,b).
 %
@@ -26,15 +26,15 @@
 %   sol = bdSolve(sys);                               % solve
 %   t = sol.x;                                        % time steps
 %   Y = sol.y;                                        % solution variables
-%   dW = sol.dW;                                      % noise samples
+%   dW = sol.dW;                                      % Wiener increments
 %   ax = plotyy(t,Y, t,dW);                           % plot the result
 %   xlabel('time');
 %   ylabel(ax(1),'Y');
 %   ylabel(ax(2),'dW');
 %
-% Example 3: Using pre-generated (fixed) random walks
+% Example 3: Using pre-generated (fixed) random values
 %   sys = SDEdemo1();                             % get system struct
-%   sys.sdeoption.randn = randn(1,101);           % our random sequences
+%   sys.sdeoption.randn = randn(1,101);           % our standard normal values
 %   sys.tspan = [0 10];                           % time domain
 %   sol1 = bdSolve(sys);                          % solve
 %   sol2 = bdSolve(sys);                          % solve (again)
@@ -86,18 +86,17 @@ function sys = SDEdemo1()
    % Specify SDE solvers and default options
     sys.sdesolver = {@sdeIto};          % Relevant SDE solvers
     sys.sdeoption.InitialStep = 0.01;   % SDE solver step size (optional)
-    sys.sdeoption.NoiseSources = 1;     % Number of Weiner noise processes
+    sys.sdeoption.NoiseSources = 1;     % Number of driving Wiener processes
 
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
     sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo1}';
         '';
-        'A Stochastic Differential Equation describing geometric Brownian motion';
+        'An Ito Stochastic Differential Equation describing geometric Brownian motion';
         '\qquad $dY = \mu\,Y\,dt + \sigma\,Y\,dW_t$';
         'where';
         '\qquad $Y(t)$ is the dynamic variable,';
-        '\qquad $\mu$ and $\sigma$ are scalar constants,';
-        '\qquad $dW_t$ is a Weiner process.'};
+        '\qquad $\mu$ and $\sigma$ are scalar constants.'};
     
     % Include the Time Portrait panel in the GUI
     sys.gui.bdTimePortrait.title = 'Time Portrait';
@@ -109,12 +108,12 @@ function sys = SDEdemo1()
     sys.self = str2func(mfilename);
 end
 
-% The deterministic function.
+% The deterministic coefficient function.
 function F = odefun(t,Y,a,b)  
     F = a*Y;
 end
 
-% The stochastic function.
+% The noise coefficient function.
 function G = sdefun(t,Y,a,b)  
     G = b*Y;
 end
