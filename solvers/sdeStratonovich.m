@@ -1,11 +1,11 @@
-%sdeStratonovich  Solve Stratonovich SDE using the Stratonovich-Heun method
+%sdeStratonovich  Solve Stratonovich SDE using the Stratonovich-Heun method.
 %   SOL = sdeStratonovich(ODEFUN,SDEFUN,TSPAN,Y0,OPTIONS,...)
-%   uses the Stratonovich-Huen method to integrate a system of stochastic
-%   differential equations of the form 
+%   uses the Stratonovich-Heun method to integrate a system of Stratonovich 
+%   stochastic differential equations of the form 
 %      dy = F(t,y,...)*dt + G(t,y,...)*dW(t)
 %   where F(t,y,...)*dt is the deterministic part and G(t,y,...)*dW(t) is
-%   the stochastic part. dW(t) is a Weiner (Brownian) noise process.
-%   The differential equations are assumed to be derived with Ito calculus.
+%   the stochastic part. dW(t) is a vector of independent Wiener increments.
+%   The differential equations are assumed to be in Stratonovich form.
 % 
 %   The method integrates the equations for time span TSPAN=[T0 TFINAL]
 %   from initial conditions Y0. ODEFUN and SDEFUN are handles to the
@@ -21,7 +21,7 @@
 %
 %   Note that ODEFUN must return an (nx1) column vector whereas SDEFUN
 %   must return an (nxm) matrix of noise coefficients. The solver
-%   matrix multiplies the noise coefficicents by the (mx1) noise terms
+%   matrix-multiplies the noise coefficicents by the (mx1) noise terms
 %   in dW(t) to obtain an (nx1) column vector.
 %
 %   Solver-specific options are passed via the OPTIONS struct, of which,
@@ -30,33 +30,31 @@
 %   OPTIONS =
 %      NoiseSources: [m]           number of noise processes in dW
 %       InitialStep: [dt]          integrator time step (optional)
-%             randn: [mxt]         pre-generated random noise (optional)
+%             randn: [mxT]         pre-generated standard normal random values
 %         OutputFcn: @(t,Y,flag)   handle to user-defined output function
 %
 %   The solution is returned in the SOL struct as per ode45, ode23, etc.
-%   Interpolating the solution is possible (using bdEval) but it is not
-%   recommended because interpolation of a stochastic process is meaning-
-%   less. The values of y(t) and y'(t) can instead be read directly from
-%   the struct.
+%   Interpolating the solution (using bdEval) is not recommended because
+%   bdEval does not correctly interpolate stochastic processes.
 %
 %   SOL =
-%       x: [1xt]  time points
-%       y: [nxt]  y(t) values
-%      yp: [nxt]  y'(t) values
-%      dW: [mxt]  Weiner noise samples
+%       x: [1xT]  time points
+%       y: [nxT]  y(t) values
+%      yp: [nxT]  the change in y over the following time step, divided by dt
+%      dW: [mxT]  Wiener increments 
 %
-%  The Weiner noise is computed as dW=sqrt(dt)*randn(m,t) where m is
-%  the number of Weiner processes (NoiseSources) and t is the number
+%  The Wiener increments are computed as dW=sqrt(dt)*randn(m,T) where m is
+%  the number of driving Wiener processes (NoiseSources) and T is the number
 %  of time points in the solution. The time points [T0:dt:TFINAL]
-%  are equi-spaced with dt defined by the INITIALSTEP option. If 
+%  are equi-spaced with time step dt defined by the INITIALSTEP option. If
 %  INITIALSTEP is undefined then the solver defaults to 101 time steps
 %  by setting dt=(TFINAL-T0)/100. 
 %
-%  Alternatvely, the user may supply pre-computed random samples via the
-%  RANDN field of the OPTIONS struct. Those random samples must be drawn
-%  from a Normal distribution using the Matlab RANDN(m,t) function. The
-%  INITIALSTEP option is ignored becasue the step size dt=(TFINAL-T0)/(t-1)
-%  is determined by TSPAN=[T0 TFINAL] and the number of time points (t)
+%  Alternatvely, the user may supply pre-computed random values via the
+%  RANDN field of the OPTIONS struct. Those values must be drawn from a normal
+%  distribution with mean 0 and std 1 using the Matlab RANDN(m,T) function.
+%  The INITIALSTEP option is ignored becasue the step size dt=(TFINAL-T0)/(T-1)
+%  is determined by TSPAN=[T0 TFINAL] and the number of time points (T)
 %  in RANDN.
 %
 %EXAMPLE
@@ -66,7 +64,7 @@
 %  tspan = [0 10];                  % time domain
 %  n = 13;                          % number of equations
 %  Y0 = ones(n,1);                  % initial conditions
-%  options.NoiseSources = n;        % number of noise sources
+%  options.NoiseSources = n;        % number of driving Wiener processes
 %  options.InitialStep = 0.01;      % step size, dt
 %  theta = 1;                       % model-specific parameter
 %  mu = -1;                         % model-specific parameter
@@ -111,7 +109,7 @@
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.   
 function sol = sdeStratonovich(odefun,sdefun,tspan,y0,options,varargin)
-    % Get the number of noise sources (Weiner processes).
+    % Get the number of noise sources (driving Wiener processes).
     if isfield(options,'NoiseSources')
         m = options.NoiseSources;
     else
@@ -151,13 +149,13 @@ function sol = sdeStratonovich(odefun,sdefun,tspan,y0,options,varargin)
     sol.y = NaN(numel(y0),tcount);      % values of y(t)
     sol.yp = sol.y;                     % values of dy(t)/dt
 
-    % compute the Weiner processes
+    % compute the Wiener increments
     if isfield(options,'randn') && ~isempty(options.randn)
         % The user has supplied us with random samples,
         % we only need scale it by sqrt(dt)
         sol.dW = sqrt(dt) .* options.randn;
     else
-        % Generate the Weiner noise (scaled by sqrt(dt))
+        % Generate the Wiener increments (scaled by sqrt(dt))
         sol.dW = sqrt(dt) .* randn(m,tcount);
     end
     
@@ -181,7 +179,7 @@ function sol = sdeStratonovich(odefun,sdefun,tspan,y0,options,varargin)
     % tspan to the last.
     tspanidx = 1;           % Current index of tspan
         
-    % Fixed-step Stratonovich-Huen method
+    % Fixed-step Stratonovich-Heun method
     sol.y(:,1) = y0;
     for indx=1:tcount-1        
         % Execute the OutputFcn whenever the time step reaches the next
@@ -203,7 +201,7 @@ function sol = sdeStratonovich(odefun,sdefun,tspan,y0,options,varargin)
             tspanidx = tspanidx+1;
         end
 
-        % Stratonovich-Huen step
+        % Stratonovich-Heun step
         tn = sol.x(indx);
         tnp1 = sol.x(indx+1);
         yn = sol.y(:,indx);
@@ -217,7 +215,7 @@ function sol = sdeStratonovich(odefun,sdefun,tspan,y0,options,varargin)
         sol.y(:,indx+1) = yn + sol.yp(:,indx);
     end
 
-    % Complete the final Stratonovich-Huen step
+    % Complete the final Stratonovich-Heun step
     tn = sol.x(end);
     tnp1 = tn+dt;
     yn = sol.y(:,end);

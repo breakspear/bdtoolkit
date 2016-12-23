@@ -18,16 +18,16 @@
 %   sol = bdSolve(sys);                                % solve
 %   t = sol.x;                                         % time steps
 %   Y = sol.y;                                         % solution variables
-%   dW = sol.dW;                                       % noise samples
+%   dW = sol.dW;                                       % Wiener increments
 %   subplot(1,2,1); 
 %   plot(t,Y); xlabel('time'); ylabel('Y');            % plot time trace 
 %   subplot(1,2,2);
 %   histfit(dW(:)); xlabel('dW'); ylabel('count');     % noise histogram
 %
-% Example 3: Using pre-generated (fixed) random walks
+% Example 3: Using pre-generated (fixed) random values
 %   n = 20;                                       % number of processes
 %   sys = SDEdemo2(n);                            % get system struct
-%   sys.sdeoption.randn = randn(n,101);           % our random sequences
+%   sys.sdeoption.randn = randn(n,101);           % our standard normal values
 %   sys.tspan = [0 10];                           % time domain
 %   sol1 = bdSolve(sys);                          % solve
 %   sol2 = bdSolve(sys);                          % solve (again)
@@ -79,7 +79,7 @@ function sys = SDEdemo2(n)
    % Specify SDE solvers and default options
     sys.sdesolver = {@sdeIto};          % Pertinent SDE solvers
     sys.sdeoption.InitialStep = 0.01;   % SDE solver step size (optional)
-    sys.sdeoption.NoiseSources = n;     % Number of Weiner noise processes
+    sys.sdeoption.NoiseSources = n;     % Number of Wiener noise processes
 
     % Include the Latex (Equations) panel in the GUI
     sys.gui.bdLatexPanel.title = 'Equations'; 
@@ -91,9 +91,7 @@ function sys = SDEdemo2(n)
         '\qquad $Y(t)$ is a vector of dynamic variables ($n$ x $1$),';
         '\qquad $\theta>0$ is the rate of convergence to the mean,';
         '\qquad $\mu$ is the (long-term) mean,';
-        '\qquad $\sigma>0$ is the volatility,';
-        '\qquad $dW_i(t)$ is a Weiner process,';
-        '\qquad $i{=}1 \dots n$.';
+        '\qquad $\sigma>0$ is the volatility.'};
         '';
         'Notes';
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
@@ -114,12 +112,12 @@ function sys = SDEdemo2(n)
     sys.self = @self;    
 end
 
-% The deterministic function.
+% The deterministic coefficient function.
 function F = odefun(t,Y,theta,mu,sigma)  
     F = theta .* (mu - Y);
 end
 
-% The stochastic function.
+% The noise coefficient function.
 function G = sdefun(t,Y,theta,mu,sigma)
     G = sigma .* eye(numel(Y));
 end
