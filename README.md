@@ -89,7 +89,7 @@ The best way to proceed is to inspect the example code in the *models* directory
 ## BSD License
 This software is freely available under the 2-clause BSD license.  
 
-> Copyright (C) 2016, Queensland Institute of Medical Research (QIMR).
+> Copyright (C) 2016, QIMR Berghofer Medical Research Institute
 > All rights reserved.
 > 
 > Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:

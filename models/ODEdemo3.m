@@ -52,7 +52,7 @@ function sys = ODEdemo3(Kij)
     % Authors
     %   Stewart Heitmann (2016a)
 
-    % Copyright (c) 2016, Queensland Institute Medical Research (QIMR)
+    % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
