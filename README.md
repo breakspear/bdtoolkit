@@ -101,5 +101,5 @@ This software is freely available under the 2-clause BSD license.
 ## Contributors
 * Michael Breakspear, Joint Project Leader 
 * Stewart Heitmann, Joint Project Leader & Lead Developer
-* Matthew Aburn, Stochastic Differential Equation Solvers
+* Matthew Aburn
 
