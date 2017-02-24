@@ -1,23 +1,23 @@
 %bdGetValues  Read all values from a pardef/vardef/lagdef cell array. 
-%   Returns all values in xxxdef as one monolithic column vector
+%   Returns the contents of all xxxdef.value fields as single monolithic
+%   column vector
 %Usage:
 %   Y = bdGetValues(xxxdef)
 %where
-%   xxxdef is a pardef, vardef, lagdef or auxdef cell array.
+%   xxxdef is any array of structs that contains a field called 'value', 
+%       such as sys.vardef, sys.pardef, sys.lagdef and sys.auxdef.
 %
 %EXAMPLE
-%  vardef = {'a',1; 'b',[2 3 4]; 'c',5};
-%  Y0 = bdGetValues(vardef)
+%   vardef = [ struct('name','a', 'value',1);
+%              struct('name','b', 'value',[2 3 4]);
+%              struct('name','c', 'value',[5 7 9 11; 6 8 10 12]);
+%              struct('name','d', 'value',13); ];
+%   Y0 = bdGetValues(vardef)
 %
-%  Y0 =
-%     1
-%     2
-%     3
-%     4
-%     5
+%   Returns Y0 as the column vector [1:13]'
 %
 %AUTHORS
-%  Stewart Heitmann (2016a)
+%  Stewart Heitmann (2016a, 2017a)
 
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -46,9 +46,10 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
+
 function vec = bdGetValues(xxxdef)
-    % extract the second column of vardef
-    vec = xxxdef(:,2);
+    % extract the value fields of vardef as a cell array
+    vec = {xxxdef.value}';
 
     % convert each cell entry to a column vector
     for indx=1:numel(vec)

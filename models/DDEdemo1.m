@@ -49,7 +49,7 @@
 %   legend('y1','y2','y3');
 %
 % Authors
-%   Stewart Heitmann (2016a)
+%   Stewart Heitmann (2016a,2017a)
 
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -79,25 +79,34 @@
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
 function sys = DDEdemo1()
-    sys.ddefun = @ddefun;               % Handle to our DDE function
-    sys.pardef = {'a',-1;               % DDE parameters {'name',value}
-                  'b', 1;
-                  'c',-1;
-                  'd', 1};
-    sys.lagdef = {'tau1',1;             % DDE lag parameters {'name',value}
-                  'tau2',0.2};
-    sys.vardef = {'y1',1;               % DDE variables {'name',value}
-                  'y2',1;
-                  'y3',1};
-    sys.tspan = [0 20];                 % default time span 
+    % Handle to our DDE function
+    sys.ddefun = @ddefun;
+    
+    % Our DDE parameters
+    sys.pardef = [ struct('name','a', 'value',-1);
+                   struct('name','b', 'value', 1);
+                   struct('name','c', 'value',-1);
+                   struct('name','d', 'value', 1) ];
+               
+    % Our DDE lag parameters
+    sys.lagdef = [ struct('name','tau1', 'value',1.0);
+                   struct('name','tau2', 'value',0.2) ];
+               
+    % Our DDE state variables
+    sys.vardef = [ struct('name','y1', 'value',1);
+                   struct('name','y2', 'value',1);
+                   struct('name','y3', 'value',1) ];
+              
+    % Default time span
+    sys.tspan = [0 20]; 
 
     % Specify DDE solvers and default options
     sys.ddesolver = {@dde23};                  % DDE solvers
     sys.ddeoption = ddeset('RelTol',1e-6);     % DDE solver options    
     
     % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{DDEdemo1}';
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = {'\textbf{DDEdemo1}';
         '';
         'Delay Differential Equation with constant time delays';
         '\qquad $\dot y_1(t) = a\,y_1(t-\tau_1)$';
@@ -113,13 +122,13 @@ function sys = DDEdemo1()
         '\qquad 2. Constant initial conditions apply for $t{<}t_0$' };
     
     % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait = [];
  
     % Include the Phase Portrait panel in the GUI
-    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+    sys.panels.bdPhasePortrait = [];
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver'; 
+    sys.panels.bdSolverPanel = []; 
     
     % Handle to this function. The GUI uses it to construct a new system. 
     sys.self = str2func(mfilename);

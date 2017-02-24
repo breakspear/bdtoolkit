@@ -1,13 +1,17 @@
-classdef bdCorrelationPanel < handle
-    %bdCorrelationPanel - Brain Dynamics GUI panel for cross-correlations.
-    %   Displays cross-correlations between variables of a dynamical
-    %   system.
+classdef bdCorrPanel < handle
+    %bdCorrPanel - Brain Dynamics GUI panel for linear correlation.
+    %   Displays the linear correlation matrix for the system variables.
+    %   This class implements a linear correlation matrix of the system
+    %   variables for the graphical user interface of the Brain Dynamics
+    %   Toolbox (bdGUI). Users never call this class directly. They instead
+    %   instruct the bdGUI application to load the panel by specifying
+    %   options in their model's sys struct.
     %
     %SYS OPTIONS
-    %   sys.gui.bdCorrelationPanel.title      Name of the panel (optional)
+    %   sys.panels.bdCorrPanel.title = 'Correlation'
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a)
+    %  Stewart Heitmann (2016a,2017a)
 
     % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -48,22 +52,22 @@ classdef bdCorrelationPanel < handle
         popup           % handle to variable selector
         varMap          % maps entries in vardef to rows in sol.y
         auxMap          % maps entries in auxdef to rows in sal
+        listener        % handle to listener
     end
     
     methods
-        function this = bdCorrelationPanel(tabgroup,control)
-            if ~isfield(control.sys.gui,'bdCorrelationPanel')
-                return      % we aren't wanted so quietly do nothing.
-            end
-            
-            % sys.gui.bdCorrelationPanel.title (optional)
-            if isfield(control.sys.gui.bdCorrelationPanel,'title')
-                title = control.sys.gui.bdCorrelationPanel.title;
-            else
-                title = 'Correlation';
-            end
+        function this = bdCorrPanel(tabgroup,control)
+            % Construct a new tab panel in the parent tabgroup.
+            % Usage:
+            %    bdCorrPanel(tabgroup,control)
+            % where 
+            %    tabgroup is a handle to the parent uitabgroup object.
+            %    control is a handle to the GUI control panel.
 
-           % map vardef entries to rows in sol
+            % apply default settings to sys.panels.bdTimePortrait
+            control.sys.panels.bdCorrPanel = bdCorrPanel.syscheck(control.sys);
+
+            % map vardef entries to rows in sol
             this.varMap = bdUtils.varMap(control.sys.vardef);
             if isfield(control.sys,'auxdef')
                 % map auxdef entries to rows in sal
@@ -74,7 +78,7 @@ classdef bdCorrelationPanel < handle
             end
             
             % construct the uitab
-            this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
+            this.tab = uitab(tabgroup,'title',control.sys.panels.bdCorrPanel.title, 'Tag','bdCorrPanelTab', 'Units','pixels');
             
             % get tab geometry
             parentw = this.tab.Position(3);
@@ -117,15 +121,33 @@ classdef bdCorrelationPanel < handle
                 'Parent', this.tab, ...
                 'Position',[posx posy posw posh]);
 
+            % construct the tab context menu
+            this.tab.UIContextMenu = uicontextmenu;
+            uimenu(this.tab.UIContextMenu,'Label','Close Panel', 'Callback',@(~,~) this.delete());
+
             % register a callback for resizing the panel
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
 
             % listen to the control panel for redraw events
-            addlistener(control,'redraw',@(~,~) this.render(control));    
+            this.listener = addlistener(control,'redraw',@(~,~) this.render(control));    
+        end
+        
+        % Destructor
+        function delete(this)
+            delete(this.listener);
+            delete(this.tab);          
+            % delete the menu if no more bdCorrPanel panels exist
+            %obj = findobj(this.fig,'Tag','bdCorrPanelTab');
+            %if isempty(obj)
+            %    obj = findobj(this.fig,'Tag','bdCorrPanelMenu');
+            %    if ~isempty(obj)
+            %        delete(obj);
+            %    end
+            %end
         end
         
         function render(this,control)
-            %disp('bdCorrelationPanel.render()')
+            %disp('bdCorrPanel.render()')
             
             % Cross-correlation assumes equi-spaced time steps. However
             % many of our solver are auto-steppers, so we must interpolate
@@ -224,5 +246,24 @@ classdef bdCorrelationPanel < handle
         
     end
     
+    methods (Static)
+        
+        % Check the sys.panels struct
+        function syspanel = syscheck(sys)
+            % Default panel settings
+            syspanel.title = 'Correlation';
+            
+            % Nothing more to do if sys.panels.bdCorrPanel is undefined
+            if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdCorrPanel')
+                return;
+            end
+            
+            % sys.panels.bdCorrPanel.title
+            if isfield(sys.panels.bdCorrPanel,'title')
+                syspanel.title = sys.panels.bdCorrPanel.title;
+            end
+        end
+        
+    end
 end
 

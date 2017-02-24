@@ -1,4 +1,4 @@
-% Kuramoto - Kuramoto Phase Oscillator Network
+% KuramotoNet - Network of Kuramoto Phase Oscillators
 %   Constructs a Kuramoto network with n nodes.
 %       theta_i' = omega_i + SUM_j Kij*sin(theta_i-theta_j)
 %   where 
@@ -13,7 +13,7 @@
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2016a)
+%   Stewart Heitmann (2016a,2017a)
 
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -42,17 +42,24 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = Kuramoto(Kij)
+function sys = KuramotoNet(Kij)
+    % Determine the number of nodes from the size of the coupling matrix
     n = size(Kij,1);
     
-    % Construct the system struct
-    sys.odefun = @odefun;                   % Handle to our ODE function
-    sys.auxfun = @auxfun;                   % Handle to our auxillary function
-    sys.pardef = {'Kij', Kij;               % ODE parameters {'name',value}
-                  'k',1;               
-                  'omega',randn(n,1)};
-    sys.vardef = {'theta',2*pi*rand(n,1)};  % ODE variables {'name',value}
-    sys.auxdef = {'phi',zeros(n,1);         % AUX variables {'name',value}
+    % Handles to our ODE and auxiliary functions
+    sys.odefun = @odefun;
+    sys.auxfun = @auxfun;
+    
+    % Our ODE parameters
+    sys.pardef = [ struct('name','Kij',   'value',Kij);
+                   struct('name','k',     'value',1);               
+                   struct('name','omega', 'value',randn(n,1)) ];
+               
+    % Our ODE variables
+    sys.vardef = struct('name','theta', 'value',2*pi*rand(n,1));
+    
+    % Our axiliary variables
+    sys.auxdef = [ struct('phi',zeros(n,1);
                   'R',0};
     sys.tspan = [0 100];                    % default time span [begin end]
 
@@ -62,8 +69,8 @@ function sys = Kuramoto(Kij)
                 
                     
     % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{Kuramoto}';
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = {'\textbf{Kuramoto}';
         '';
         'Network of Kuramoto Oscillators';
         '\qquad $\dot \theta_i = \omega_i + \frac{k}{n} \sum_j K_{ij} \sin(\theta_i - \theta_j)$';
@@ -88,19 +95,19 @@ function sys = Kuramoto(Kij)
         '\qquad Breakspear et al (2010) Generative models of cortical oscillations.'};
     
     % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait.title = 'Time Portrait';
  
     % Include the Phase Portrait panel in the GUI
-    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+    sys.panels.bdPhasePortrait.title = 'Phase Portrait';
 
-    % Include the Space-Time Portrait panel in the GUI
-    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+    % Include the Space-Time panel in the GUI
+    sys.panels.bdSpaceTime.title = 'Space-Time';
 
-    % Include the Corelation panel in the GUI
-    sys.gui.bdCorrelationPanel.title = 'Correlation';
+    % Include the Correlation panel in the GUI
+    sys.panels.bdCorrPanel.title = 'Correlation';
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';                
+    sys.panels.bdSolverPanel.title = 'Solver';                
 end
 
 % Kuramoto ODE function where

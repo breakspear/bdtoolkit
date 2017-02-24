@@ -1,11 +1,16 @@
 classdef bdSolverPanel < handle
-    %bdSolverPanel - Brain Dynamics GUI panel for solver options.
-    %
+    %bdSolverPanel Brain Dynamics GUI panel for solver options.
+    %   This class implements phase portraits for the graphical user interface
+    %   of the Brain Dynamics Toolbox (bdGUI). Users never call this class
+    %   directly. They instead instruct the bdGUI application to load the
+    %   panel by specifying options in their model's sys struct. 
+    %   
     %SYS OPTIONS
-    %   sys.gui.bdSolverPanel.title      Name of the panel (optional)
+    %   sys.panels.bdSolverPanel.title = 'Solver'
+    %   sys.panels.bdSolverPanel.grid = false
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a)
+    %  Stewart Heitmann (2016a, 2017a)
 
     % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -36,34 +41,33 @@ classdef bdSolverPanel < handle
     % POSSIBILITY OF SUCH DAMAGE.
     properties (Access=private) 
         fig             % handle to parent figure
+        tab             % handle to uitab object
+        listener1       % handle to listener
+        listener2       % handle to listener
     end
  
     methods        
         function this = bdSolverPanel(tabgroup,control)
-            % default sys.gui settings
-            title = 'Solver';
             
-            % sys.gui.bdSolverPanel.title
-            if isfield(control.sys.gui,'bdSolverPanel') && isfield(control.sys.gui.bdSolverPanel,'title')
-                title = control.sys.gui.bdSolverPanel.title;
-            end
-            
+            % apply default settings to sys.panels.bdSolverPanel
+            control.sys.panels.bdSolverPanel = bdSolverPanel.syscheck(control.sys);
+
             % get handle to parent figure
             this.fig = ancestor(tabgroup,'figure');
 
             % construct the uitab
-            tab = uitab(tabgroup,'title',title, 'Units','pixels');
+            this.tab = uitab(tabgroup,'title',control.sys.panels.bdSolverPanel.title, 'Tag','bsSolverPanelTab', 'Units','pixels');
             
             % get tab geometry
-            parentw = tab.Position(3);
-            parenth = tab.Position(4);
+            parentw = this.tab.Position(3);
+            parenth = this.tab.Position(4);
 
             % compute axes geometry
             axesh = (parenth-200)/2;
             axesw = parentw-100;
             
             % construct the dydt axes
-            ax1 = axes('Parent',tab, ...
+            ax1 = axes('Parent',this.tab, ...
                 'Units','pixels', ...
                 'Position', [60 150+axesh  axesw axesh]);
             plt1 = stairs(0,0, 'parent',ax1, 'color','k', 'Linewidth',1);
@@ -72,7 +76,7 @@ classdef bdSolverPanel < handle
             ylabel('||dY||','FontSize',14);
 
             % construct the step-size axes
-            ax2 = axes('Parent',tab, ...
+            ax2 = axes('Parent',this.tab, ...
                 'Units','pixels', ...
                 'Position', [60 130 axesw axesh]);
             plt2 = stairs(0,0, 'parent',ax2, 'color','k', 'Linewidth',1);
@@ -81,20 +85,39 @@ classdef bdSolverPanel < handle
             ylabel('step size (dt)','FontSize',14);
             
             % construct panel for odeoptions
-            this.odePanel(tab,control);
+            this.odePanel(this.tab,control);
             
             % construct the Solver menu (if it does not already exist)
             obj = findobj(this.fig,'Tag','bdSolverPanelMenu');
             if isempty(obj)
                 bdSolverPanel.constructMenu(this.fig,control);
             end
-                        
+            
+            % construct the tab context menu
+            this.tab.UIContextMenu = uicontextmenu;
+            uimenu(this.tab.UIContextMenu,'Label','Close Panel', 'Callback',@(~,~) this.delete());
+
             % register a callback for resizing the panel
-            set(tab,'SizeChangedFcn', @(~,~) this.SizeChanged(tab,ax1,ax2));
+            set(this.tab,'SizeChangedFcn', @(~,~) this.SizeChanged(this.tab,ax1,ax2));
 
             % listen to the control panel for redraw events
-            addlistener(control,'redraw',@(~,~) this.render(control,ax1,ax2,plt1,plt2));    
+            this.listener1 = addlistener(control,'redraw',@(~,~) this.render(control,ax1,ax2,plt1,plt2));    
         end
+        
+        % Destructor
+        function delete(this)
+            delete(this.listener1);
+            delete(this.listener2);
+            delete(this.tab);          
+            % delete the menu if no more bdSolverPanel panels exist
+            obj = findobj(this.fig,'Tag','bdSolverPanelTab');
+            if isempty(obj)
+                obj = findobj(this.fig,'Tag','bdSolverPanelMenu');
+                if ~isempty(obj)
+                    delete(obj);
+                end
+            end
+        end       
         
     end
     
@@ -300,7 +323,7 @@ classdef bdSolverPanel < handle
             renderboxes;
             
             % listen to the control panel for redraw events
-            addlistener(control,'redraw',@(~,~) renderboxes);    
+            this.listener2 = addlistener(control,'redraw',@(~,~) renderboxes);    
 
             % Listener function for updating the edit boxes
             function renderboxes
@@ -398,7 +421,7 @@ classdef bdSolverPanel < handle
             appdata = getappdata(this.fig,'bdSolverPanel');
             
             % show gridlines (or not)
-            if appdata.gridflag
+            if appdata.grid
                 grid(ax1,'on');
                 grid(ax2,'on');
             else
@@ -433,10 +456,33 @@ classdef bdSolverPanel < handle
     
     methods (Static)
         
+        % Check the sys.panels struct
+        function syspanel = syscheck(sys)
+            % Default panel settings
+            syspanel.title = 'Solver';
+            syspanel.grid = false;
+            
+            % Nothing more to do if sys.panels.bdSolverPanel is undefined
+            if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdSolverPanel')
+                return;
+            end
+            
+            % sys.panels.bdSolverPanel.title
+            if isfield(sys.panels.bdSolverPanel,'title')
+                syspanel.title = sys.panels.bdSolverPanel.title;
+            end
+            
+            % sys.panels.bdSolverPanel.grid
+            if isfield(sys.panels.bdSolverPanel,'grid')
+                syspanel.grid = sys.panels.bdSolverPanel.grid;
+            end
+        end
+
+        
         % The menu is static so that one menu can serve many instances of the class
         function menuobj = constructMenu(fig,control)            
             % init the appdata for the menu     
-            appdata = struct('gridflag',false);
+            appdata.grid = control.sys.panels.bdSolverPanel.grid;
             setappdata(fig,'bdSolverPanel',appdata);
             
             % construct menu
@@ -444,14 +490,6 @@ classdef bdSolverPanel < handle
             
             % solver menu items
             checkstr='on';
-%             for indx = 1:numel(control.sys.solver)
-%                 uimenu('Parent',menuobj, ...
-%                     'Label',control.sys.solver{indx}, ...
-%                     'Tag', 'bdSolverSelector', ...
-%                     'Checked',checkstr, ...
-%                     'Callback', @(menuitem,~) bdSolverPanel.SolverMenuCallback(menuobj,menuitem,control) );
-%                 checkstr='off';                
-%             end
              for indx = 1:numel(control.solvermap)
                 uimenu('Parent',menuobj, ...
                     'Label',control.solvermap(indx).solvername, ...
@@ -462,10 +500,17 @@ classdef bdSolverPanel < handle
                 checkstr='off';                
             end
             
+            % grid menu check string
+            if appdata.grid
+                gridcheck = 'on';
+            else
+                gridcheck = 'off';
+            end
+
             % grid menu item
             uimenu('Parent',menuobj, ...
                 'Label','Grid', ...
-                'Checked','off', ...
+                'Checked',gridcheck, ...
                 'Separator','on', ...
                 'Callback', @(menuitem,~) bdSolverPanel.MenuCallback(fig,menuitem,control) );          
         end        
@@ -497,10 +542,10 @@ classdef bdSolverPanel < handle
                 case 'Grid'
                     switch menuitem.Checked
                         case 'on'
-                            appdata.gridflag = false;
+                            appdata.grid = false;
                             menuitem.Checked='off';
                         case 'off'
-                            appdata.gridflag = true;
+                            appdata.grid = true;
                             menuitem.Checked='on';
                     end
             end 

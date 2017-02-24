@@ -1,4 +1,4 @@
-% SDEdemo1 Geometric Brownian motion
+% BrownianMotion  SDE model of Geometric Brownian motion
 %   Ito Stochastic Differential Equation (SDE)
 %        dy(t) = mu*y(t)*dt + sigma*y(t)*dW(t)
 %   decribing geometric Brownian motion. The Brain Dynamics toolbox
@@ -14,11 +14,11 @@
 %   and G(t,y) is implemented by sys.sdefun(t,y,a,b).
 %
 % Example 1: Using the Brain Dynamics GUI
-%   sys = SDEdemo1();       % construct the system struct
-%   gui = bdGUI(sys);       % open the Brain Dynamics GUI
+%   sys = BrownianMotion();       % construct the system struct
+%   gui = bdGUI(sys);             % open the Brain Dynamics GUI
 % 
 % Example 2: Using the Brain Dynamics command-line solver
-%   sys = SDEdemo1();                                 % get system struct
+%   sys = BrownianMotion();                           % system struct
 %   sys.pardef = bdSetValue(sys.pardef,'mu',-0.1);    % 'mu' parameter
 %   sys.pardef = bdSetValue(sys.pardef,'sigma',0.1);  % 'sigma' parameter
 %   sys.vardef = bdSetValue(sys.vardef,'Y',rand);     % 'Y' initial value
@@ -33,8 +33,8 @@
 %   ylabel(ax(2),'dW');
 %
 % Example 3: Using pre-generated (fixed) random values
-%   sys = SDEdemo1();                             % get system struct
-%   sys.sdeoption.randn = randn(1,101);           % our standard normal values
+%   sys = BrownianMotion();                       % construct system struct
+%   sys.sdeoption.randn = randn(1,101);           % standard normal values
 %   sys.tspan = [0 10];                           % time domain
 %   sol1 = bdSolve(sys);                          % solve
 %   sol2 = bdSolve(sys);                          % solve (again)
@@ -45,7 +45,7 @@
 %   std(sol1.y - sol2.y)                          % results are identical
 %
 % Authors
-%   Stewart Heitmann (2016a)
+%   Stewart Heitmann (2016a, 2017a)
 
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -74,14 +74,20 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = SDEdemo1()
-    % Construct the system struct
-    sys.odefun = @odefun;               % Handle to our deterministic function
-    sys.sdefun = @sdefun;               % Handle to our stochastic function
-    sys.pardef = {'mu',  -0.1;          % SDE parameters {'name',value}
-                  'sigma',0.1};
-    sys.vardef = {'Y',5};               % SDE variables {'name',value}
-    sys.tspan = [0 10];                 % default time span
+function sys = BrownianMotion()
+    % Handles to our SDE functions
+    sys.sdeF   = @sdeF;                 % deterministic coefficients
+    sys.sdeG   = @sdeG;                 % stochastic coefficints
+
+    % Our SDE parameters
+    sys.pardef = [ struct('name','mu',    'value',-0.1);
+                   struct('name','sigma', 'value', 0.1) ];
+               
+    % Our SDE variables
+    sys.vardef =  struct('name','Y', 'value',5);
+    
+    % Default time span
+    sys.tspan = [0 10];
               
    % Specify SDE solvers and default options
     sys.sdesolver = {@sdeIto};          % Relevant SDE solvers
@@ -89,8 +95,8 @@ function sys = SDEdemo1()
     sys.sdeoption.NoiseSources = 1;     % Number of driving Wiener processes
 
     % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo1}';
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = {'\textbf{SDEdemo1}';
         '';
         'An Ito Stochastic Differential Equation describing geometric Brownian motion';
         '\qquad $dY = \mu\,Y\,dt + \sigma\,Y\,dW_t$';
@@ -99,21 +105,21 @@ function sys = SDEdemo1()
         '\qquad $\mu$ and $\sigma$ are scalar constants.'};
     
     % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait = [];
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';
+    sys.panels.bdSolverPanel = [];
     
     % Handle to this function. The GUI uses it to construct a new system. 
     sys.self = str2func(mfilename);
 end
 
 % The deterministic coefficient function.
-function F = odefun(t,Y,a,b)  
+function F = sdeF(~,Y,a,~)  
     F = a*Y;
 end
 
 % The noise coefficient function.
-function G = sdefun(t,Y,a,b)  
+function G = sdeG(~,Y,~,b)  
     G = b*Y;
 end

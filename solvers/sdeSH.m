@@ -1,5 +1,5 @@
-%sdeStratonovich  Solve Stratonovich SDE using the Stratonovich-Heun method.
-%   SOL = sdeStratonovich(ODEFUN,SDEFUN,TSPAN,Y0,OPTIONS,...)
+%sdeSH  Solve a Stratonovich SDE using the Stratonovich-Heun method.
+%   SOL = sdeSH(ODEFUN,SDEFUN,TSPAN,Y0,OPTIONS,...)
 %   uses the Stratonovich-Heun method to integrate a system of Stratonovich 
 %   stochastic differential equations of the form 
 %      dy = F(t,y,...)*dt + G(t,y,...)*dW(t)
@@ -69,7 +69,7 @@
 %  theta = 1;                       % model-specific parameter
 %  mu = -1;                         % model-specific parameter
 %  sigma = 0.5;                     % model-specific parameter
-%  sol = sdeStratonovich(odefun,sdefun,tspan,Y0,options,theta,mu,sigma);
+%  sol = sdeSH(odefun,sdefun,tspan,Y0,options,theta,mu,sigma);
 %  T = sol.x;                       % solution time points
 %  Y = sol.y;                       % solution values y(t)
 %  plot(T,Y);                       % plot the results
@@ -78,7 +78,7 @@
 %  SDEdemo1, SDEdemo2 and SDEdemo3
 %
 %AUTHORS
-%  Stewart Heitmann (2016a)
+%  Stewart Heitmann (2016a,2017a)
 %  Matthew Aburn (2016a)
 
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
@@ -108,7 +108,7 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.   
-function sol = sdeStratonovich(odefun,sdefun,tspan,y0,options,varargin)
+function sol = sdeSH(odefun,sdefun,tspan,y0,options,varargin)
     % Get the number of noise sources (driving Wiener processes).
     if isfield(options,'NoiseSources')
         m = options.NoiseSources;

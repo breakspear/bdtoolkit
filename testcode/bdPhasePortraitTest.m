@@ -1,5 +1,5 @@
 % Test function for bdPhasePortrait
-function [bdphaseportrait, control] = bdPhasePortraitTest(sys)
+function [phaseportrait, control] = bdPhasePortraitTest(sys)
     % ensure bdControl is in the path
     if ~exist('bdControl.m','file')
         addpath ..
@@ -26,11 +26,11 @@ function [bdphaseportrait, control] = bdPhasePortraitTest(sys)
     control = bdControl(panel2,sys);
     
     % construct the phase portrait panel
-    phaseportrait1 = bdPhasePortrait(tabgroup1,control);
-    phaseportrait2 = bdPhasePortrait(tabgroup1,control);
+    phaseportrait(1) = bdPhasePortrait(tabgroup1,control);
+    phaseportrait(2) = bdPhasePortrait(tabgroup1,control);
     
     % force a recompute
-    notify(control,'recompute');
+    notify(control,'recompute');    
 end
 
 function SizeChanged(fig,panel1,panel2)

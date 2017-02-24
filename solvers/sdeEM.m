@@ -1,5 +1,5 @@
-%sdeIto  Solve Ito SDE using the Euler-Maruyama method.
-%   SOL = sdeIto(ODEFUN,SDEFUN,TSPAN,Y0,OPTIONS,...)
+%sdeEM  Solve an Ito SDE using the Euler-Maruyama method.
+%   SOL = sdeEM(ODEFUN,SDEFUN,TSPAN,Y0,OPTIONS,...)
 %   uses the Euler-Marayuma method to integrate a system of Ito stochastic
 %   differential equations of the form 
 %      dy = F(t,y,...)*dt + G(t,y,...)*dW(t)
@@ -69,7 +69,7 @@
 %  theta = 1;                       % model-specific parameter
 %  mu = -1;                         % model-specific parameter
 %  sigma = 0.5;                     % model-specific parameter
-%  sol = sdeIto(odefun,sdefun,tspan,Y0,options,theta,mu,sigma);
+%  sol = sdeEM(odefun,sdefun,tspan,Y0,options,theta,mu,sigma);
 %  T = sol.x;                       % solution time points
 %  Y = sol.y;                       % solution values y(t)
 %  plot(T,Y);                       % plot the results
@@ -78,7 +78,7 @@
 %  SDEdemo1, SDEdemo2 and SDEdemo3
 %
 %AUTHORS
-%  Stewart Heitmann (2016a)
+%  Stewart Heitmann (2016a, 2017a)
 %  Matthew Aburn (2016a)
 
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
@@ -108,7 +108,7 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.   
-function sol = sdeIto(odefun,sdefun,tspan,y0,options,varargin)
+function sol = sdeEM(sdefun,sdegun,tspan,y0,options,varargin)
     % Get the number of noise sources (driving Wiener processes).
     if isfield(options,'NoiseSources')
         m = options.NoiseSources;
@@ -161,8 +161,8 @@ function sol = sdeIto(odefun,sdefun,tspan,y0,options,varargin)
     
     % miscellaneous output
     sol.solver = mfilename;
-    sol.extdata.odefun = odefun;
-    sol.extdata.sdefun = sdefun;
+    sol.extdata.odefun = sdefun;
+    sol.extdata.sdefun = sdegun;
     sol.extdata.options = options;
     sol.ex21tdata.varargin = varargin;
     
@@ -202,8 +202,8 @@ function sol = sdeIto(odefun,sdefun,tspan,y0,options,varargin)
         end
 
         % Call the user-supplied functions
-        F = odefun(sol.x(indx), sol.y(:,indx), varargin{:});
-        G = sdefun(sol.x(indx), sol.y(:,indx), varargin{:});
+        F = sdefun(sol.x(indx), sol.y(:,indx), varargin{:});
+        G = sdegun(sol.x(indx), sol.y(:,indx), varargin{:});
 
         % Euler step
         sol.yp(:,indx) = F*dt + G*sol.dW(:,indx);            % dy(t) = F(t,y(t))*dt + G(t,y(t))*dW(t)
@@ -211,8 +211,8 @@ function sol = sdeIto(odefun,sdefun,tspan,y0,options,varargin)
     end
     
     % Complete the final Euler step
-    F = odefun(sol.x(end), sol.y(:,end), varargin{:});
-    G = sdefun(sol.x(end), sol.y(:,end), varargin{:});
+    F = sdefun(sol.x(end), sol.y(:,end), varargin{:});
+    G = sdegun(sol.x(end), sol.y(:,end), varargin{:});
     sol.yp(:,end) = F*dt + G*sol.dW(:,end);
 
     % Execute the OutputFcn for the final entry in tspan.

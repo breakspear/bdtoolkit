@@ -1,12 +1,20 @@
 classdef bdPhasePortrait < handle
     %bdPhasePortrait Brain Dynamics GUI panel for phase portraits.
-    %   Displays 2D and 3D trajectories in the Brain Dynamics Toolbox GUI.
-    %
+    %   This class implements phase portraits for the graphical user interface
+    %   of the Brain Dynamics Toolbox (bdGUI). Users never call this class
+    %   directly. They instead instruct the bdGUI application to load the
+    %   panel by specifying options in their model's sys struct. 
+    %   
     %SYS OPTIONS
-    %   sys.gui.bdPhasePortrait.title      Name of the panel (optional)
+    %   sys.panels.bdPhasePortrait.title = 'Phase Portrait'
+    %   sys.panels.bdPhasePortrait.vecfield = false
+    %   sys.panels.bdPhasePortrait.markinit = true
+    %   sys.panels.bdPhasePortrait.grid = false
+    %   sys.panels.bdPhasePortrait.hold = false
+    %   sys.panels.bdPhasePortrait.autolim = true
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a)
+    %  Stewart Heitmann (2016a, 2017a)
 
     % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -45,6 +53,7 @@ classdef bdPhasePortrait < handle
         popupz              % handle to Z popup
         checkbox3D          % handle to 3D checkbox
         solMap              % maps rows in sol.y to entries in vardef
+        listener            % handle to listener
     end
     
     methods
@@ -56,18 +65,10 @@ classdef bdPhasePortrait < handle
             %    tabgroup is a handle to the parent uitabgroup object.
             %    title is a string defining the name given to the new tab.
             %    control is a handle to the GUI control panel.
-            % validate the sys.gui settings
+            % validate the sys.panels settings
 
-            if ~isfield(control.sys.gui,'bdPhasePortrait')
-                return      % we aren't wanted so quietly do nothing.
-            end
-            
-            % sys.gui.bdTimePortrait.title (optional)
-            if isfield(control.sys.gui.bdPhasePortrait,'title')
-                title = control.sys.gui.bdPhasePortrait.title;
-            else
-                title = 'Phase Portrait';
-            end
+            % apply default settings to sys.panels.bdPhasePortrait
+            control.sys.panels.bdPhasePortrait = bdPhasePortrait.syscheck(control.sys);
 
             % get handle to parent figure
             this.fig = ancestor(tabgroup,'figure');
@@ -76,10 +77,10 @@ classdef bdPhasePortrait < handle
             this.solMap = bdUtils.solMap(control.sys.vardef);
             
             % number of entries in vardef
-            nvardef = size(control.sys.vardef,1);
+            nvardef = numel(control.sys.vardef);
             
             % construct the uitab
-            this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
+            this.tab = uitab(tabgroup,'title',control.sys.panels.bdPhasePortrait.title, 'Tag','bdPhasePortraitTab', 'Units','pixels');
             
             % get tab geometry
             parentw = this.tab.Position(3);
@@ -91,6 +92,7 @@ classdef bdPhasePortrait < handle
             posw = parentw-65;
             posh = parenth-90;
             this.ax  = axes('Parent',this.tab, 'Units','pixels', 'Position',[posx posy posw posh]);           
+            hold(this.ax,'on');
             
             % x selector
             posx = 10;
@@ -114,7 +116,7 @@ classdef bdPhasePortrait < handle
             posw = 100;
             posh = 20; 
             if nvardef>=2
-                popupval = numel(control.sys.vardef{1,2}) + 1;
+                popupval = numel(control.sys.vardef(1).value) + 1;
             end
             this.popupy = uicontrol('Style','popup', ...
                 'String', {this.solMap.name}, ...
@@ -132,7 +134,7 @@ classdef bdPhasePortrait < handle
             posw = 100;
             posh = 20;
             if nvardef>=3
-                popupval = numel(control.sys.vardef{1,2}) + numel(control.sys.vardef{2,2}) + 1;
+                popupval = numel(control.sys.vardef(1).value) + numel(control.sys.vardef(2).value) + 1;
             end
             this.popupz = uicontrol('Style','popup', ...
                 'String', {this.solMap.name}, ...
@@ -166,11 +168,29 @@ classdef bdPhasePortrait < handle
                 bdPhasePortrait.constructMenu(this.fig,control);
             end
             
+            % construct the tab context menu
+            this.tab.UIContextMenu = uicontextmenu;
+            uimenu(this.tab.UIContextMenu,'Label','Close Panel', 'Callback',@(~,~) this.delete());
+
             % register a callback for resizing the panel
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
 
             % listen to the control panel for redraw events
-            addlistener(control,'redraw',@(~,~) this.render(control));            
+            this.listener = addlistener(control,'redraw',@(~,~) this.render(control));            
+        end
+        
+        % Destructor
+        function delete(this)
+            delete(this.listener);
+            delete(this.tab);          
+            % delete the PhasePortrait menu if no more PhasePortaits exist
+            obj = findobj(this.fig,'Tag','bdPhasePortraitTab');
+            if isempty(obj)
+                obj = findobj(this.fig,'Tag','bdPhasePortraitMenu');
+                if ~isempty(obj)
+                    delete(obj);
+                end
+            end
         end
             
     end
@@ -186,13 +206,28 @@ classdef bdPhasePortrait < handle
             % convergence test
             steadystate = convergence(control);
             
+            % read the popup widgets
             xindx = this.popupx.Value;
             yindx = this.popupy.Value;
             zindx = this.popupz.Value;
             xstr = this.popupx.String{xindx};
             ystr = this.popupy.String{yindx};
             zstr = this.popupz.String{zindx};
+            
+            % current time domain
             tindx = find(control.sol.x>=0);
+            
+            % if 'hold' menu is checked then ...
+            if appdata.hold
+                % Change existing plots to thin lines 
+                objs = findobj(this.ax);
+                set(objs,'LineWidth',0.5);               
+            else
+                % Clear the plot axis
+                cla(this.ax); 
+            end
+            
+            % 
             if this.checkbox3D.Value
                 % plot current trajectory in 3D
                 x = control.sol.y(xindx,tindx);
@@ -200,8 +235,7 @@ classdef bdPhasePortrait < handle
                 z = control.sol.y(zindx,tindx);
 
                 plot3(this.ax, x,y,z, 'color','k','Linewidth',1);
-                hold(this.ax, 'on');
-                if appdata.initflag
+                if appdata.markinit
                     plot3(this.ax, x(1),y(1),z(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
                 end
                 if steadystate
@@ -216,33 +250,25 @@ classdef bdPhasePortrait < handle
                     % compute vector field
                     xlimit = this.ax.XLim;
                     ylimit = this.ax.YLim;
-                    zlimit = this.ax.ZLim;
-                    [xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh] = this.VectorField3D(control,xindx,yindx,zindx,xlimit,ylimit,zlimit);
+                    [xmesh,ymesh,dxmesh,dymesh] = this.VectorField2D(control,tindx(1),xindx,yindx,xlimit,ylimit);
 
-                    % plot vector field in axv
+                    zmesh = ones(size(xmesh)) .* z(1);
+                    dzmesh = zeros(size(zmesh));
+                    
+                    % plot vector field
                     quiver3(xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh,'parent',this.ax, 'color',[0.5 0.5 0.5]);
                     % dont let the quiver plot change the original axes limits
                     this.ax.XLim = xlimit;
                     this.ax.YLim = ylimit;
-                    this.ax.ZLim = zlimit;
                 end
-                
-                % show gridlines (if appropriate) 
-                if appdata.gridflag
-                    grid(this.ax,'on');
-                else
-                    grid(this.ax,'off');
-                end                    
-                
-                hold(this.ax, 'off');
+
            else
                 % plot current trajectory in 2D
                 x = control.sol.y(xindx,tindx);
                 y = control.sol.y(yindx,tindx);
 
                 plot(this.ax, x,y, 'color','k','Linewidth',1);
-                hold(this.ax, 'on');
-                if appdata.initflag
+                if appdata.markinit
                     plot(this.ax, x(1),y(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
                 end
                 if steadystate
@@ -256,28 +282,36 @@ classdef bdPhasePortrait < handle
                     % compute vector field
                     xlimit = this.ax.XLim;
                     ylimit = this.ax.YLim;
-                    [xmesh,ymesh,dxmesh,dymesh] = this.VectorField2D(control,xindx,yindx,xlimit,ylimit);
+                    [xmesh,ymesh,dxmesh,dymesh] = this.VectorField2D(control,tindx(1),xindx,yindx,xlimit,ylimit);
 
-                    % plot vector field in axv
+                    % plot vector field
                     quiver(xmesh,ymesh,dxmesh,dymesh, 'parent',this.ax, 'color',[0.5 0.5 0.5]);
                     % dont let the quiver plot change the original axes limits
                     this.ax.XLim = xlimit;
                     this.ax.YLim = ylimit;
                 end
                 
-                % show gridlines (if appropriate)
-                if appdata.gridflag
-                    grid(this.ax,'on');
+                % adjust the y limits (or not)
+                if appdata.autolim
+                    xlim(this.ax,'auto')
+                    ylim(this.ax,'auto')
                 else
-                    grid(this.ax,'off');
-                end                    
-                
-                hold(this.ax, 'off');
+                    xlim(this.ax,'manual');
+                    ylim(this.ax,'manual');
+                end
             end
+            
+            % show gridlines (if appropriate)
+            if appdata.grid
+                grid(this.ax,'on');
+            else
+                grid(this.ax,'off');
+            end
+
         end
         
         % Evaluate the 2D vector field 
-        function [xmesh,ymesh,dxmesh,dymesh] = VectorField2D(this,control,xindx,yindx,xlimit,ylimit)
+        function [xmesh,ymesh,dxmesh,dymesh] = VectorField2D(this,control,tindx,xindx,yindx,xlimit,ylimit)
             %disp('bdPhasePortrait.VectorField2D()');
 
             % Determine the type of the active solver
@@ -301,10 +335,14 @@ classdef bdPhasePortrait < handle
             meshlen = numel(xmesh);
             
             % evaluate the vector field at trajectory end
-            Y0 = control.sol.y(:,end);
+            %Y0 = control.sol.y(:,end);
+            
+            % evaluate the vector field at t(tindx)
+            Y0 = control.sol.y(:,tindx);
             
             % curent parameter values
-            P0 = {control.sys.pardef{:,2}};
+            P0  = {control.sys.pardef.value};
+
             
             % evaluate vector field
             for idx=1:meshlen
@@ -319,54 +357,54 @@ classdef bdPhasePortrait < handle
             end
         end
 
-        % Evaluate the 3D vector field 
-        function [xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh] = VectorField3D(this,control,xindx,yindx,zindx,xlimit,ylimit,zlimit)
-            %disp('bdPhasePortrait.VectorField3D()');
-
-            % Determine the type of the active solver
-            solvertype = control.solvermap(control.solveridx).solvertype;
-            
-            % Do not compute vector fields for delay differential equations 
-            if strcmp(solvertype,'ddesolver')
-                xmesh=[];
-                ymesh=[];
-                zmesh=[];
-                dxmesh=[];
-                dymesh=[];
-                dzmesh=[];
-                return
-            end
-            
-            % compute a mesh for the domain
-            xdomain = linspace(xlimit(1),xlimit(2), 7);
-            ydomain = linspace(ylimit(1),ylimit(2), 7);
-            zdomain = linspace(zlimit(1),zlimit(2), 7);
-            [xmesh,ymesh,zmesh] = meshgrid(xdomain,ydomain,zdomain);
-            dxmesh = NaN(size(xmesh));
-            dymesh = dxmesh;
-            dzmesh = dxmesh;
-            meshlen = numel(xmesh);
-            
-            % evaluate vector field at trajectory end
-            Y0 = control.sol.y(:,end);
-            
-            % curent parameter values
-            P0 = {control.sys.pardef{:,2}};
-            
-            % evaluate vector field
-            for idx=1:meshlen
-                % set initial conditions to curent mesh point
-                Y0(xindx) = xmesh(idx);
-                Y0(yindx) = ymesh(idx);
-                Y0(zindx) = zmesh(idx);
-                % compute ODE (assume t=0)
-                dY = control.sys.odefun(0,Y0,P0{:});
-                % save results
-                dxmesh(idx) = dY(xindx);
-                dymesh(idx) = dY(yindx);
-                dzmesh(idx) = dY(zindx);
-            end
-        end       
+%         % Evaluate the 3D vector field 
+%         function [xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh] = VectorField3D(this,control,tindx,xindx,yindx,zindx,xlimit,ylimit,zlimit)
+%             %disp('bdPhasePortrait.VectorField3D()');
+% 
+%             % Determine the type of the active solver
+%             solvertype = control.solvermap(control.solveridx).solvertype;
+%             
+%             % Do not compute vector fields for delay differential equations 
+%             if strcmp(solvertype,'ddesolver')
+%                 xmesh=[];
+%                 ymesh=[];
+%                 zmesh=[];
+%                 dxmesh=[];
+%                 dymesh=[];
+%                 dzmesh=[];
+%                 return
+%             end
+%             
+%             % compute a mesh for the domain
+%             xdomain = linspace(xlimit(1),xlimit(2), 7);
+%             ydomain = linspace(ylimit(1),ylimit(2), 7);
+%             zdomain = linspace(zlimit(1),zlimit(2), 7);
+%             [xmesh,ymesh,zmesh] = meshgrid(xdomain,ydomain,zdomain);
+%             dxmesh = NaN(size(xmesh));
+%             dymesh = dxmesh;
+%             dzmesh = dxmesh;
+%             meshlen = numel(xmesh);
+%             
+%             % evaluate vector field at trajectory end
+%             Y0 = control.sol.y(:,end);
+%             
+%             % curent parameter values
+%             P0 = {control.sys.pardef.value};
+%             
+%             % evaluate vector field
+%             for idx=1:meshlen
+%                 % set initial conditions to curent mesh point
+%                 Y0(xindx) = xmesh(idx);
+%                 Y0(yindx) = ymesh(idx);
+%                 Y0(zindx) = zmesh(idx);
+%                 % compute ODE (assume t=0)
+%                 dY = control.sys.odefun(0,Y0,P0{:});
+%                 % save results
+%                 dxmesh(idx) = dY(xindx);
+%                 dymesh(idx) = dY(yindx);
+%                 dzmesh(idx) = dY(zindx);
+%             end
+%         end       
         
         % Callback for panel resizing. 
         function SizeChanged(this,parent)
@@ -386,36 +424,121 @@ classdef bdPhasePortrait < handle
         function check3DCallback(this,control)
             if this.checkbox3D.Value
                 set(this.popupz,'Enable','on');
+                this.ax.View=[-37.5 0.3];
             else
                 set(this.popupz,'Enable','off');
+                this.ax.View=[0 90];
             end
-            this.render(control);
+            this.render(control);           
         end
         
     end
     
     
     methods (Static)
-        
+                
+        % Check the sys.panels struct
+        function syspanel = syscheck(sys)
+            % Default panel settings
+            syspanel.title = 'Phase Portrait';
+            syspanel.vecfield = false;
+            syspanel.markinit = true;
+            syspanel.grid = false;
+            syspanel.hold = false;
+            syspanel.autolim = true;
+            
+            % Nothing more to do if sys.panels.bdPhasePortrait is undefined
+            if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdPhasePortrait')
+                return;
+            end
+            
+            % sys.panels.bdPhasePortrait.title
+            if isfield(sys.panels.bdPhasePortrait,'title')
+                syspanel.title = sys.panels.bdPhasePortrait.title;
+            end
+            
+            % sys.panels.bdPhasePortrait.grid
+            if isfield(sys.panels.bdPhasePortrait,'grid')
+                syspanel.grid = sys.panels.bdPhasePortrait.grid;
+            end
+            
+            % sys.panels.bdPhasePortrait.hold
+            if isfield(sys.panels.bdPhasePortrait,'hold')
+                syspanel.hold = sys.panels.bdPhasePortrait.hold;
+            end
+            
+            % sys.panels.bdPhasePortrait.autolim
+            if isfield(sys.panels.bdPhasePortrait,'autolim')
+                syspanel.autolim = sys.panels.bdPhasePortrait.autolim;
+            end
+        end
+
         % The menu is static so that one menu can serve many instances of the class
         function menuobj = constructMenu(fig,control)            
-            % init the appdata for the menu     
-            appdata = struct('gridflag',false, 'vecfield',false, 'initflag',true);
+            % init the appdata for the menu
+            appdata.vecfield = control.sys.panels.bdPhasePortrait.vecfield;
+            appdata.markinit = control.sys.panels.bdPhasePortrait.markinit;
+            appdata.grid = control.sys.panels.bdPhasePortrait.grid;
+            appdata.hold = control.sys.panels.bdPhasePortrait.hold;
+            appdata.autolim = control.sys.panels.bdPhasePortrait.autolim;            
             setappdata(fig,'bdPhasePortrait',appdata);
+            
+            % vector-field menu check string
+            if appdata.vecfield
+                vecfieldcheck = 'on';
+            else
+                vecfieldcheck = 'off';
+            end
+            
+            % initial conditions markers menu check string
+            if appdata.markinit
+                markinitcheck = 'on';
+            else
+                markinitcheck = 'off';
+            end
+            
+            % grid menu check string
+            if appdata.grid
+                gridcheck = 'on';
+            else
+                gridcheck = 'off';
+            end
+            
+            % hold menu check string
+            if appdata.hold
+                holdcheck = 'on';
+            else
+                holdcheck = 'off';
+            end
+            
+            % autolim menu check string
+            if appdata.autolim
+                autolimcheck = 'on';
+            else
+                autolimcheck = 'off';
+            end
             
             % construct menu items
             menuobj = uimenu('Parent',fig, 'Label','Phase Portrait', 'Tag','bdPhasePortraitMenu');
             uimenu('Parent',menuobj, ...
                    'Label','Vector Field', ...
-                   'Checked','off', ...
+                   'Checked',vecfieldcheck, ...
                    'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );          
             uimenu('Parent',menuobj, ...
                    'Label','Initial Conditions', ...
-                   'Checked','on', ...
+                   'Checked',markinitcheck, ...
                    'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );          
             uimenu('Parent',menuobj, ...
                    'Label','Grid', ...
-                   'Checked','off', ...
+                   'Checked',gridcheck, ...
+                   'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );
+            uimenu('Parent',menuobj, ...
+                   'Label','Hold', ...
+                   'Checked',holdcheck, ...
+                   'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );
+            uimenu('Parent',menuobj, ...
+                   'Label','Auto Limits', ...
+                   'Checked',autolimcheck, ...
                    'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );
         end        
         
@@ -425,16 +548,6 @@ classdef bdPhasePortrait < handle
             appdata = getappdata(fig,'bdPhasePortrait');
             
             switch menuitem.Label
-                case 'Grid'
-                    switch menuitem.Checked
-                        case 'on'
-                            appdata.gridflag = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            appdata.gridflag = true;
-                            menuitem.Checked='on';
-                    end
-                    
                 case 'Vector Field'
                     switch menuitem.Checked
                         case 'on'
@@ -448,12 +561,42 @@ classdef bdPhasePortrait < handle
                 case 'Initial Conditions'
                     switch menuitem.Checked
                         case 'on'
-                            appdata.initflag = false;
+                            appdata.markinit = false;
                             menuitem.Checked='off';
                         case 'off'
-                            appdata.initflag = true;
+                            appdata.markinit = true;
                             menuitem.Checked='on';
                     end
+                    
+                case 'Grid'
+                    switch menuitem.Checked
+                        case 'on'
+                            appdata.grid = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            appdata.grid = true;
+                            menuitem.Checked='on';
+                    end
+                    
+                case 'Hold'
+                    switch menuitem.Checked
+                        case 'on'
+                            appdata.hold = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            appdata.hold = true;
+                            menuitem.Checked='on';
+                    end
+                    
+                case 'Auto Limits'
+                    switch menuitem.Checked
+                        case 'on'
+                            appdata.autolim = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            appdata.autolim = true;
+                            menuitem.Checked='on';
+                    end                    
             end 
             
             % save the new appdata
@@ -481,29 +624,3 @@ function flag = convergence(control)
     end
 end
     
-% function vec = GetDefValues(xxxdef)
-% %GetDefValues returns the values stored in a pardef or vardef cell array.
-% %This function is useful for extracting the values stored in a user-defined
-% %vardef array as a single vector for use by the ODE solver.
-% %Usage:
-% %   vec = GetDefValues(xxxdef)
-% %where xxxdef is a cell array of {'name',value} pairs. 
-% %Example:
-% %  vardef = {'a',1;
-% %            'b',[2 3 4];
-% %            'c',[5 8; 6 9; 7 10]};
-% %  y0 = GetDefValues(vardef);
-% %  ...
-% %  sol = ode45(@odefun,tspan,y0,...)
-% 
-%     % extract the second column of xxxdef
-%     vec = xxxdef(:,2);
-%     
-%     % convert each cell entry to a column vector
-%     for indx=1:numel(vec)
-%         vec{indx} = reshape(vec{indx},[],1);
-%     end
-%     
-%     % concatenate the column vectors to a simple vector
-%     vec = cell2mat(vec);
-% end

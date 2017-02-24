@@ -1,5 +1,5 @@
-function sys = ODEdemo3(Kij)
-    % ODEdemo3  System of N coupled van der Pol equations
+function sys = VanDerPolOscillators(Kij)
+    % VanDerPolOscillators  System of N coupled van der Pol ocillators
     %   Implements a set of n coupled van der Pol equation
     %        Ui' = Vi
     %        Vi' = a*(1-Ui^2)*Vi - Ui - b*Kij*Ui
@@ -9,14 +9,14 @@ function sys = ODEdemo3(Kij)
     %   n = 20;                             % number of nodes
     %   Kij = circshift(eye(n),1) + ...     % nearest-neighbour coupling
     %         circshift(eye(n),-1);
-    %   sys = ODEdemo3(Kij);                % construct the system struct
+    %   sys = VanDerPolOscillators(Kij);    % construct the system struct
     %   gui = bdGUI(sys);                   % open the Brain Dynamics GUI
     % 
     % Example 2: Using the Brain Dynamics command-line solver
     %   n = 20;                                             % number of nodes
     %   Kij = circshift(eye(n),1) + ...                     % nearest-neighbour
     %         circshift(eye(n),-1);                         % coupling
-    %   sys = ODEdemo3(Kij);                                % system struct
+    %   sys = VanDerPolOscillators(Kij);                    % system struct
     %   sys.pardef = bdSetValue(sys.pardef,'a',1);          % set 'a' parameter
     %   sys.pardef = bdSetValue(sys.pardef,'b',1.3);        % set 'b' parameter
     %   sys.vardef = bdSetValue(sys.vardef,'U',rand(n,1));  % set 'y1' variable
@@ -33,7 +33,7 @@ function sys = ODEdemo3(Kij)
     %   n = 20;                                      % number of nodes
     %   Kij = circshift(eye(n),1) + ...              % nearest-neighbour
     %         circshift(eye(n),-1);                  % coupling
-    %   sys = ODEdemo3(Kij);                         % system struct
+    %   sys = VanDerPolOscillators(Kij);             % system struct
     %   odefun = sys.odefun;                         % ODE function handle
     %   [~,a,b] = deal(sys.pardef{:,2});             % default parameters
     %   [U0,V0] = deal(sys.vardef{:,2});             % initial conditions
@@ -50,7 +50,7 @@ function sys = ODEdemo3(Kij)
     %   plot(tsol,V); xlabel('time'); ylabel('V');   % plot the V solution
     %
     % Authors
-    %   Stewart Heitmann (2016a)
+    %   Stewart Heitmann (2016a,2017a)
 
     % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -83,23 +83,29 @@ function sys = ODEdemo3(Kij)
     % determine the number of nodes from Kij
     n = size(Kij,1);
 
-    % Construct the system struct
-    sys.odefun = @odefun;                   % Handle to our ODE function
-    sys.pardef = {'Kij',Kij;                % ODE parameters {'name',value}
-                  'a',1;
-                  'b',0.2};
-    sys.vardef = {'U',rand(n,1);            % ODE variables {'name',value}
-                  'V',rand(n,1)};
-    sys.tspan = [0 100];                    % default time span
+    % Handle to our ODE function
+    sys.odefun = @odefun;
+    
+    % ODE parameters
+    sys.pardef = [ struct('name','Kij', 'value',Kij);
+                   struct('name','a',   'value',  1);
+                   struct('name','b',   'value',0.2) ];
+    
+    % ODE variables           
+    sys.vardef = [ struct('name','U',   'value',rand(n,1));
+                   struct('name','V',   'value',rand(n,1)) ];
+               
+    % Default time span
+    sys.tspan = [0 100];
               
     % Specify ODE solvers and default options
-    sys.odesolver = {@ode45,@ode23,@ode113};    % ODE solvers
+    %sys.odesolver = {@ode45,@ode23,@ode113};    % ODE solvers
     sys.odeoption.RelTol = 1e-6;                % ODE solver options
-    sys.odeoption.AbsTol = 1e-6;                % see odeset 
+    %sys.odeoption.AbsTol = 1e-6;                % see odeset 
 
     % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo3}';
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = {'\textbf{Van der Pol Oscillators}';
         '';
         'A network of coupled van der Pol oscillators';
         '\qquad $\dot U_i = V_i$';
@@ -108,7 +114,7 @@ function sys = ODEdemo3(Kij)
         '\qquad $U_i(t)$ and $V_i(t)$ are the dynamic variables ($n$ x $1$),';
         '\qquad $K_{ij}$ is the connectivity matrix ($n$ x $n$),';
         '\qquad $a$ and $b$ are scalar constants,';
-        '\qquad $i{=}1 \dots n$.';
+        '\qquad $i,j{=}1 \dots n$.';
         '';
         'Notes';
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$.'];
@@ -116,18 +122,16 @@ function sys = ODEdemo3(Kij)
         '\qquad 3. Network coupling is scaled by $b$.'};
     
     % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait = [];
  
     % Include the Phase Portrait panel in the GUI
-    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+    sys.panels.bdPhasePortrait = [];
 
-    % Include the Space-Time Portrait panel in the GUI
-    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+    % Include the Space-Time panel in the GUI
+    sys.panels.bdSpaceTime = [];
 
-    sys.gui.bdCorrelationPanel = [];
-    
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';   
+    sys.panels.bdSolverPanel = [];   
     
     % Handle to the function that the GUI calls to construct a new system. 
     sys.self = @self;
@@ -158,6 +162,6 @@ function sys = self()
         sys = [];  
     else
         % pass Kij to our main function
-        sys = ODEdemo3(Kij);
+        sys = VanDerPolOscillators(Kij);
     end
 end

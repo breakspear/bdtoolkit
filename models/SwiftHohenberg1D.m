@@ -14,9 +14,8 @@ function sys = SwiftHohenberg1D(n,dx)
     %   sys = SwiftHohenberg1D(n,dx);   % construct the system struct
     %   gui = bdGUI(sys);               % open the Brain Dynamics GUI
     %
-    %
     % Authors
-    %   Stewart Heitmann (2016a)
+    %   Stewart Heitmann (2016a,2017a)
 
     % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -56,21 +55,27 @@ function sys = SwiftHohenberg1D(n,dx)
     x = [1:n]'*dx - (n+1)*dx/2;             % spatial domain, centered on x=0
     U0  = (-tanh(x-8) + tanh(x+8)).*cos(x)+2.0;
     
-    % Construct the system struct
-    sys.odefun = @odefun;                   % Handle to our ODE function
-    sys.pardef = {'mu',1.5;                 % ODE parameters {'name',value}
-                  'nu',3.0;
-                  'dx',0.25};
-    sys.vardef = {'U',U0};                  % ODE variables {'name',value}
-    sys.tspan = [0 20];                     % default time span
+    % Handle to our ODE function
+    sys.odefun = @odefun;
+    
+    % Our ODE parameters
+    sys.pardef = [ struct('name','mu', 'value',1.5);
+                   struct('name','nu', 'value',3.0);
+                   struct('name','dx', 'value',0.25) ];
+               
+    % Our ODE variables
+    sys.vardef = struct('name','U', 'value',U0);
+    
+    % Default time span
+    sys.tspan = [0 20];
          
     % Specify ODE solvers and default options
-    sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
+    %sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
     sys.odeoption = odeset('RelTol',1e-6);              % ODE solver options
 
     % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{SwiftHohenberg1D}';
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = {'\textbf{SwiftHohenberg1D}';
         '';
         'Spatially discretized Swift-Hohenberg partial differential equation';
         '\qquad $\dot U = -(I + D_{xx})^2 U - \mu U + \nu U^3 - U^5$';
@@ -89,16 +94,16 @@ function sys = SwiftHohenberg1D(n,dx)
         'structures in spatially-extended neural networks. ICMNS 2016.'};
               
     % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait = [];
  
     % Include the Phase Portrait panel in the GUI
-    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+    sys.panels.bdPhasePortrait = [];
 
-    % Include the Space-Time Portrait panel in the GUI
-    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+    % Include the Space-Time panel in the GUI
+    sys.panels.bdSpaceTime = [];
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';                      
+    sys.panels.bdSolverPanel = [];                      
               
     % Function hook for the GUI System-New menu
     sys.self = @self;    

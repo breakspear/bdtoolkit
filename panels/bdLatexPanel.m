@@ -1,14 +1,17 @@
 classdef bdLatexPanel < handle
-    %bdLatexPanel - Brain Dynamics GUI panel for Latex equations.
-    %   Displays mathematical equations in the Brain Dynamics Toolbox GUI
-    %   using the MATLAB built-in latex interpreter.
+    %bdLatexPanel - Brain Dynamics Toolbox panel for Latex equations.
+    %   This class displays latex equations in the graphical user interface
+    %   of the Brain Dynamics Toolbox (bdGUI) using the MATLAB built-in
+    %   latex interpreter. Users never call this class directly. They
+    %   instead instruct the bdGUI application to load the panel by
+    %   specifying options in their model's sys struct. 
     %
     %SYS OPTIONS
-    %   sys.gui.bdLatexPanel.title      String name of the panel (optional)
-    %   sys.gui.bdLatexPanel.latex      Cell array of latex strings
+    %   sys.panels.bdLatexPanel.title = 'Equations'
+    %   sys.panels.bdLatexPanel.latex = {'latex string','latex string',...}
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a)
+    %  Stewart Heitmann (2016a, 2017a)
 
     % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -38,6 +41,10 @@ classdef bdLatexPanel < handle
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
+    properties (Access=private) 
+        tab             % handle to uitab object
+    end
+
     methods        
         function this = bdLatexPanel(tabgroup,control)
             % Construct a new tab panel in the parent tabgroup.
@@ -47,32 +54,20 @@ classdef bdLatexPanel < handle
             %    tabgroup is a handle to the parent uitabgroup object.
             %    control is a handle to the GUI control object.
 
+            % apply default settings to sys.panels.bdLatexPanel
+            control.sys.panels.bdLatexPanel = bdLatexPanel.syscheck(control.sys);
 
-            % default sys.gui settings
-            title = 'Equations';
-            latex = {'\textbf{bdLatexPanel}'; 'Undefined \textsl{sys.gui.bdLatexPanel.latex} field'};
-
-            % sys.gui.bdLatexPanel.title
-            if isfield(control.sys.gui,'bdLatexPanel') && isfield(control.sys.gui.bdLatexPanel,'title')
-                title = control.sys.gui.bdLatexPanel.title;
-            end
-            
-            % sys.gui.bdLatexPanel.latex
-            if isfield(control.sys.gui,'bdLatexPanel') && isfield(control.sys.gui.bdLatexPanel,'latex')
-                latex = control.sys.gui.bdLatexPanel.latex;
-            end
-            
             % construct the uitab
-            tab = uitab(tabgroup, 'title',title, 'Units','points');
+            this.tab = uitab(tabgroup, 'title',control.sys.panels.bdLatexPanel.title, 'Tag','bdLatexPanelTab', 'Units','points');
 
             % get tab geometry (in points)
-            %parentx = tab.Position(1);
-            %parenty = tab.Position(2);
-            %parentw = tab.Position(3);
-            parenth = tab.Position(4);
+            %parentx = this.tab.Position(1);
+            %parenty = this.tab.Position(2);
+            %parentw = this.tab.Position(3);
+            parenth = this.tab.Position(4);
 
             % construct the axes
-            ax = axes('Parent',tab, ...
+            ax = axes('Parent',this.tab, ...
                 'Units','normal', ...
                 'Position',[0 0 1 1], ...
                 'XTick', [], ...
@@ -80,15 +75,13 @@ classdef bdLatexPanel < handle
                 'XColor', [1 1 1], ...
                 'YColor', [1 1 1]);
             
-            % render the latex text as one large action
-            %text(0.01,0.98,latex, 'interpreter','latex', 'Parent',ax, 'FontSize',16, 'VerticalAlignment','top');
-            
             % Render the latex strings one line at a time. This is better
             % than rendering the latex strings in a single text box
             % because (i) the latex interpreter has limited memory for
             % monumental strings, and (ii) it is difficult for the user
             % to locate latex syntax errors in monumental strings.
             yoffset = 4;   % points
+            latex = control.sys.panels.bdLatexPanel.latex;
             for l = 1:numel(latex)
                 
                 % special case: small skip for empty strings
@@ -112,7 +105,7 @@ classdef bdLatexPanel < handle
                     % latex syntax error occured. Colour the offending text red.
                     obj.Color = [1 0 0];                    
                     % issue a syntax error
-                    uiwait( warndlg({'latex syntax error in sys.gui.bdLatexPanel.latex',latex{l}},'bdLatexPanel','modal') );
+                    uiwait( warndlg({'latex syntax error in sys.panels.bdLatexPanel.latex',latex{l}},'bdLatexPanel','modal') );
                     yoffset = yoffset + 24;                   % skip one line (approx)
                 else
                     yoffset = yoffset + 1.1*obj.Extent(4);    % skip one line (exactly)
@@ -120,10 +113,19 @@ classdef bdLatexPanel < handle
                 
             end
             
+            % construct the tab context menu
+            this.tab.UIContextMenu = uicontextmenu;
+            uimenu(this.tab.UIContextMenu,'Label','Close Panel', 'Callback',@(~,~) this.delete());
+
             % register a callback for resizing the panel
-            set(tab,'SizeChangedFcn', @(~,~) SizeChanged(this,tab));
+            set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
         end
         
+        % Destructor
+        function delete(this)
+            delete(this.tab);          
+        end
+
     end
     
     methods (Access = private)
@@ -145,6 +147,34 @@ classdef bdLatexPanel < handle
             end            
         end
     
+    end
+    
+    methods (Static)
+        
+        % Check the sys.panels struct
+        function syspanel = syscheck(sys)
+            % Default panel settings
+            syspanel.title = 'Equations';
+            syspanel.latex = {'\textbf{No latex equations to display}',
+                              '\textsl{sys.panels.bdLatexPanel.latex} = \{`latex string 1'', `latex string 2'', ... \}',
+                              'is undefined for this model'};
+            
+            % Nothing more to do if sys.panels.bdLatexPanel is undefined
+            if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdLatexPanel')
+                return;
+            end
+            
+            % sys.panels.bdLatexPanel.title
+            if isfield(sys.panels.bdLatexPanel,'title')
+                syspanel.title = sys.panels.bdLatexPanel.title;
+            end
+            
+            % sys.panels.bdLatexPanel.latex
+            if isfield(sys.panels.bdLatexPanel,'latex')
+                syspanel.latex = sys.panels.bdLatexPanel.latex;
+            end            
+        end   
+        
     end
 end
 

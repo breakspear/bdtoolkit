@@ -1,9 +1,9 @@
-% SDEdemo3 Ito Stochastic Differential Equation
-%   An example scalar system with multiplicative noise.
+% MultipNoise Ito SDE with multiplicative noise processes
+%   Ito stochastic differential system with multiplicative noise.
 %     dy = -(a + y*b^2)*(1-y^2)*dt + b(1-y^2)*dW
 %
 % Authors
-%   Stewart Heitmann (2016a)
+%   Stewart Heitmann (2016a,2017a)
 %   Matthew Aburn (2016a)
  
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
@@ -33,14 +33,20 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = SDEdemo3()
-    % Construct the system struct
-    sys.odefun = @odefun;           % Handle to our deterministic function
-    sys.sdefun = @sdefun;           % Handle to our stochastic function
-    sys.pardef = {'a', 1.0;         % SDE parameters {'name',value}
-                  'b', 0.8};
-    sys.vardef = {'y', 0.1};        % SDE variables {'name',value}
-    sys.tspan = [0 5];              % default time span
+function sys = MultipNoise()
+    % Handles to our SDE functions
+    sys.sdeF = @sdeF;               % deterministic coefficients
+    sys.sdeG = @sdeG;               % stochastic coefficients
+    
+    % Our SDE parameters
+    sys.pardef = [ struct('name','a', 'value',1.0);
+                   struct('name','b', 'value',0.8) ];
+
+    % Our SDE variables           
+    sys.vardef = struct('name','y', 'value',0.1);
+    
+    % Default time span
+    sys.tspan = [0 5];
     
     % Specify SDE solvers and default options
     sys.sdesolver = {@sdeIto};          % Pertinent SDE solvers
@@ -48,8 +54,8 @@ function sys = SDEdemo3()
     sys.sdeoption.NoiseSources = 1;     % Number of Wiener noise processes
 
     % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo3}';
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = {'\textbf{Multiplicative Noise}';
         '';
         'An Ito stochastic differential equation';
         '\qquad $dy = -(a + y\,b^2)(1-y^2)\,dt + b(1-y^2)\,dW_t$';
@@ -58,18 +64,21 @@ function sys = SDEdemo3()
         '\qquad $a$ and $b$ are scalar constants.'};
     
     % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait = [];
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';                       
+    sys.panels.bdSolverPanel = [];     
+    
+    % Handle to this function. The GUI uses it to construct a new system. 
+    sys.self = str2func(mfilename);
 end
 
 % The deterministic coefficient function
-function f = odefun(t,y,a,b)  
+function f = sdeF(~,y,a,b)  
     f = -(a + y.*b^2).*(1 - y^2);
 end
 
 % The noise coefficient function.
-function G = sdefun(t,y,a,b)  
+function G = sdeG(~,y,~,b)  
     G = b.*(1 - y^2);
 end

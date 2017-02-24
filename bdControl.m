@@ -3,7 +3,7 @@ classdef bdControl < handle
     %  Internal toolbox object not intended to be called by end-users.
     % 
     %AUTHORS
-    %  Stewart Heitmann (2016a)
+    %  Stewart Heitmann (2016a, 2017a)
 
     % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -57,7 +57,23 @@ classdef bdControl < handle
     
     methods
         function this = bdControl(panel,sys)
-            % working copy of the system struct
+            % Check the contents of sys and fill any missing fields with
+            % default values. Rethrow any problems back to the caller.
+            try
+                sys = bdUtils.syscheck(sys);
+            catch ME
+                throwAsCaller(MException('bdtoolkit:bdControl',ME.message));
+            end
+            
+            % init the sol struct
+            this.sol.x=[];
+            this.sol.y=[];
+            this.sol.yp=[];
+            this.sol.stats.nsteps=0;
+            this.sol.stats.nfailed=0;
+            this.sol.stats.nfevals=0;
+            
+            % take a working copy of the system struct
             this.sys = sys;
             
             % contrsuct the solver map
@@ -98,9 +114,9 @@ classdef bdControl < handle
                 'Position',[0 panelh-yoffset posw boxh]);
             
             % ODE parameter widgets
-            for parindx=1:size(sys.pardef,1)
-                parstr = sys.pardef{parindx,1};    % parameter name (string)
-                parval = sys.pardef{parindx,2};    % parameter value (vector)
+            for parindx=1:numel(sys.pardef)
+                parstr = sys.pardef(parindx).name;    % parameter name (string)
+                parval = sys.pardef(parindx).value;   % parameter value (vector)
        
                 % switch depending on parval being a scalar, vector or matrix
                 switch ScalarVectorMatrix(parval)
@@ -184,7 +200,7 @@ classdef bdControl < handle
             end
                        
             % SDE random-hold widgets (if applicable)
-            if isfield(sys,'sdefun')
+            if isfield(sys,'sdeF')
                 % next row
                 yoffset = yoffset + 1.5*rowh;                    
                 
@@ -238,9 +254,9 @@ classdef bdControl < handle
                     'Position',[0 panelh-yoffset posw boxh]);
 
                 % for each lagdef entry
-                for lagindx=1:size(sys.lagdef,1)
-                    lagstr = sys.lagdef{lagindx,1};    % lag name (string)
-                    lagval = sys.lagdef{lagindx,2};    % lag value (vector)
+                for lagindx=1:numel(sys.lagdef)
+                    lagstr = sys.lagdef(lagindx).name;    % lag name (string)
+                    lagval = sys.lagdef(lagindx).value;   % lag value (vector)
 
                     % switch depending on lagval being a scalar, vector or matrix
                     switch ScalarVectorMatrix(lagval)
@@ -340,9 +356,9 @@ classdef bdControl < handle
                 'Position',[0 panelh-yoffset posw boxh]);
             
             % ODE variable widgets (initial conditions)
-            for varindx=1:size(sys.vardef,1)
-                varstr = sys.vardef{varindx,1};    % variable name (string)
-                varval = sys.vardef{varindx,2};    % variable initial value (vector)
+            for varindx=1:numel(sys.vardef)
+                varstr = sys.vardef(varindx).name;    % variable name (string)
+                varval = sys.vardef(varindx).value;   % variable initial value (vector)
 
                 % switch depending on varval being a scalar, vector or matrix
                 switch ScalarVectorMatrix(varval)
@@ -564,21 +580,21 @@ classdef bdControl < handle
         % Callback for ODE parameter edit box
         function ScalarParameter(this,editObj,parindx)
             this.ScalarCallback(editObj);
-            this.sys.pardef{parindx,2} = editObj.Value;
+            this.sys.pardef(parindx).value = editObj.Value;
             notify(this,'recompute');
         end
         
         % Callback for DDE lag edit box
         function ScalarLag(this,editObj,lagindx)
             this.ScalarCallback(editObj);
-            this.sys.lagdef{lagindx,2} = editObj.Value;
+            this.sys.lagdef(lagindx).value = editObj.Value;
             notify(this,'recompute');
         end
         
         % Callback for ODE variable edit box
         function ScalarVariable(this,editObj,varindx)
             this.ScalarCallback(editObj);
-            this.sys.vardef{varindx,2} = editObj.Value;
+            this.sys.vardef(varindx).value = editObj.Value;
             notify(this,'recompute');
         end
 
@@ -614,21 +630,21 @@ classdef bdControl < handle
         % Callback for ODE parameter vector widget
         function VectorParameter(this,barObj,name,parindx)
             this.VectorCallback(barObj,name);
-            this.sys.pardef{parindx,2} = reshape(barObj.YData, size(this.sys.pardef{parindx,2}));
+            this.sys.pardef(parindx).value = reshape(barObj.YData, size(this.sys.pardef(parindx).value));
             notify(this,'recompute');
         end
 
         % Callback for DDE lag vector widget
         function VectorLag(this,barObj,name,lagindx)
             this.VectorCallback(barObj,name);
-            this.sys.lagdef{lagindx,2} = reshape(barObj.YData, size(this.sys.lagdef{lagindx,2}));
+            this.sys.lagdef(lagindx).value = reshape(barObj.YData, size(this.sys.lagdef(lagindx).value));
             notify(this,'recompute');
         end
         
         % Callback for ODE variable vector widget
         function VectorVariable(this,barObj,name,varindx)
             this.VectorCallback(barObj,name);
-            this.sys.vardef{varindx,2} = reshape(barObj.YData, size(this.sys.vardef{varindx,2}));
+            this.sys.vardef(varindx).value = reshape(barObj.YData, size(this.sys.vardef(varindx).value));
             notify(this,'recompute');
         end
         
@@ -653,27 +669,27 @@ classdef bdControl < handle
         % Callback for ODE parameter matrix widget
         function MatrixParameter(this,imObj,name,parindx)
             % open dialog box for editing a matrix
-            this.sys.pardef{parindx,2} = bdEditMatrix(this.sys.pardef{parindx,2},name);
+            this.sys.pardef(parindx).value = bdEditMatrix(this.sys.pardef(parindx).value,name);
             % update the image data in the control panel
-            set(imObj,'CData',this.sys.pardef{parindx,2});
+            set(imObj,'CData',this.sys.pardef(parindx).value);
             notify(this,'recompute');
         end
 
         % Callback for DDE lag matrix widget
         function MatrixLag(this,imObj,name,lagindx)
             % open dialog box for editing a matrix
-            this.sys.lagdef{lagindx,2} = bdEditMatrix(this.sys.lagdef{lagindx,2},name);
+            this.sys.lagdef(lagindx).value = bdEditMatrix(this.sys.lagdef(lagindx).value,name);
             % update the image data in the control panel
-            set(imObj,'CData',this.sys.lagdef{lagindx,2});
+            set(imObj,'CData',this.sys.lagdef(lagindx).value);
             notify(this,'recompute');
         end
 
         % Callback for ODE varoable matrix widget
         function MatrixVariable(this,imObj,name,varindx)
             % open dialog box for editing a matrix
-            this.sys.vardef{varindx,2} = bdEditMatrix(this.sys.vardef{varindx,2},name);
+            this.sys.vardef(varindx).value = bdEditMatrix(this.sys.vardef(varindx).value,name);
             % update the image data in the control panel
-            set(imObj,'CData',this.sys.vardef{varindx,2});
+            set(imObj,'CData',this.sys.vardef(varindx).value);
             notify(this,'recompute');
         end
         
@@ -708,7 +724,7 @@ classdef bdControl < handle
              end
 
             % Call the solver
-            [this.sol,this.solx] = bdSolve(this.sys,tspan,solverfunc,solvertype);
+            [this.sol,this.solx] = bdUtils.solve(this.sys,tspan,solverfunc,solvertype);
             
             % Hold the SDEnoise if the HOLD button is 'on'
             switch solvertype

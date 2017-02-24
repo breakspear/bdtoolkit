@@ -1,12 +1,16 @@
-classdef bdSpaceTimePortrait < handle
-    %bdSpaceTimePortrait Brain Dynamics GUI panel for space-time plots.
-    %   Displays space-time plots in the Brain Dynamics Toolbox GUI.
-    %
+classdef bdSpaceTime < handle
+    %bdSpaceTime Brain Dynamics GUI panel for space-time plots.
+    %   This class implements space-time plots for the graphical user interface
+    %   of the Brain Dynamics Toolbox (bdGUI). Users never call this class
+    %   directly. They instead instruct the bdGUI application to load the
+    %   panel by specifying any (or all) of the following options in their
+    %   model's system definition. 
+    %   
     %SYS OPTIONS
-    %   sys.gui.bdSpaceTimePortrait.title    Name of the panel (optional)
+    %   sys.panels.bdSpaceTime.title = 'Space-Time'
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a)
+    %  Stewart Heitmann (2016a,2017a)
 
     % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -37,45 +41,37 @@ classdef bdSpaceTimePortrait < handle
     % POSSIBILITY OF SUCH DAMAGE.
 
     properties
-        Y       % matrix of Y values versus time (n x t)
-        t       % vector of time points (1 x t)
+        Y           % matrix of Y values versus time (n x t)
+        t           % vector of time points (1 x t)
     end
     
     properties (Access=private) 
-        tab     % handle to uitab object
-        ax      % handle to plot axes
-        img     % handle to axes image
-        popup   % hanle to variable selector
-        varindx % lookup table for indexes of the ODE variables
+        tab         % handle to uitab object
+        ax          % handle to plot axes
+        img         % handle to axes image
+        popup       % handle to variable selector
+        varindx     % lookup table for indexes of the ODE variables
+        listener    % handle to listener
     end
     
     methods
-        function this = bdSpaceTimePortrait(tabgroup,control)
+        function this = bdSpaceTime(tabgroup,control)
             % Construct a new tab panel in the parent tabgroup.
             % Usage:
-            %    bdSpaceTimePortrait(tabgroup,title,control)
+            %    bdSpaceTime(tabgroup,control)
             % where 
             %    tabgroup is a handle to the parent uitabgroup object.
-            %    title is a string defining the name given to the new tab.
             %    control is a handle to the GUI control panel.
 
-            if ~isfield(control.sys.gui,'bdSpaceTimePortrait')
-                return      % we aren't wanted so quietly do nothing.
-            end
-            
-            % sys.gui.bdSpaceTimePortrait.title (optional)
-            if isfield(control.sys.gui.bdSpaceTimePortrait,'title')
-                title = control.sys.gui.bdSpaceTimePortrait.title;
-            else
-                title = 'Space-Time';
-            end
+            % apply default settings to sys.panels.bdSpaceTime
+            control.sys.panels.bdSpaceTime = bdSpaceTime.syscheck(control.sys);
 
             % build a lookup table describing the data indexes pertinent
             % to each ODE variable defined in sys.vardef{name,value}
             this.varindx = this.enumerate(control.sys.vardef);
             
             % construct the uitab
-            this.tab = uitab(tabgroup,'title',title, 'Units','pixels');
+            this.tab = uitab(tabgroup,'title',control.sys.panels.bdSpaceTime.title, 'Tag','bdSpaceTimeTab', 'Units','pixels');
             
             % get tab geometry
             parentw = this.tab.Position(3);
@@ -103,7 +99,7 @@ classdef bdSpaceTimePortrait < handle
             posh = 20;
             
             this.popup = uicontrol('Style','popup', ...
-                'String', control.sys.vardef(:,1), ...
+                'String', {control.sys.vardef.name}, ...
                 'Value', 1, ...
                 'Callback', @(~,~) this.selectorCallback(control), ...
                 'HorizontalAlignment','left', ...
@@ -112,15 +108,33 @@ classdef bdSpaceTimePortrait < handle
                 'Parent', this.tab, ...
                 'Position',[posx posy posw posh]);
 
+            % construct the tab context menu
+            this.tab.UIContextMenu = uicontextmenu;
+            uimenu(this.tab.UIContextMenu,'Label','Close Panel', 'Callback',@(~,~) this.delete());
+
             % register a callback for resizing the panel
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
 
             % listen to the control panel for redraw events
-            addlistener(control,'redraw',@(~,~) this.render(control));    
+            this.listener = addlistener(control,'redraw',@(~,~) this.render(control));    
         end
         
+        % Destructor
+        function delete(this)
+            delete(this.listener);
+            delete(this.tab);          
+            % delete the menu if no more bdSpaceTime panels exist
+            %obj = findobj(this.fig,'Tag','bdSpaceTimeTab');
+            %if isempty(obj)
+            %    obj = findobj(this.fig,'Tag','bdSpaceTimeMenu');
+            %    if ~isempty(obj)
+            %        delete(obj);
+            %    end
+            %end
+        end
+               
         function render(this,control)
-            %disp('bdSpaceTimePortrait.render()')
+            %disp('bdSpaceTime.render()')
             varnum = this.popup.Value;
             %varstr = this.popup.String{varnum};
             yindx = this.varindx{varnum};
@@ -159,15 +173,35 @@ classdef bdSpaceTimePortrait < handle
 
         function indices = enumerate(this,xxxdef)
             indices = {};
-            nr = size(xxxdef,1);
+            nr = numel(xxxdef);
             n = 0;
-            % for each row in xxxdef{row,ccol}
+            % for each entry in xxxdef
             for r=1:nr
-                nc = numel(xxxdef{r,2}); 
+                nc = numel(xxxdef(r).value); 
                 indices{r} = [1:nc]+n;
                 n = n + nc;
             end
             
+        end
+        
+    end
+    
+    methods (Static)
+        
+        % Check the sys.panels struct
+        function syspanel = syscheck(sys)
+            % Default panel settings
+            syspanel.title = 'Space-Time';
+            
+            % Nothing more to do if sys.panels.bdSpaceTime is undefined
+            if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdSpaceTime')
+                return;
+            end
+            
+            % sys.panels.bdSpaceTime.title
+            if isfield(sys.panels.bdSpaceTime,'title')
+                syspanel.title = sys.panels.bdSpaceTime.title;
+            end
         end
         
     end

@@ -1,11 +1,12 @@
-function sys = ODEdemo1()
-    % ODEdemo1  Simple Ordinary Differential Equation
-    %   Implements the simple ordinary differential equation
-    %        y'(t) = a*Y + b*t
-    %   for use with the Brain Dynamics toolbox.
+function sys = LinearODE2D()
+    % LinearODE2D  Linear Ordinary Differential Equation with 2 variables
+    %   Implements the system of linear ordinary differential equations
+    %        x'(t) = a*x(t) + b*y(t)
+    %        y'(t) = c*x(t) + d*y(t)
+    %   for use with the Brain Dynamics Toolbox.
     %
-    % Example 1: Using the Brain Dynamics GUI
-    %   sys = ODEdemo1();       % construct the system struct
+    % Example 1: Using the Brain Dynamics graphical toolbox
+    %   sys = LinearODE2D();    % construct the system struct
     %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
     % 
     % Example 2: Using the Brain Dynamics command-line solver
@@ -32,10 +33,13 @@ function sys = ODEdemo1()
     %   plot(tsol,Y);                             % plot the result
     %   xlabel('time'); ylabel('y');
     %
+    % Reference
+    %   Heitmann, Aburn & Breakspear (2017) The Brain Dynamics Toolbox. 
+    %
     % Authors
-    %   Stewart Heitmann (2016a)
+    %   Stewart Heitmann (2017a)
 
-    % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -63,38 +67,61 @@ function sys = ODEdemo1()
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
-    % Construct the system struct
-    sys.odefun = @odefun;               % Handle to our ODE function
-    sys.pardef = {'a',-1;               % ODE parameters {'name',value}
-                  'b',0.01};
-    sys.vardef = {'y',rand};            % ODE variables {'name',value}
-    sys.tspan = [0 20];                 % default time span  
+    % Handle to our ODE function
+    sys.odefun = @odefun;
+    
+    % ODE parameter definitions
+    sys.pardef = [ struct('name','a', 'value', 1);
+                   struct('name','b', 'value',-1);
+                   struct('name','c', 'value',10);
+                   struct('name','d', 'value',-2) ];
+    
+    % ODE variable definitions
+    sys.vardef = [ struct('name','x', 'value',2*rand-1);
+                   struct('name','y', 'value',2*rand-1) ];
 
-    % Specify ODE solvers and default options
-    sys.odesolver = {@ode45,@ode23,@odeEuler};  % ODE solvers
-    sys.odeoption.RelTol = 1e-6;                % ODE solver options
-    sys.odeoption.AbsTol = 1e-6;                % see odeset 
-    
-    % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{ODEdemo1}';
+    % Latex (Equations) panel
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = { 
+        '\textbf{LinearODE2D}';
         '';
-        'A simple example of an Ordinary Differential Equation (ODE) \medskip';
-        '\qquad $\dot Y(t) = a\,Y(t) + b\,t$ \medskip';
-        'where $a$ and $b$ are scalar constants.'};
+        'System of linear ordinary differential equations';
+        '\qquad $\dot x(t) = a\,x(t) + b\,y(t)$';
+        '\qquad $\dot y(t) = c\,x(t) + d\,y(t)$';
+        'where $a,b,c,d$ are scalar constants.';
+        };
+
+    % Include the Time Portrait panel in the GUI 
+    sys.panels.bdTimePortrait = [];
+
+    % Include the Phase Portrait panel in the GUI 
+    sys.panels.bdPhasePortrait = [];
+  
+    % Include the Solver panel in the GUI 
+    sys.panels.bdSolverPanel = [];
     
-    % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    % Default time span (optional)
+    sys.tspan = [0 20]; 
+
+    % Specify the relevant ODE solvers (optional)
+    sys.odesolver = {@ode45,@ode23,@odeEul};
     
-    % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';
+    % ODE solver options (optional)
+    sys.odeoption.RelTol = 1e-6;        % Relative Tolerance
+    sys.odeoption.Jacobian = @jacfun;   % Handle to Jacobian function 
     
-    % Handle to this function. The GUI uses it to construct a new system. 
-    sys.self = str2func(mfilename);
+    % Handle to this function (optional). 
+    sys.self = str2func(mfilename);     % bdGUI calls this to contruct 
+                                        % a new instance of the model.
 end
 
-% The ODE function.
-function dYdt = odefun(t,Y,a,b)  
-    dYdt = a*Y + b*t;
+% The ODE function. Y and dYdt are both (2x1) vectors.
+function dYdt = odefun(t,Y,a,b,c,d)  
+    dYdt = [a b; c d] * Y;
+end
+
+% The Jacobian function (otional).
+function J = jacfun(t,Y,a,b,c,d)  
+    J = [a b; c d];
 end
 

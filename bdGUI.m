@@ -8,7 +8,7 @@ classdef bdGUI
     %   gui = bdGUI(sys);
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a)
+    %  Stewart Heitmann (2016a, 2017a)
 
     % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -93,10 +93,7 @@ classdef bdGUI
             
             % construct System menu (without any menu items)
             systemMenu = uimenu('Parent',this.fig, 'Label','System');
-
-            % construct Panels menu (without any menu items)
-            %panelsMenu = uimenu('Parent',this.fig, 'Label','Panels');
-
+               
             % construct the LHS panel (using an approximate position)
             this.panel1 = uipanel(this.fig,'Units','pixels','Position',[5 5 600 600],'BorderType','none');
             this.tabgroup = uitabgroup(this.panel1);
@@ -110,16 +107,45 @@ classdef bdGUI
             % resize the panels (putting them in their exact position)
             this.SizeChanged();
 
-            % load each gui panel listed in sys.gui
-            if isfield(sys,'gui')
-                guifields = fieldnames(sys.gui);
+            % construct Panels menu (without any menu items)
+            panelsMenu = uimenu('Parent',this.fig, 'Label','Panels');
+            uimenu('Parent',panelsMenu, ...
+                    'Label','Equations', ...
+                    'Callback', @(~,~) this.PanelsMenu('bdLatexPanel'));
+            uimenu('Parent',panelsMenu, ...
+                    'Label','Time Portrait', ...
+                    'Callback', @(~,~) this.PanelsMenu('bdTimePortrait'));
+            uimenu('Parent',panelsMenu, ...
+                    'Label','Phase Portrait', ...
+                    'Callback', @(~,~) this.PanelsMenu('bdPhasePortrait'));
+            uimenu('Parent',panelsMenu, ...
+                    'Label','Space-Time', ...
+                    'Callback', @(~,~) this.PanelsMenu('bdSpaceTime'));
+            uimenu('Parent',panelsMenu, ...
+                    'Label','Correlations', ...
+                    'Callback', @(~,~) this.PanelsMenu('bdCorrPanel'));
+            uimenu('Parent',panelsMenu, ...
+                    'Label','Solver Panel', ...
+                    'Callback', @(~,~) this.PanelsMenu('bdSolverPanel'));
+
+            % load each gui panel listed in sys.panels
+            if isfield(sys,'panels')
+                guifields = fieldnames(sys.panels);
                 for indx = 1:numel(guifields)
                     classname = guifields{indx};
                     if exist(classname,'class')
                         % construct the panel
-                        obj = feval(classname,this.tabgroup,this.control);
-                        % add it to the panel menu
-                        %uimenu('Parent',panelsMenu, 'Label',classname);
+                        feval(classname,this.tabgroup,this.control);
+                        % add the panel to the Panels menu if necessary
+                        switch classname
+                            case {'bdLatexPanel','bdTimePortrait','bdPhasePortrait','bdSpaceTime','bdCorrPanel','bdSolverPanel'}
+                                % Nothing to do. The Panel menu has these by default
+                            otherwise
+                                % Add a menu item for the novel panel
+                                uimenu('Parent',panelsMenu, ...
+                                       'Label',classname, ...
+                                       'Callback', @(~,~) this.PanelsMenu(classname));
+                        end
                     else
                         dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
                         uiwait(dlg);
@@ -127,23 +153,9 @@ classdef bdGUI
                 end
             end
             
-            % construct menu items
-            if isfield(sys,'self')
-                uimenu('Parent',systemMenu, ...
-                       'Label','Reconfigure', ...
-                       'Callback', @(~,~) this.SystemNew() );
-            else
-                uimenu('Parent',systemMenu, ...
-                       'Label','Reconfigure', ...
-                       'Enable', 'off');
-            end
-            uimenu('Parent',systemMenu, ...
-                   'Label','Load', ...
-                   'Callback', @(~,~) this.SystemLoad() );
-            uimenu('Parent',systemMenu, ...
-                   'Label','Save', ...
-                   'Callback', @(~,~) this.SystemSave() );
-
+            % Populate the System menu
+            this.PopulateSystemMenu(systemMenu,sys);
+            
             % register a callback for resizing the figure
             set(this.fig,'SizeChangedFcn', @(~,~) this.SizeChanged());
 
@@ -155,7 +167,27 @@ classdef bdGUI
     
     methods (Access=private)
 
-       % Callback for System-New menu
+        % Populate the System Menu
+        function PopulateSystemMenu(this,systemMenu,sys)
+             % construct menu items
+            if isfield(sys,'self')
+                uimenu('Parent',systemMenu, ...
+                       'Label','Reconfigure', ...
+                       'Callback', @(~,~) this.SystemNew() );
+            else
+                uimenu('Parent',systemMenu, ...
+                       'Label','Reconfigure', ...
+                       'Enable', 'off');
+            end
+            uimenu('Parent',systemMenu, ...
+                   'Label','Load sys', ...
+                   'Callback', @(~,~) this.SystemLoad() );
+            uimenu('Parent',systemMenu, ...
+                   'Label','Save sys', ...
+                   'Callback', @(~,~) this.SystemSave() );
+        end
+        
+        % Callback for System-New menu
         function SystemNew(this)
             if isfield(this.control.sys,'self')
                 newsys = feval(this.control.sys.self);
@@ -196,12 +228,16 @@ classdef bdGUI
             end
         end
         
-        % Callback for Panel menu item
-        function PanelMenu(this, menuobj, classname, panelname)
-            switch menuobj.Enable
-                case 'on'
-                    % Hide all objects
-            end
+        function PanelsMenu(this,classname)
+           if exist(classname,'class')
+                % construct the panel
+                feval(classname,this.tabgroup,this.control);
+                % force a redraw event
+                notify(this.control,'redraw');
+            else
+                dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
+                uiwait(dlg);
+           end          
         end
         
         function SizeChanged(this)

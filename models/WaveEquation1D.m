@@ -14,7 +14,7 @@ function sys = WaveEquation1D(n)
     %   gui = bdGUI(sys);           % run the GUI application
     %
     % Authors
-    %   Stewart Heitmann (2016a)
+    %   Stewart Heitmann (2016a,2017a)
     
     % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -67,25 +67,31 @@ function sys = WaveEquation1D(n)
     U0 = ((1:n)>x0) .* ((1:n)<x1);
     V0 = zeros(n,1);
     
-    % Construct the system struct
-    sys.odefun = @odefun;                   % Handle to our ODE function
-    sys.pardef = {'c',1;                    % ODE parameters {'name',value}
-                  'dx',0.1};
-    sys.vardef = {'U',U0;                   % ODE variables {'name',value}
-                  'V',V0};
-    sys.tspan = [0 20];                     % default time span
-        
+    % Handle to our ODE function
+    sys.odefun = @odefun;
+    
+    % Our ODE parameters
+    sys.pardef = [ struct('name','c',  'value',1.0);
+                   struct('name','dx', 'value',0.1) ];
+    
+    % Our ODE variables
+    sys.vardef = [ struct('name','U', 'value',U0);
+                   struct('name','V', 'value',V0) ];
+               
+    % Default time span
+    sys.tspan = [0 20];
+    
     % Specify ODE solvers and default options
     sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
     sys.odeoption = odeset('RelTol',1e-6,'InitialStep',0.00001);   % ODE solver options
 
     % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{WaveEquation1D}';
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = {'\textbf{WaveEquation1D}';
         '';
         'The second-order Wave Equation';
         '\qquad $\partial^2 U/ \partial t^2 = c^2 \; \partial^2 U / \partial x^2$';
-        'in one spatial dimension, $x \in \mathrm{R}^1.$';
+        'is a PDE in one spatial dimension, $x \in \mathrm{R}^1.$';
         '';
         'The PDE is transformed into a system of first-order ODEs';
         '\qquad $\dot U = V$';
@@ -99,16 +105,16 @@ function sys = WaveEquation1D(n)
         ['\qquad 4. $n{=}',num2str(n),'$.']};
               
     % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait.title = 'Time Portrait';
  
     % Include the Phase Portrait panel in the GUI
-    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+    sys.panels.bdPhasePortrait.title = 'Phase Portrait';
 
-    % Include the Space-Time Portrait panel in the GUI
-    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+    % Include the Space-Time panel in the GUI
+    sys.panels.bdSpaceTime.title = 'Space-Time';
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';                                   
+    sys.panels.bdSolverPanel.title = 'Solver';                                   
 
     % Function hook for the GUI System-New menu
     sys.self = @self;    

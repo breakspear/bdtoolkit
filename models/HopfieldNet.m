@@ -15,7 +15,7 @@
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2016a)
+%   Stewart Heitmann (2016a,2017a)
 
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -48,22 +48,28 @@ function sys = HopfieldNet(Wij)
     % determine the number of nodes from Wij
     n = size(Wij,1);
 
-    % Construct the system struct
-    sys.odefun = @odefun;               % Handle to our ODE function
-    sys.pardef = {'Wij',Wij;            % ODE parameters {'name',value}
-                  'Iapp',rand(n,1);
-                  'b',1;
-                  'tau',10};
-    sys.vardef = {'V',rand(n,1)};       % ODE variables {'name',value}
-    sys.tspan = [0 200];               % default time span [begin end]
+    % Handle to our ODE function
+    sys.odefun = @odefun;
+    
+    % Our ODE parameters
+    sys.pardef = [ struct('name','Wij',  'value',Wij);
+                   struct('name','Iapp', 'value',rand(n,1));
+                   struct('name','b',    'value',1);
+                   struct('name','tau',  'value',10) ];
+               
+    % Our ODE variables
+    sys.vardef = struct('name','V', 'value',rand(n,1));
+    
+    % Default time span
+    sys.tspan = [0 200];
 
     % Specify ODE solvers and default options
     sys.odesolver = {@ode45,@ode113,@odeEuler};     % ODE solvers
     sys.odeoption = odeset('RelTol',1e-6);          % ODE solver options
  
     % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{HopfieldNet}';
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = {'\textbf{HopfieldNet}';
         '';
         'The Continuous Hopfield Network';
         '\qquad $\tau \dot V_i = -V_i + \sum_j W_{ij} \tanh(b\, V_i) + I_{app}$';
@@ -78,16 +84,16 @@ function sys = HopfieldNet(Wij)
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
     
     % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait.title = 'Time Portrait';
  
     % Include the Phase Portrait panel in the GUI
-    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+    sys.panels.bdPhasePortrait.title = 'Phase Portrait';
 
-    % Include the Space-Time Portrait panel in the GUI
-    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+    % Include the Space-Time panel in the GUI
+    sys.panels.bdSpaceTime.title = 'Space-Time';
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';
+    sys.panels.bdSolverPanel.title = 'Solver';
 
     % Function hook for the GUI System-New menu
     sys.self = @self;

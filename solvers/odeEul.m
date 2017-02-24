@@ -1,5 +1,5 @@
-%odeEuler  Solve ODE using the fixed-step Euler method.
-%   SOL = odeEuler(ODEFUN,TSPAN,Y0,OPTIONS,...)
+%odeEul  Solve ODE using the fixed-step Euler method.
+%   SOL = odeEul(ODEFUN,TSPAN,Y0,OPTIONS,...)
 %   uses a fixed-step Euler method to integrate a system of Ordinary 
 %   Differential Equations of the form 
 %      dy/dt = F(t,y,...)
@@ -36,7 +36,7 @@
 %  options.InitialStep = 0.01;      % step size, dt
 %  theta = 1;                       % model-specific parameter
 %  mu = -1;                         % model-specific parameter
-%  sol = odeEuler(odefun,tspan,Y0,options,theta,mu);
+%  sol = odeEul(odefun,tspan,Y0,options,theta,mu);
 %  T = linspace(0,10,100);          % time domain of interest
 %  Y = bdEval(sol,T);               % interpolate
 %  plot(T,Y);                       % plot the results
@@ -45,7 +45,7 @@
 %  ODEdemo1, ODEdemo2 and ODEdemo3
 %
 %AUTHORS
-%  Stewart Heitmann (2016a)
+%  Stewart Heitmann (2016a, 2017a)
 
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -74,7 +74,7 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.   
-function sol = odeEuler(ode,tspan,y0,options,varargin)
+function sol = odeEul(ode,tspan,y0,options,varargin)
     % The InitialStep option defines our time step
     dt = odeget(options,'InitialStep');
     if isempty(dt)

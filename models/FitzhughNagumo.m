@@ -7,13 +7,15 @@
 %    
 %
 % Example:
-%   n = 20;                     % number of neurons
-%   sys = FitzhughNagumo(n);    % construct the system struct
-%   gui = bdGUI(sys);           % open the Brain Dynamics GUI
+%   n = 20;                           % Number of neurons.
+%   Kij = circshift(eye(n),1) + ...   % Define the connection matrix
+%         circshift(eye(n),-1);       % (it is a chain in this case).
+%   sys = FitzhughNagumo(Kij);        % Construct the system struct.
+%   gui = bdGUI(sys);                 % Open the Brain Dynamics GUI.
 %
 % Authors
-%   Matthew Aburn
-%   Stewart Heitmann
+%   Matthew Aburn (2017a)
+%   Stewart Heitmann (2017a)
 %
 % See Also:
 % Sanz-Leon et al. (2015) Mathematical framework for large-scale brain network
@@ -49,38 +51,44 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = FitzhughNagumo(n)
-    % Construct the default connection matrix (a chain in this case)
-    Kij = circshift(eye(n),1) + circshift(eye(n),-1);
+function sys = FitzhughNagumo(Kij)
+    % determine the number of nodes from Kij
+    n = size(Kij,1);
     
-    % Construct the system struct
-    sys.odefun = @odefun;               % Handle to our ODE function
-    sys.pardef = {'Kij',Kij;            % ODE parameters {'name',value}
-                  'a',0.056;
-                  'b',0.08;
-                  'c',0.0;
-                  'd',1.0;
-                  'e',0.0;
-                  'f',1./3;
-                  'g',1.0;
-                  'alpha',-1.0;
-                  'beta',0.064;
-                  'gamma',1.0;
-                  'tau',1.0;
-                  'Iapp',0.0;
-                  'sigma',1.0;
-                  'theta',0.0};
-    sys.vardef = {'V',5.0*rand(n,1)-2.5;    % ODE variables {'name',value}
-                  'W',3.0*rand(n,1)-0.5};
-    sys.tspan = [0 1000];               % default time span [begin end]
+    % Handle to our ODE function
+    sys.odefun = @odefun;
+    
+    % Our ODE parameters
+    sys.pardef = [ struct('name','Kij',   'value',Kij); 
+                   struct('name','a',     'value',0.056);
+                   struct('name','b',     'value',0.08);
+                   struct('name','c',     'value',0.0);
+                   struct('name','d',     'value',1.0);
+                   struct('name','e',     'value',0.0);
+                   struct('name','f',     'value',1./3);
+                   struct('name','g',     'value',1.0);
+                   struct('name','alpha', 'value',-1.0);
+                   struct('name','beta',  'value',0.064);
+                   struct('name','gamma', 'value',1.0);
+                   struct('name','tau',   'value',1.0);
+                   struct('name','Iapp',  'value',0.0);
+                   struct('name','sigma', 'value',1.0);
+                   struct('name','theta', 'value',0.0) ];
+               
+    % Our ODE variables        
+    sys.vardef = [ struct('name','V', 'value',5.0*rand(n,1)-2.5);
+                   struct('name','W', 'value',3.0*rand(n,1)-0.5) ];
+    
+    % Default time span
+    sys.tspan = [0 1000];
               
     % Specify ODE solvers and default options
-    sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
+    %sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
     sys.odeoption = odeset('RelTol',1e-6);              % ODE solver options
 
     % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{FitzhughNagumo}';
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = {'\textbf{FitzhughNagumo}';
         '';
         'Network of generalized FitzHugh-Nagumo oscillators.';
         '\qquad $\dot V_i = \tau d (-f V_i^3 + e V_i^2 + g V_i + \alpha W_i + \gamma (I_{app} + I_{net}))$';
@@ -101,25 +109,26 @@ function sys = FitzhughNagumo(n)
         '\quad FitzHugh (1955) Mathematical models of threshold phenomena in the nerve membrane, \textit{Bull. Math. Biophysics}, \textbf{17}:257--278'};
     
     % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait = [];
  
     % Include the Phase Portrait panel in the GUI
-    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+    sys.panels.bdPhasePortrait = [];
 
     % Include the Space-Time Portrait panel in the GUI
-    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+    sys.panels.bdSpaceTime = [];
 
-    sys.gui.bdCorrelationPanel = [];
+    % Include the Correlation panel on the GUI
+    sys.panels.bdCorrPanel = [];
     
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';                 
+    sys.panels.bdSolverPanel = [];                 
     
     % Function hook for the GUI System-New menu
     sys.self = @self;
 end
 
 % The ODE function for the generalized FitzHugh-Nagumo model.
-function dY = odefun(t,Y,Kij,a,b,c,d,e,f,g,alpha,beta,gamma,tau,I,sigma,theta)  
+function dY = odefun(~,Y,Kij,a,b,c,d,e,f,g,alpha,beta,gamma,tau,I,sigma,theta)  
     % extract incoming variables from Y
     Y = reshape(Y,[],2);        % reshape Y to an (nx2) matrix 
     V = Y(:,1);                 % V is (nx1) vector
@@ -140,15 +149,16 @@ function y=F(x)
     y = 1./(1+exp(-x));
 end
 
-% This function is called by the GUI System-New menu
+% The self function is called by the GUI to spawn a new variant of the model
 function sys = self()
-    % open a dialog box prompting the user for the value of n
-    n = bdEditScalars({100,'number of neurons'}, ...
-        'New System', 'FitzHugh-Nagumo model');
-    % if the user cancelled then...
-    if isempty(n)
-        sys = [];                       % return empty sys
+    % Prompt the user to load Kij from file. 
+    info = {mfilename,'','Load the connectivity matrix, Kij'};
+    Kij = bdLoadMatrix(mfilename,info);
+    if isempty(Kij) 
+        % the user cancelled the operation
+        sys = [];  
     else
-        sys = FitzhughNagumo(round(n));  % generate a new sys
+        % pass Kij to our main function
+        sys = FitzhughNagumo(Kij);
     end
 end

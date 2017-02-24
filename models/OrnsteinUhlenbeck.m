@@ -1,16 +1,16 @@
-% SDEdemo2  Independent Ornstein-Uhlenbeck processes
+% OrnsteinUhlenbeck  N independent Ornstein-Uhlenbeck processes
 %   N independent Ornstein-Uhlenbeck processes
 %        dY_i(t) = theta*(mu-Y_i(t))*dt + sigma*dW_i(t)
 %   for i=1..n.
 %
 % Example 1: Using the Brain Dynamics GUI
 %   n = 20;                 % number of processes
-%   sys = SDEdemo2(n);      % construct the system struct
+%   sys = OrnsteinUhlenbeck(n);      % construct the system struct
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 % 
 % Example 2: Using the Brain Dynamics command-line solver
 %   n = 20;                                            % num of processes
-%   sys = SDEdemo2(n);                                 % get system struct
+%   sys = OrnsteinUhlenbeck(n);                        % system struct
 %   sys.pardef = bdSetValue(sys.pardef,'mu',0.5);      % 'mu' parameter
 %   sys.pardef = bdSetValue(sys.pardef,'sigma',0.1);   % 'sigma' parameter
 %   sys.vardef = bdSetValue(sys.vardef,'Y',rand(n,1)); % 'Y' initial values
@@ -26,8 +26,8 @@
 %
 % Example 3: Using pre-generated (fixed) random values
 %   n = 20;                                       % number of processes
-%   sys = SDEdemo2(n);                            % get system struct
-%   sys.sdeoption.randn = randn(n,101);           % our standard normal values
+%   sys = OrnsteinUhlenbeck(n);                   % construct system struct
+%   sys.sdeoption.randn = randn(n,101);           % standard normal values
 %   sys.tspan = [0 10];                           % time domain
 %   sol1 = bdSolve(sys);                          % solve
 %   sol2 = bdSolve(sys);                          % solve (again)
@@ -37,7 +37,7 @@
 %   plot(sol2.x,sol2.y,'r');  title('sol2');      % plot 2nd result in red                                      
 %
 % Authors
-%   Stewart Heitmann (2016a)
+%   Stewart Heitmann (2016a,2017a)
 
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -66,15 +66,21 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = SDEdemo2(n)
-    % Construct the system struct
-    sys.odefun = @odefun;               % Handle to our deterministic function
-    sys.sdefun = @sdefun;               % Handle to our stochastic function
-    sys.pardef = {'theta',1;            % SDE parameters {'name',value}
-                  'mu',0.5;
-                  'sigma',0.5};
-    sys.vardef = {'Y',5*ones(n,1)};     % SDE variables {'name',value}
-    sys.tspan = [0 10];                 % default time span  
+function sys = OrnsteinUhlenbeck(n)
+    % Handle to our SDE functions
+    sys.sdeF = @sdeF;                   % deterministic coefficients
+    sys.sdeG = @sdeG;                   % stochastic coefficients
+ 
+    % Our SDE parameters
+    sys.pardef = [ struct('name','theta', 'value',1.0);
+                   struct('name','mu',    'value',0.5);
+                   struct('name','sigma', 'value',0.5) ];
+               
+    % Our SDE variables
+    sys.vardef = struct('name','Y',  'value',5*ones(n,1));
+    
+    % Default time span
+    sys.tspan = [0 10];  
            
    % Specify SDE solvers and default options
     sys.sdesolver = {@sdeIto};          % Pertinent SDE solvers
@@ -82,8 +88,8 @@ function sys = SDEdemo2(n)
     sys.sdeoption.NoiseSources = n;     % Number of Wiener noise processes
 
     % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{SDEdemo2}';
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = {'\textbf{Ornstein-Uhlenbeck}';
         '';
         'N independent Ornstein-Uhlenbeck processes';
         '\qquad $dY_i = \theta (\mu - Y_i)\,dt + \sigma dW_i$';
@@ -97,28 +103,28 @@ function sys = SDEdemo2(n)
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
               
     % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait = [];
  
     % Include the Phase Portrait panel in the GUI
-    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+    sys.panels.bdPhasePortrait = [];
 
-    % Include the Space-Time Portrait panel in the GUI
-    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+    % Include the Space-Time panel in the GUI
+    sys.panels.bdSpaceTime = [];
 
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';      
+    sys.panels.bdSolverPanel = [];      
     
     % Function hook for the GUI System-New menu
     sys.self = @self;    
 end
 
 % The deterministic coefficient function.
-function F = odefun(t,Y,theta,mu,sigma)  
+function F = sdeF(t,Y,theta,mu,sigma)  
     F = theta .* (mu - Y);
 end
 
 % The noise coefficient function.
-function G = sdefun(t,Y,theta,mu,sigma)
+function G = sdeG(t,Y,theta,mu,sigma)
     G = sigma .* eye(numel(Y));
 end
 
@@ -126,11 +132,11 @@ end
 function sys = self()
     % open a dialog box prompting the user for the value of n
     n = bdEditScalars({100,'number of processes'}, ...
-        'New System', 'SDEdemo2');
+        'New System', mfilename);
     % if the user cancelled then...
     if isempty(n)
-        sys = [];                       % return empty sys
+        sys = [];                             % return empty sys
     else
-        sys = SDEdemo2(round(n));       % generate a new sys
+        sys = OrnsteinUhlenbeck(round(n));    % generate a new sys
     end
 end

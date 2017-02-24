@@ -1,4 +1,4 @@
-% HindmarshRose Hindmarsh-Rose neural network
+% HindmarshRose   Network of Hindmarsh-Rose neurons
 % The Hindmarsh-Rose equations
 %    x' = y - a*x.^3 + b*x.^2 - z + I - gs*(x-Vs).*Inet;
 %    y' = c - d*x.^2 - y;
@@ -8,12 +8,14 @@
 %    F(x) = 1./(1+exp(-x));
 %   
 % Example:
-%   n = 20;                     % number of neurons
-%   sys = HindmarshRose(n);     % construct the system struct
-%   gui = bdGUI(sys);           % open the Brain Dynamics GUI
+%   n = 20;                           % Number of neurons
+%   Kij = circshift(eye(n),1) + ...   % Connection matrix
+%         circshift(eye(n),-1);       % (a chain in this case)
+%   sys = HindmarshRose(Kij);         % Construct the system struct
+%   gui = bdGUI(sys);                 % Open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2016a)
+%   Stewart Heitmann (2016a,2017a)
 
 
 % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
@@ -43,36 +45,42 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = HindmarshRose(n)
-    % Construct the default connection matrix (a chain in this case)
-    Kij = circshift(eye(n),1) + circshift(eye(n),-1);
+function sys = HindmarshRose(Kij)
+    % determine the number of nodes from Kij
+    n = size(Kij,1);
     
-    % Construct the system struct
-    sys.odefun = @odefun;               % Handle to our ODE function
-    sys.pardef = {'Kij',Kij;            % ODE parameters {'name',value}
-                  'a',1;
-                  'b',3;
-                  'c',1;
-                  'd',5;
-                  'r',0.006;
-                  's',4;
-                  'x0',-1.6;
-                  'Iapp',1.5;
-                  'gs',0.1;
-                  'Vs',2;
-                  'theta',-0.25};
-    sys.vardef = {'x',rand(n,1);        % ODE variables {'name',value}
-                  'y',rand(n,1);
-                  'z',rand(n,1)};
-    sys.tspan = [0 1000];               % default time span [begin end]
+    % Handle to our ODE function
+    sys.odefun = @odefun;
+    
+    % Our ODE parameters
+    sys.pardef = [ struct('name','Kij',   'value',Kij);
+                   struct('name','a',     'value',1);
+                   struct('name','b',     'value',3);
+                   struct('name','c',     'value',1);
+                   struct('name','d',     'value',5);
+                   struct('name','r',     'value',0.006);
+                   struct('name','s',     'value',4);
+                   struct('name','x0',    'value',-1.6);
+                   struct('name','Iapp',  'value',1.5);
+                   struct('name','gs',    'value',0.1);
+                   struct('name','Vs',    'value',2);
+                   struct('name','theta', 'value',-0.25) ];
+                   
+    % Our ODE variables
+    sys.vardef = [ struct('name','x', 'value',rand(n,1));
+                   struct('name','y', 'value',rand(n,1));
+                   struct('name','z', 'value',rand(n,1)) ];
+
+    % Default time span
+    sys.tspan = [0 1000];
               
     % Specify ODE solvers and default options
     sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
     sys.odeoption = odeset('RelTol',1e-6);              % ODE solver options
 
     % Include the Latex (Equations) panel in the GUI
-    sys.gui.bdLatexPanel.title = 'Equations'; 
-    sys.gui.bdLatexPanel.latex = {'\textbf{HindmarshRose}';
+    sys.panels.bdLatexPanel.title = 'Equations'; 
+    sys.panels.bdLatexPanel.latex = {'\textbf{HindmarshRose}';
         '';
         'Network of reciprocally-coupled Hindmarsh-Rose neurons';
         '\qquad $\dot X_i = Y_i - a\,X_i^3 + b\,X_i^2 - Z_i + I_{app} - I_{net}$';
@@ -90,18 +98,16 @@ function sys = HindmarshRose(n)
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
     
     % Include the Time Portrait panel in the GUI
-    sys.gui.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait = [];
  
     % Include the Phase Portrait panel in the GUI
-    sys.gui.bdPhasePortrait.title = 'Phase Portrait';
+    sys.panels.bdPhasePortrait = [];
 
-    % Include the Space-Time Portrait panel in the GUI
-    sys.gui.bdSpaceTimePortrait.title = 'Space-Time';
+    % Include the Space-Time panel in the GUI
+    sys.panels.bdSpaceTime = [];
 
-    sys.gui.bdCorrelationPanel = [];
-    
     % Include the Solver panel in the GUI
-    sys.gui.bdSolverPanel.title = 'Solver';                 
+    sys.panels.bdSolverPanel = [];                 
     
     % Function hook for the GUI System-New menu
     sys.self = @self;
