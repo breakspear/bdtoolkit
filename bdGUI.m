@@ -8,9 +8,9 @@ classdef bdGUI
     %   gui = bdGUI(sys);
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a, 2017a)
+    %  Stewart Heitmann (2016a,2017a)
 
-    % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -38,12 +38,15 @@ classdef bdGUI
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
-    properties
-        control         % handle to the bdControl object
+    properties (Dependent)
+        sys             % system definition structure
+        sol             % current output of the solver
+        sox             % current auxiliary variables
     end
     
     properties (Access=private)
         fig             % handle to application figure
+        control         % handle to the bdControl object
         panel1          % handle to uipanel 1
         panel2          % handle to uipanel 2
         tabgroup        % handle to tabgroup in panel1
@@ -162,6 +165,21 @@ classdef bdGUI
             % force a recompute
             notify(this.control,'recompute');
             
+        end
+        
+        % Get sys property
+        function sys = get.sys(this)
+            sys = this.control.sys;
+        end
+        
+        % Get sol property
+        function sol = get.sol(this)
+            sol = this.control.sol;
+        end
+        
+        % Get sox property
+        function sox = get.sox(this)
+            sox = this.control.sox;
         end
     end
     
