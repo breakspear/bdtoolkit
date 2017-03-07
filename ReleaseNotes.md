@@ -5,10 +5,12 @@ Released in conjuction with the following paper:
 *Heitmann, Aburn, Breakspear (2017) The Brain Dynamics Toolbox: An open-source software package for simulating dynamical systems in MATLAB.*
 
 New features include:
-(1) More flexible syntax for defining system parameters and variables.
-(2) Automatic validation of *sys* structs at load-time.
-(3) System fields *tspan*, *odesolver*, *odeoption*, *ddesolver*, *ddeoption*, *sdesolver*, *sdeoption* may now be omitted if the default settings are acceptable.
-(4) Revised set of example models.
+(1) The GUI now supports multiple instances of plot panels that can be loaded at run-time via pull-down menus.
+(2) Time and Phase portraits now support plot 'hold on/off'.
+(3) More flexible syntax for defining system parameters and variables in the *sys* struct.
+(4) Automatic validation of *sys* structs at load-time.
+(5) System fields *tspan*, *odesolver*, *odeoption*, *ddesolver* and *ddeoption* may now be omitted if the default settings are acceptable.
+(6) The set of example models has been substantially revised.
  
 Bug fixes include:
 (1) interpolation of time in space-time plots.
@@ -22,9 +24,11 @@ Bug fixes include:
 (6) *odeEuler* was renamed *odeEul*;
 (7) *sdeIto* was renamed *sdeEM*;
 (8) *sdeStratonovich* was renamed *sdeSH*;
-(9) *bdVerify* was renamed *bdSysCheck*.
+(9) *bdVerify* was renamed *bdSysCheck*;
+(10) *bdUtils* was renamed *bd*;
+(11) The *gui.control* property was replaced by *gui.sys, gui.sol* and *gui.aux*.
 
-**Important message to users migrating from 2016a to 2017a.** Sys structs created for 2016a will need to be modified to accommodate the changes above. It is recommended that *bdSysCheck* be used to assist the migration prcocess. It will detect obsolete fields in sys structs.
+**Important message to users migrating from 2016a to 2017a.** Scripts and sys structures written for 2016a will need to be modified to accommodate the changes above. We highly recommend running *bdSysCheck* on existing system definitions when migrating old code. It will detect obsolete and invalid sys fields and issue helpful warnings. 
 
 
 #### Version 2016a (24 Dec 2016)

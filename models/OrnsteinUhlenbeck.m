@@ -68,53 +68,52 @@
 % POSSIBILITY OF SUCH DAMAGE.
 function sys = OrnsteinUhlenbeck(n)
     % Handle to our SDE functions
-    sys.sdeF = @sdeF;                   % deterministic coefficients
-    sys.sdeG = @sdeG;                   % stochastic coefficients
+    sys.sdeF = @sdeF;       % deterministic coefficients
+    sys.sdeG = @sdeG;       % stochastic coefficients
  
-    % Our SDE parameters
+    % SDE parameters
     sys.pardef = [ struct('name','theta', 'value',1.0);
                    struct('name','mu',    'value',0.5);
                    struct('name','sigma', 'value',0.5) ];
                
-    % Our SDE variables
+    % SDE state variables
     sys.vardef = struct('name','Y',  'value',5*ones(n,1));
     
-    % Default time span
-    sys.tspan = [0 10];  
-           
-   % Specify SDE solvers and default options
-    sys.sdesolver = {@sdeEM};           % Pertinent SDE solvers
-    sys.sdeoption.InitialStep = 0.01;   % SDE solver step size (optional)
-    sys.sdeoption.NoiseSources = n;     % Number of Wiener noise processes
+    % Nominate the applicable SDE solvers
+    sys.sdesolver = {@sdeEM};           % Euler-Murayama Method
+    
+    % SDE solver options
+    sys.sdeoption.InitialStep = 0.01;   % Solver step size
+    sys.sdeoption.NoiseSources = n;     % Number of noise sources
 
-    % Include the Latex (Equations) panel in the GUI
+    % Latex (Equations) panel
     sys.panels.bdLatexPanel.title = 'Equations'; 
     sys.panels.bdLatexPanel.latex = {'\textbf{Ornstein-Uhlenbeck}';
         '';
-        'N independent Ornstein-Uhlenbeck processes';
+        'System of $n$ independent Ornstein-Uhlenbeck processes';
         '\qquad $dY_i = \theta (\mu - Y_i)\,dt + \sigma dW_i$';
         'where';
-        '\qquad $Y(t)$ is a vector of dynamic variables ($n$ x $1$),';
+        '\qquad $Y_i(t)$ are the $n$ state variables,';
+        '\qquad $\mu$ dictates the long-term mean of $Y_i(t)$,';
         '\qquad $\theta>0$ is the rate of convergence to the mean,';
-        '\qquad $\mu$ is the (long-term) mean,';
-        '\qquad $\sigma>0$ is the volatility.';
+        '\qquad $\sigma>0$ is the volatility of the noise.';
         '';
         'Notes';
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
               
-    % Include the Time Portrait panel in the GUI
+    % Time Portrait panel
     sys.panels.bdTimePortrait = [];
  
-    % Include the Phase Portrait panel in the GUI
+    % Phase Portrait panel
     sys.panels.bdPhasePortrait = [];
 
-    % Include the Space-Time panel in the GUI
-    sys.panels.bdSpaceTime = [];
-
-    % Include the Solver panel in the GUI
+    % Solver panel
     sys.panels.bdSolverPanel = [];      
     
-    % Function hook for the GUI System-New menu
+    % Default time span (optional)
+    sys.tspan = [0 10];  
+           
+    % Function hook for the bdGUI System-Reconfigure menu
     sys.self = @self;    
 end
 
