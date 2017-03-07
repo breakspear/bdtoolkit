@@ -1,6 +1,6 @@
 %bdSolve  Solve an initial-value problem using the Brain Dynamics Toolbox
 %Usage: 
-%   [sol,solx] = bdSolve(sys,tspan,@solverfun,solvertype)
+%   [sol,sox] = bdSolve(sys,tspan,@solverfun,solvertype)
 %where
 %   sys is a system struct describing the dynamical system
 %   tspan=[0 100] is the time span of the integration (optional)
@@ -17,23 +17,37 @@
 %RETURNS
 %   sol is the solution structure in the same format as that returned
 %      by the matlab ode45 solver.
-%   solx is a solution structure that contains any auxiliary variables
+%   sox is a solution structure that contains any auxiliary variables
 %      that the model has defined. The format is the same as sol.
-%   Use the bdEval function to extract the results from sol and solx.
+%   Use the bdEval function to extract the results from sol and sox.
 %
-%EXAMPLE
-%    sys = ODEdemo1;                    % construct our system
-%    tspan = [0 10];                    % integration time domain
-%    sol = bdSolve(sys,tspan);          % solve
-%    tplot = 0:0.1:10;                  % time domain of interest
-%    Y = bdEval(sol,tplot);             % extract solution
-%    plot(tplot,Y);                     % plot the result
-%    xlabel('time'); ylabel('y');
+%EXAMPLE 1
+%   sys = LinearODE;                % Linear system of ODEs
+%   tspan = [0 10];                 % integration time domain
+%   sol = bdSolve(sys,tspan);       % call the solver
+%   tplot = 0:0.1:10;               % time domain of interest
+%   Y = bdEval(sol,tplot);          % extract/interpolate the solution
+%   plot(tplot,Y);                  % plot the result
+%   xlabel('time'); ylabel('y');
+%
+%EXAMPLE 2 (Auxiliary variables)
+%   n = 20;                         % number of oscillators
+%   Kij = ones(n);                  % coupling matrix (global coupling)
+%   sys = KuramotoNet(Kij);         % Kuramoto model
+%   tspan = [0 100];                % integration time domain
+%   [sol,sox] = bdSolve(sys,tspan); % call the solver
+%   tplot = 0:1:100;                % time domain of interest
+%   phi = bdEval(sox,tplot,1:n);    % extract auxiliary variables, phi
+%   R = bdEval(sox,tplot,n+1);      % extract auxiliary variable, R
+%   figure; plot(tplot,phi);        % plot the phi variables
+%   xlabel('time'); ylabel('sin(theta)');
+%   figure; plot(tplot,R);          % plot the R variable
+%   xlabel('time'); ylabel('Kuramoto R');
 %
 %AUTHORS
-%   Stewart Heitmann (2016a, 2017a)
+%   Stewart Heitmann (2016a,2017a)
 
-% Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -60,7 +74,7 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function [sol,solx] = bdSolve(sys,tspan,solverfun,solvertype)
+function [sol,sox] = bdSolve(sys,tspan,solverfun,solvertype)
         % check the number of output variables
         if nargout>2
             error('Too many output variables');
@@ -73,9 +87,9 @@ function [sol,solx] = bdSolve(sys,tspan,solverfun,solvertype)
    
         % check the validity of the sys struct and fill missing fields with default values
         try
-            sys = bdUtils.syscheck(sys);
+            sys = bd.syscheck(sys);
         catch ME
-            throwAsCaller(MException('bdSolve',ME.message));
+            throwAsCaller(ME);
         end
 
         % use defaults for missing input parameters
@@ -84,23 +98,23 @@ function [sol,solx] = bdSolve(sys,tspan,solverfun,solvertype)
                 % Get tspan from the sys settings. 
                 tspan = sys.tspan;
                 % Use the first solver found in the sys settings. 
-                solvermap = bdUtils.solverMap(sys);
+                solvermap = bd.solverMap(sys);
                 solverfun = solvermap(1).solverfunc;
                 solvertype = solvermap(1).solvertype;
             case 2      % Case of bdSolve(sys,tspan)
                 % Use the first solver found in the sys settings. 
-                solvermap = bdUtils.solverMap(sys);
+                solvermap = bd.solverMap(sys);
                 solverfun = solvermap(1).solverfunc;
                 solvertype = solvermap(1).solvertype;
             case 3      % Case of bdSolve(sys,tspan,solverfun)
                 % Determine the solvertype from the sys settings
-                solvertype = bdUtils.solverType(sys,solverfun);
+                solvertype = bd.solverType(sys,solverfun);
         end
         
         % Call the appropriate solver
         try
-            [sol,solx] = bdUtils.solve(sys,tspan,solverfun,solvertype);
+            [sol,sox] = bd.solve(sys,tspan,solverfun,solvertype);
         catch ME
-            throwAsCaller(MException('bdSolve',ME.message));
+            throwAsCaller(ME);
         end
 end

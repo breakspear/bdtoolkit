@@ -13,7 +13,7 @@ classdef bdCorrPanel < handle
     %AUTHORS
     %  Stewart Heitmann (2016a,2017a)
 
-    % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -68,13 +68,13 @@ classdef bdCorrPanel < handle
             control.sys.panels.bdCorrPanel = bdCorrPanel.syscheck(control.sys);
 
             % map vardef entries to rows in sol
-            this.varMap = bdUtils.varMap(control.sys.vardef);
+            this.varMap = bd.varMap(control.sys.vardef);
             if isfield(control.sys,'auxdef')
                 % map auxdef entries to rows in sal
-                this.auxMap = bdUtils.varMap(control.sys.auxdef);
+                this.auxMap = bd.varMap(control.sys.auxdef);
             else
                 % construct empty maps
-                this.auxMap = bdUtils.varMap([]);
+                this.auxMap = bd.varMap([]);
             end
             
             % construct the uitab

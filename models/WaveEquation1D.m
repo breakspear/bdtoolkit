@@ -16,7 +16,7 @@ function sys = WaveEquation1D(n)
     % Authors
     %   Stewart Heitmann (2016a,2017a)
     
-    % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -81,9 +81,10 @@ function sys = WaveEquation1D(n)
     % Default time span
     sys.tspan = [0 20];
     
-    % Specify ODE solvers and default options
-    sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
-    sys.odeoption = odeset('RelTol',1e-6,'InitialStep',0.00001);   % ODE solver options
+    % Specify ODE solvers and default solver options
+    sys.odesolver = {@ode45,@ode23,@ode113,@odeEul};
+    sys.odeoption.RelTol = 1e-6;
+    sys.InitialStep = 0.00001;
 
     % Include the Latex (Equations) panel in the GUI
     sys.panels.bdLatexPanel.title = 'Equations'; 

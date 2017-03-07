@@ -3,9 +3,9 @@ classdef bdControl < handle
     %  Internal toolbox object not intended to be called by end-users.
     % 
     %AUTHORS
-    %  Stewart Heitmann (2016a, 2017a)
+    %  Stewart Heitmann (2016a,2017a)
 
-    % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,7 @@ classdef bdControl < handle
     properties
         sys         % user-supplied system definition
         sol = []    % solution struct returned by the matlab solver
-        solx = []   % auxiliary variables (computed by sys.auxfun)
+        sox = []    % auxiliary variables (computed by sys.auxfun)
         solvermap   % maps the solver functions to name and type strings
         solveridx   % index of the active solver
     end
@@ -60,7 +60,7 @@ classdef bdControl < handle
             % Check the contents of sys and fill any missing fields with
             % default values. Rethrow any problems back to the caller.
             try
-                sys = bdUtils.syscheck(sys);
+                sys = bd.syscheck(sys);
             catch ME
                 throwAsCaller(MException('bdtoolkit:bdControl',ME.message));
             end
@@ -77,7 +77,7 @@ classdef bdControl < handle
             this.sys = sys;
             
             % contrsuct the solver map
-            this.solvermap = bdUtils.solverMap(sys); 
+            this.solvermap = bd.solverMap(sys); 
             
             % currently active solver
             this.solveridx = 1;            
@@ -724,7 +724,7 @@ classdef bdControl < handle
              end
 
             % Call the solver
-            [this.sol,this.solx] = bdUtils.solve(this.sys,tspan,solverfunc,solvertype);
+            [this.sol,this.sox] = bd.solve(this.sys,tspan,solverfunc,solvertype);
             
             % Hold the SDEnoise if the HOLD button is 'on'
             switch solvertype

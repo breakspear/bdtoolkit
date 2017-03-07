@@ -45,9 +45,9 @@
 %   std(sol1.y - sol2.y)                          % results are identical
 %
 % Authors
-%   Stewart Heitmann (2016a, 2017a)
+%   Stewart Heitmann (2016a,2017a)
 
-% Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -90,7 +90,7 @@ function sys = BrownianMotion()
     sys.tspan = [0 10];
               
    % Specify SDE solvers and default options
-    sys.sdesolver = {@sdeIto};          % Relevant SDE solvers
+    sys.sdesolver = {@sdeEM};           % Relevant SDE solvers
     sys.sdeoption.InitialStep = 0.01;   % SDE solver step size (optional)
     sys.sdeoption.NoiseSources = 1;     % Number of driving Wiener processes
 

@@ -19,9 +19,9 @@ function bdSysCheck(sys)
     %  ALL TESTS PASSED OK
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a, 2017a)
+    %  Stewart Heitmann (2016a,2017a)
     
-    % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -51,9 +51,9 @@ function bdSysCheck(sys)
 
     % check that sys is valid and fill missing fields with defaults   
     try
-        sys = bdUtils.syscheck(sys);
+        sys = bd.syscheck(sys);
     catch ME
-        throwAsCaller(MException('bdtoolkit:bdVerify',ME.message));
+        throwAsCaller(MException('bdtoolkit:bdSysCheck',ME.message));
     end
     disp('sys struct format is OK');
     
@@ -78,9 +78,45 @@ function bdSysCheck(sys)
         Y = sys.odefun(t,Y0,par{:});
         disp(['  ',num2str(size(Y),'Returns Y as size [%d %d]')]);
         if size(Y,2)~=1
-            throwAsCaller(MException('bdtoolkit:bdVerify','sys.odefun must return Y as a column vector'));
+            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.odefun must return Y as a column vector'));
         end
-        disp('sys.odefun format is OK');
+        disp('  sys.odefun format is OK');
+    end
+
+    % test sys.odefun and sys.auxfun with each ODE solver
+    if isfield(sys,'odefun')
+        if isempty(sys.pardef)
+            parnames=',';
+        else            
+            parnames = sprintf('%s,',sys.pardef.name);
+        end
+        for solveridx = 1:numel(sys.odesolver)
+            solverfun = sys.odesolver{solveridx};
+            solverstr = func2str(solverfun);
+            disp(['Calling sol = ',solverstr,'(sys.odefun,tspan,Y0,odeoption,',parnames(1:end-1),') returns']);
+            sol = bdSolve(sys,sys.tspan,solverfun);
+            solx = num2str(size(sol.x),'[%d %d]');
+            soly = num2str(size(sol.y),'[%d %d]');
+            disp(['  sol.x as size ', solx]);
+            disp(['  sol.y as size ', soly]);
+            
+            % test sys.auxfun with the sol struct
+            if isfield(sys,'auxfun')
+                % call the auxfun with the final sol struct we just computed
+                disp(['Calling aux = sys.auxfun(sol,',parnames(1:end-1),') returns']);
+                par = {sys.pardef.value};
+                aux = sys.auxfun(sol,par{:});
+                disp(['  ',num2str(size(aux),'aux as size [%d %d]')]);      
+                if size(aux,2)~=size(sol.y,2)
+                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with the same number of columns as sol.y'));
+                end
+                aux0 = bdGetValues(sys.auxdef);
+                if size(aux,1)~=numel(aux0)
+                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
+                end                
+                disp('  sys.auxfun format is OK');
+            end            
+        end
     end
     
     % test sys.ddefun
@@ -109,13 +145,50 @@ function bdSysCheck(sys)
         Y = sys.ddefun(t,Y0,Z,par{:});
         disp(['  ',num2str(size(Y),'Returns Y as size [%d %d]')]);
         if size(Y,2)~=1
-            throwAsCaller(MException('bdtoolkit:bdVerify','sys.ddefun must return Y as a column vector'));
+            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.ddefun must return Y as a column vector'));
         end
         if size(Y,1)~=n
-            throwAsCaller(MException('bdtoolkit:bdVerify','sys.odefun must return Y as size [%d 1]',n));
+            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.odefun must return Y as size [%d 1]',n));
         end
         disp('sys.ddefun format is OK');
     end
+
+    % test sys.ddefun and sys.auxfun with each DDE solver
+    if isfield(sys,'ddefun')
+        if isempty(sys.pardef)
+            parnames=',';
+        else            
+            parnames = sprintf('%s,',sys.pardef.name);
+        end
+        for solveridx = 1:numel(sys.ddesolver)
+            solverfun = sys.ddesolver{solveridx};
+            solverstr = func2str(solverfun);
+            disp(['Calling sol = ',solverstr,'(sys.ddefun,lags,Y0,tspan,ddeoption,',parnames(1:end-1),') returns']);
+            sol = bdSolve(sys,sys.tspan,solverfun);
+            solx = num2str(size(sol.x),'[%d %d]');
+            soly = num2str(size(sol.y),'[%d %d]');
+            disp(['  sol.x as size ', solx]);
+            disp(['  sol.y as size ', soly]);
+
+            % test sys.auxfun with the sol struct
+            if isfield(sys,'auxfun')
+                % call the auxfun with the final sol struct we just computed
+                disp(['Calling aux = sys.auxfun(sol,',parnames(1:end-1),') returns']);
+                par = {sys.pardef.value};
+                aux = sys.auxfun(sol,par{:});
+                disp(['  ',num2str(size(aux),'aux as size [%d %d]')]);      
+                if size(aux,2)~=size(sol.y,2)
+                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with the same number of columns as sol.y'));
+                end
+                aux0 = bdGetValues(sys.auxdef);
+                if size(aux,1)~=numel(aux0)
+                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
+                end                
+                disp('  sys.auxfun format is OK');
+            end            
+        end
+    end
+    
     
     % test sys.sdeF
     if isfield(sys,'sdeF')
@@ -138,9 +211,9 @@ function bdSysCheck(sys)
         Y = sys.sdeF(t,Y0,par{:});
         disp(['  ',num2str(size(Y),'Returns Y as size [%d %d]')]);
         if size(Y,2)~=1
-            throwAsCaller(MException('bdtoolkit:bdVerify','sys.sdeF must return Y as a column vector'));
+            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.sdeF must return Y as a column vector'));
         end
-        disp('sys.sdeF format is OK');
+        disp('  sys.sdeF format is OK');
     end
     
     % test sys.sdeG
@@ -164,70 +237,52 @@ function bdSysCheck(sys)
         G = sys.sdeG(t,Y0,par{:});
         disp(['  ',num2str(size(G),'Returns G as size [%d %d]')]);      
         if size(G,1)~=size(Y0,1)
-            throwAsCaller(MException('bdtoolkit:bdVerify','sys.sdeG must return an (nxm) matrix where n=numel(Y0)'));
+            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.sdeG must return an (nxm) matrix where n=numel(Y0)'));
         end
         if size(G,2)~=sys.sdeoption.NoiseSources
-            throwAsCaller(MException('bdtoolkit:bdVerify','sys.sdeG must return an (nxm) matrix where m=sys.sdeoption.NoiseSources'));
+            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.sdeG must return an (nxm) matrix where m=sys.sdeoption.NoiseSources'));
         end
-        disp('sys.sdeG format is OK');
+        disp('  sys.sdeG format is OK');
     end
-        
-    % test sys.auxfun
-    if isfield(sys,'auxfun')
+       
+    % test sys.sdeF abd sys.sdeG with each SDE solver
+    if isfield(sys,'sdeF') && isfield(sys,'sdeG')
         if isempty(sys.pardef)
             parnames=',';
-        else
-            parnames = sprintf('%s,',sys.pardef{:,1});
+        else            
+            parnames = sprintf('%s,',sys.pardef.name);
         end
-        % generate a faux time domain from tspan
-        tcount = 11;
-        t = linspace(sys.tspan(1), sys.tspan(2), tcount);
-        % generate faux Y values by replicating the initial conditions 
-        Y0 = bdGetValues(sys.vardef);
-        Y = Y0(:,ones(1,tcount));
-        % call the auxfun
-        disp(['Calling Yaux = sys.auxfun(t,Y,',parnames(1:end-1),') where']);
-        disp(['t is size [', num2str(size(t)), ']']);
-        disp(['Y is size [', num2str(size(Y)), ']']);
-        for indx = 1:size(sys.pardef,1)
-            pname = sys.pardef{indx,1};
-            psize = size(sys.pardef{indx,2});
-            disp([pname ' is size [', num2str(psize), ']']);
+        for solveridx = 1:numel(sys.sdesolver)
+            solverfun = sys.sdesolver{solveridx};
+            solverstr = func2str(solverfun);
+            disp(['Calling sol = ',solverstr,'(sys.sdeF,sys.sdeG,tspan,Y0,ddeoption,',parnames(1:end-1),') returns']);
+            sol = bdSolve(sys,sys.tspan,solverfun);
+            solx = num2str(size(sol.x),'[%d %d]');
+            soly = num2str(size(sol.y),'[%d %d]');
+            solW = num2str(size(sol.dW),'[%d %d]');
+            disp(['  sol.x as size ', solx]);
+            disp(['  sol.y as size ', soly]);
+            disp(['  sol.dW as size ', solW]);
+            
+            % test sys.auxfun with the sol struct
+            if isfield(sys,'auxfun')
+                % call the auxfun with the final sol struct we just computed
+                disp(['Calling aux = sys.auxfun(sol,',parnames(1:end-1),') returns']);
+                par = {sys.pardef.value};
+                aux = sys.auxfun(sol,par{:});
+                disp(['  ',num2str(size(aux),'aux as size [%d %d]')]);      
+                if size(aux,2)~=size(sol.y,2)
+                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with the same number of columns as sol.y'));
+                end
+                aux0 = bdGetValues(sys.auxdef);
+                if size(aux,1)~=numel(aux0)
+                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
+                end                
+                disp('  sys.auxfun format is OK');
+            end            
         end
-        Yaux = sys.auxfun(t,Y,sys.pardef{:,2});
-        disp(num2str(size(Yaux),'returns Yaux as size [%d %d]'));      
-        assert(size(Yaux,2)==tcount, 'sys.auxfun must return Yaux with the same number of columns as t');        
-        disp('sys.auxfun format is OK');
-        disp('---');
     end
   
     disp('ALL TESTS PASSED OK');
 end
 
-
-% function vec = GetDefValues(xxxdef)
-% %GetDefValues returns the values stored in a pardef or vardef cell array.
-% %This function is useful for extracting the values stored in a user-defined
-% %vardef array as a single vector for use by the ODE solver.
-% %Usage:
-% %   vec = GetDefValues(xxxdef)
-% %where xxxdef is a cell array of {'name',value} pairs. 
-% %Example:
-% %  vardef = {'a',1;
-% %            'b',[2 3 4];
-% %            'c',[5 8; 6 9; 7 10]};
-% %  y0 = GetDefValues(vardef);
-% %  ...
-% %  sol = ode45(@odefun,tspan,y0,...)
-% 
-%     % extract the second column of xxxdef
-%     vec = xxxdef(:,2);
-%     
-%     % convert each cell entry to a column vector
-%     for indx=1:numel(vec)
-%         vec{indx} = reshape(vec{indx},[],1);
-%     end
-%     
-%     % concatenate the column vectors to a simple vector
-%     vec = cell2mat(vec);
-% end

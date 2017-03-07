@@ -39,7 +39,7 @@
 % Authors
 %   Stewart Heitmann (2016a,2017a)
 
-% Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -83,7 +83,7 @@ function sys = OrnsteinUhlenbeck(n)
     sys.tspan = [0 10];  
            
    % Specify SDE solvers and default options
-    sys.sdesolver = {@sdeIto};          % Pertinent SDE solvers
+    sys.sdesolver = {@sdeEM};           % Pertinent SDE solvers
     sys.sdeoption.InitialStep = 0.01;   % SDE solver step size (optional)
     sys.sdeoption.NoiseSources = n;     % Number of Wiener noise processes
 

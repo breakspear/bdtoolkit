@@ -18,7 +18,7 @@
 %   Stewart Heitmann (2016a,2017a)
 
 
-% Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -75,7 +75,7 @@ function sys = HindmarshRose(Kij)
     sys.tspan = [0 1000];
               
     % Specify ODE solvers and default options
-    sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};  % ODE solvers
+    sys.odesolver = {@ode45,@ode23,@ode113,@odeEul};    % ODE solvers
     sys.odeoption = odeset('RelTol',1e-6);              % ODE solver options
 
     % Include the Latex (Equations) panel in the GUI

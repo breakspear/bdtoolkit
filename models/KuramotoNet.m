@@ -15,7 +15,7 @@
 % Authors
 %   Stewart Heitmann (2016a,2017a)
 
-% Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -50,25 +50,29 @@ function sys = KuramotoNet(Kij)
     sys.odefun = @odefun;
     sys.auxfun = @auxfun;
     
-    % Our ODE parameters
+    % ODE parameters
     sys.pardef = [ struct('name','Kij',   'value',Kij);
                    struct('name','k',     'value',1);               
                    struct('name','omega', 'value',randn(n,1)) ];
                
-    % Our ODE variables
+    % ODE state variables
     sys.vardef = struct('name','theta', 'value',2*pi*rand(n,1));
     
-    % Our axiliary variables
-    sys.auxdef = [ struct('phi',zeros(n,1);
-                  'R',0};
-    sys.tspan = [0 100];                    % default time span [begin end]
+    % Auxiliary variables
+    sys.auxdef = [ struct('name','phi', 'value',zeros(n,1));
+                   struct('name','R',   'value',0) ];
+               
+    % Time span
+    sys.tspan = [0 100];
 
-    % Specify ODE solvers and default options
-    sys.odesolver = {@ode45,@ode23,@ode113,@odeEuler};      % ODE solvers
-    sys.odeoption = odeset('RelTol',1e-6, 'MaxStep',0.1);   % ODE solver options
-                
+    % Relevant ODE solvers
+    sys.odesolver = {@ode45,@ode23,@ode113,@odeEul};
+    
+    % ODE solver options
+    sys.odeoption.RelTol = 1e-6;
+    sys.odeoption.MaxStep = 0.1;                
                     
-    % Include the Latex (Equations) panel in the GUI
+    % Latex (Equations) panel
     sys.panels.bdLatexPanel.title = 'Equations'; 
     sys.panels.bdLatexPanel.latex = {'\textbf{Kuramoto}';
         '';
@@ -94,19 +98,19 @@ function sys = KuramotoNet(Kij)
         '\qquad Strogatz (2000) From Kuramoto to Crawford.';
         '\qquad Breakspear et al (2010) Generative models of cortical oscillations.'};
     
-    % Include the Time Portrait panel in the GUI
+    % Time Portrait panel
     sys.panels.bdTimePortrait.title = 'Time Portrait';
  
-    % Include the Phase Portrait panel in the GUI
+    % Phase Portrait panel
     sys.panels.bdPhasePortrait.title = 'Phase Portrait';
 
-    % Include the Space-Time panel in the GUI
+    % Space-Time panel
     sys.panels.bdSpaceTime.title = 'Space-Time';
 
-    % Include the Correlation panel in the GUI
+    % Correlation panel
     sys.panels.bdCorrPanel.title = 'Correlation';
 
-    % Include the Solver panel in the GUI
+    % Solver panel
     sys.panels.bdSolverPanel.title = 'Solver';                
 end
 
@@ -123,14 +127,18 @@ function dtheta = odefun(t,theta,Kij,k,omega)
     dtheta = omega + k/n.*sum(Kij.*sin(theta_ij),1)';   % Kuramoto Equation in vector form.
 end
 
-% The auxillary function acts on the computed solution. 
-% The inputs t and theta correspond to sol.x and sol.y respectively.
-% Here we compute the auxillary variables sin(theta) and the order parameter R.
-function aux = auxfun(t,theta,Kij,k,omega)
+% The toolbox applies this auxillary function to the solution returned by
+% the solver. The ODE parameters are the same as odefun. Its output is
+% a two dimensional array where each row containes one auxiliary variable
+% whose values are computed t all time samples in vector t.
+% In this case, the auxillary variables are
+%    phi(j) = sin(theta(j) - theta(1))
+% and the Kuramoto order parameter
+%    R = 1/n * sum(exp(1i*theta)).
+function aux = auxfun(sol,Kij,k,omega)
+    theta = sol.y;                                % (nxt) matrix
     n = size(theta,1);
-    %phi = theta - ones(n,1)*theta(1,:);           % (nxt) vector
-    %phi = mod(phi+pi,2*pi)-pi;                   % wrap phi at [-pi,pi]
-    phi = sin(theta - ones(n,1)*theta(1,:));      % (nxt) vector
+    phi = sin(theta - ones(n,1)*theta(1,:));      % (nxt) matrix
     R = abs(sum(exp(1i*theta),1))./n;             % (1xt) vector
     aux = [phi; R];
 end

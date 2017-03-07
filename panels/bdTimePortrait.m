@@ -12,9 +12,9 @@ classdef bdTimePortrait < handle
     %   sys.panels.bdTimePortrait.autolim = true
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a, 2017a)
+    %  Stewart Heitmann (2016a,2017a)
 
-    % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@ classdef bdTimePortrait < handle
         varMap          % maps entries in vardef to rows in sol.y
         auxMap          % maps entries in auxdef to rows in sal
         solMap          % maps rows in sol.y to entries in vardef
-        solxMap         % maps rows in solx.y to entries in auxdef
+        soxMap          % maps rows in sox.y to entries in auxdef
         listener        % handle to listener
     end
     
@@ -71,16 +71,16 @@ classdef bdTimePortrait < handle
             this.fig = ancestor(tabgroup,'figure');
             
             % map vardef entries to rows in sol
-            this.varMap = bdUtils.varMap(control.sys.vardef);
-            this.solMap = bdUtils.solMap(control.sys.vardef);
+            this.varMap = bd.varMap(control.sys.vardef);
+            this.solMap = bd.solMap(control.sys.vardef);
             if isfield(control.sys,'auxdef')
                 % map auxdef entries to rows in sal
-                this.auxMap = bdUtils.varMap(control.sys.auxdef);
-                this.solxMap = bdUtils.solMap(control.sys.auxdef);
+                this.auxMap = bd.varMap(control.sys.auxdef);
+                this.soxMap = bd.solMap(control.sys.auxdef);
             else
                 % construct empty maps
-                this.auxMap = bdUtils.varMap([]);
-                this.solxMap = bdUtils.solMap([]);
+                this.auxMap = bd.varMap([]);
+                this.soxMap = bd.solMap([]);
             end
             
             % number of entries in vardef
@@ -115,7 +115,7 @@ classdef bdTimePortrait < handle
             posw = 100;
             posh = 20;
             popupval = 1;  
-            popuplist = {this.solMap.name, this.solxMap.name};
+            popuplist = {this.solMap.name, this.soxMap.name};
             this.popup1 = uicontrol('Style','popup', ...
                 'String', popuplist, ...
                 'Value', popupval, ...
@@ -213,18 +213,18 @@ classdef bdTimePortrait < handle
                     % index of the variable of interest
                     yrow = solindx - solrows(1) + 1;
                 else
-                    % the popup index refers to an entry of solx
+                    % the popup index refers to an entry of sox
                     solindx = popindx - nvardef;
                     
                     % get detail of the selected variable
-                    name    = this.solxMap(solindx).name;        % name string
-                    auxindx = this.solxMap(solindx).varindx;     % auxdef index
+                    name    = this.soxMap(solindx).name;        % name string
+                    auxindx = this.soxMap(solindx).varindx;     % auxdef index
 
                     % find all rows of aux that are related to this auxdef entry
                     solrows = this.auxMap(auxindx).solindx;
 
                     % extract the values for plotting
-                    y = control.solx.y(solrows,tindx);
+                    y = control.sox.y(solrows,tindx);
 
                     % index of the variable of interest
                     yrow = solindx - solrows(1) + 1;

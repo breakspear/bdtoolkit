@@ -6,7 +6,7 @@
 %   Stewart Heitmann (2016a,2017a)
 %   Matthew Aburn (2016a)
  
-% Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -49,7 +49,7 @@ function sys = MultipNoise()
     sys.tspan = [0 5];
     
     % Specify SDE solvers and default options
-    sys.sdesolver = {@sdeIto};          % Pertinent SDE solvers
+    sys.sdesolver = {@sdeEM};           % Pertinent SDE solvers
     sys.sdeoption.InitialStep = 0.005;  % SDE solver step size (optional)
     sys.sdeoption.NoiseSources = 1;     % Number of Wiener noise processes
 

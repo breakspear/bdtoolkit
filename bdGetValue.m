@@ -8,16 +8,18 @@
 %     no mathcing name field was found.
 %
 %EXAMPLE
-%  pardef = {'a',1; 'b',[2 3 4]; 'c',5};
+%  pardef = [ struct('name','a', 'value', 1);
+%             struct('name','b', 'value',[2,3,4]);
+%             struct('name','c', 'value',[5 6; 7 8]) ];
 %  val = bdGetValue(pardef,'b')
 %
 %  val =
 %     2     3     4
 %  
 %AUTHORS
-%  Stewart Heitmann (2016a)
+%  Stewart Heitmann (2016a,2017a)
 
-% Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -46,12 +48,12 @@
 % POSSIBILITY OF SUCH DAMAGE.
 function val = bdGetValue(xxxdef,name)
     val = [];
-    nvar = size(xxxdef,1);
+    nvar = numel(xxxdef);
     for indx=1:nvar
-        if strcmp(xxxdef{indx,1},name)==1
-            val = xxxdef{indx,2};
+        if strcmp(xxxdef(indx).name,name)==1
+            val = xxxdef(indx).value;
             return
         end
     end
-    warning('bdUtils.getValue() failed to find a matching name');
+    warning('bdGetValue() failed to find a matching name');
 end

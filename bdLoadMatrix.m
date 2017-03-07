@@ -20,7 +20,7 @@ function outdata = bdLoadMatrix(name,info)
     %AUTHORS
     %  Stewart Heitmann (2016a)
 
-    % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

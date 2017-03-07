@@ -1,15 +1,15 @@
 % This script runs bdSysCheck on selected models
 
 if ~exist('bdSysCheck.m', 'file')
-    addpath ..
+    error('bdtoolkit is not in the matlab path');
 end
 
-if ~exist('LinearODE2D.m', 'file')
-    addpath ../models
+if ~exist('LinearODE.m', 'file')
+    error('bdtoolkit/models is not in the matlab path');
 end
 
-disp 'TESTING LinearODE2D';
-sys = LinearODE2D();
+disp 'TESTING LinearODE';
+sys = LinearODE();
 bdSysCheck(sys);
 disp '===';
 

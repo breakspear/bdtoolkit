@@ -8,17 +8,19 @@
 %   yyydef is the returned cell array.
 %
 %EXAMPLE
-%  pardef = {'a',1; 'b',[2 3 4]; 'c',5};
+%  pardef = [ struct('name','a', 'value', 1);
+%             struct('name','b', 'value',[2,3,4]);
+%             struct('name','c', 'value',[5 6; 7 8]) ];
 %  pardef = bdSetValue(pardef,'b',[3 6 9]);
-%  bdGetValue(pardef,'b');
+%  bdGetValue(pardef,'b')
 %
 %  ans =
 %     3     6     9
 %  
 %AUTHORS
-%  Stewart Heitmann (2016a)
+%  Stewart Heitmann (2016a,2017a)
 
-% Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -47,10 +49,10 @@
 % POSSIBILITY OF SUCH DAMAGE.
 function yyydef = bdSetValue(xxxdef,name,val)
     yyydef = xxxdef;
-    nvar = size(yyydef,1);
+    nvar = numel(yyydef);
     for indx=1:nvar
-        if strcmp(yyydef{indx,1},name)==1
-            yyydef{indx,2} = val;
+        if strcmp(yyydef(indx).name,name)==1
+            yyydef(indx).value = val;
             return
         end
     end

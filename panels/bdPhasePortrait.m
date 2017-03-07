@@ -14,9 +14,9 @@ classdef bdPhasePortrait < handle
     %   sys.panels.bdPhasePortrait.autolim = true
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a, 2017a)
+    %  Stewart Heitmann (2016a,2017a)
 
-    % Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -74,7 +74,7 @@ classdef bdPhasePortrait < handle
             this.fig = ancestor(tabgroup,'figure');
 
             % map vardef and auxdef entries to rows in sol and sal
-            this.solMap = bdUtils.solMap(control.sys.vardef);
+            this.solMap = bd.solMap(control.sys.vardef);
             
             % number of entries in vardef
             nvardef = numel(control.sys.vardef);

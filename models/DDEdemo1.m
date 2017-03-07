@@ -51,7 +51,7 @@
 % Authors
 %   Stewart Heitmann (2016a,2017a)
 
-% Copyright (C) 2016, QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -79,24 +79,28 @@
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
 function sys = DDEdemo1()
-    % Handle to our DDE function
+    % Handle to our DDE and auxiliary functions
     sys.ddefun = @ddefun;
+    sys.auxfun = @auxfun;
     
-    % Our DDE parameters
+    % DDE parameters
     sys.pardef = [ struct('name','a', 'value',-1);
                    struct('name','b', 'value', 1);
                    struct('name','c', 'value',-1);
                    struct('name','d', 'value', 1) ];
                
-    % Our DDE lag parameters
+    % DDE lag parameters
     sys.lagdef = [ struct('name','tau1', 'value',1.0);
                    struct('name','tau2', 'value',0.2) ];
                
-    % Our DDE state variables
+    % DDE state variables
     sys.vardef = [ struct('name','y1', 'value',1);
                    struct('name','y2', 'value',1);
                    struct('name','y3', 'value',1) ];
-              
+               
+    % Auxiliary variables
+    sys.auxdef = struct('name','norm', 'value',0);
+    
     % Default time span
     sys.tspan = [0 20]; 
 
@@ -142,4 +146,11 @@ function dYdt = ddefun(t,Y,Z,a,b,c,d)
     dy2dt = b*Ylag1(1) + c*Ylag2(2);    % y'_2(t) = b*y_1(t-1) + c*y_2(t-0.2)
     dy3dt = d*Y(2);                     % y'_3(t) = d*y_2(t)
     dYdt = [dy1dt; dy2dt; dy3dt];       % return a column vector
+end
+
+% The toolbox applies this auxillary function to the solution returned by
+% the solver. The DDE parameters are the same as ddefun. In this case the
+% auxiliary variable is the Euclidiean length of the state variables.
+function aux = auxfun(sol,a,b,c,d)
+    aux = sqrt(sol.y(1,:).^2 + sol.y(2,:).^2 + sol.y(3,:).^2);
 end
