@@ -54,6 +54,11 @@ classdef bdPhasePortrait < handle
         checkbox3D          % handle to 3D checkbox
         solMap              % maps rows in sol.y to entries in vardef
         listener            % handle to listener
+        vecfield            % show vector field menu flag
+        markinit            % show initial conditions menu flag
+        gridflag            % grid menu flag
+        holdflag            % hold menu flag
+        autolimflag         % auto limits menu flag                
     end
     
     methods
@@ -161,17 +166,9 @@ classdef bdPhasePortrait < handle
                 'Parent', this.tab, ...
                 'Position',[posx posy posw posh]);
 
-           
-            % construct the PhasePortrait menu (if it does not already exist)
-            obj = findobj(this.fig,'Tag','bdPhasePortraitMenu');
-            if isempty(obj)
-                bdPhasePortrait.constructMenu(this.fig,control);
-            end
-            
             % construct the tab context menu
-            this.tab.UIContextMenu = uicontextmenu;
-            uimenu(this.tab.UIContextMenu,'Label','Close Panel', 'Callback',@(~,~) this.delete());
-
+            this.contextMenu(control);
+            
             % register a callback for resizing the panel
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
 
@@ -183,14 +180,6 @@ classdef bdPhasePortrait < handle
         function delete(this)
             delete(this.listener);
             delete(this.tab);          
-            % delete the PhasePortrait menu if no more PhasePortaits exist
-            obj = findobj(this.fig,'Tag','bdPhasePortraitTab');
-            if isempty(obj)
-                obj = findobj(this.fig,'Tag','bdPhasePortraitMenu');
-                if ~isempty(obj)
-                    delete(obj);
-                end
-            end
         end
             
     end
@@ -199,9 +188,6 @@ classdef bdPhasePortrait < handle
         
         function render(this,control)
             %disp('bdPhasePortrait.render()')
-            
-            % retrieve the menu appdata
-            appdata = getappdata(this.fig,'bdPhasePortrait');
 
             % convergence test
             steadystate = convergence(control);
@@ -218,7 +204,7 @@ classdef bdPhasePortrait < handle
             tindx = find(control.sol.x>=0);
             
             % if 'hold' menu is checked then ...
-            if appdata.hold
+            if this.holdflag
                 % Change existing plots to thin lines 
                 objs = findobj(this.ax);
                 set(objs,'LineWidth',0.5);               
@@ -235,7 +221,7 @@ classdef bdPhasePortrait < handle
                 z = control.sol.y(zindx,tindx);
 
                 plot3(this.ax, x,y,z, 'color','k','Linewidth',1);
-                if appdata.markinit
+                if this.markinit
                     plot3(this.ax, x(1),y(1),z(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
                 end
                 if steadystate
@@ -246,7 +232,7 @@ classdef bdPhasePortrait < handle
                 ylabel(this.ax,ystr, 'FontSize',16);
                 zlabel(this.ax,zstr, 'FontSize',16);
 
-                if appdata.vecfield
+                if this.vecfield
                     % compute vector field
                     xlimit = this.ax.XLim;
                     ylimit = this.ax.YLim;
@@ -268,7 +254,7 @@ classdef bdPhasePortrait < handle
                 y = control.sol.y(yindx,tindx);
 
                 plot(this.ax, x,y, 'color','k','Linewidth',1);
-                if appdata.markinit
+                if this.markinit
                     plot(this.ax, x(1),y(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
                 end
                 if steadystate
@@ -278,7 +264,7 @@ classdef bdPhasePortrait < handle
                 xlabel(this.ax,xstr, 'FontSize',16);
                 ylabel(this.ax,ystr, 'FontSize',16);
                 
-                if appdata.vecfield
+                if this.vecfield
                     % compute vector field
                     xlimit = this.ax.XLim;
                     ylimit = this.ax.YLim;
@@ -292,7 +278,7 @@ classdef bdPhasePortrait < handle
                 end
                 
                 % adjust the y limits (or not)
-                if appdata.autolim
+                if this.autolimflag
                     xlim(this.ax,'auto')
                     ylim(this.ax,'auto')
                 else
@@ -302,7 +288,7 @@ classdef bdPhasePortrait < handle
             end
             
             % show gridlines (if appropriate)
-            if appdata.grid
+            if this.gridflag
                 grid(this.ax,'on');
             else
                 grid(this.ax,'off');
@@ -406,6 +392,138 @@ classdef bdPhasePortrait < handle
 %             end
 %         end       
         
+
+        function contextMenu(this,control)            
+            % init the menu flags from teh sys.panels options
+            this.vecfield = control.sys.panels.bdPhasePortrait.vecfield;
+            this.markinit = control.sys.panels.bdPhasePortrait.markinit;
+            this.gridflag = control.sys.panels.bdPhasePortrait.grid;
+            this.holdflag = control.sys.panels.bdPhasePortrait.hold;
+            this.autolimflag = control.sys.panels.bdPhasePortrait.autolim;            
+            
+            % vector-field menu check string
+            if this.vecfield
+                vecfieldcheck = 'on';
+            else
+                vecfieldcheck = 'off';
+            end
+            
+            % initial conditions markers menu check string
+            if this.markinit
+                markinitcheck = 'on';
+            else
+                markinitcheck = 'off';
+            end
+            
+            % grid menu check string
+            if this.gridflag
+                gridcheck = 'on';
+            else
+                gridcheck = 'off';
+            end
+            
+            % hold menu check string
+            if this.holdflag
+                holdcheck = 'on';
+            else
+                holdcheck = 'off';
+            end
+            
+            % autolim menu check string
+            if this.autolimflag
+                autolimcheck = 'on';
+            else
+                autolimcheck = 'off';
+            end
+            
+            % construct the tab context menu
+            this.tab.UIContextMenu = uicontextmenu;
+
+            % construct menu items
+            uimenu(this.tab.UIContextMenu, ...
+                   'Label','Vector Field', ...
+                   'Checked',vecfieldcheck, ...
+                   'Callback', @(menuitem,~) this.ContextMenuCallback(menuitem,control) );          
+            uimenu(this.tab.UIContextMenu, ...
+                   'Label','Initial Conditions', ...
+                   'Checked',markinitcheck, ...
+                   'Callback', @(menuitem,~) this.ContextMenuCallback(menuitem,control) );          
+            uimenu(this.tab.UIContextMenu, ...
+                   'Label','Grid', ...
+                   'Checked',gridcheck, ...
+                   'Callback', @(menuitem,~) this.ContextMenuCallback(menuitem,control) );
+            uimenu(this.tab.UIContextMenu, ...
+                   'Label','Hold', ...
+                   'Checked',holdcheck, ...
+                   'Callback', @(menuitem,~) this.ContextMenuCallback(menuitem,control) );
+            uimenu(this.tab.UIContextMenu, ...
+                   'Label','Auto Limits', ...
+                   'Checked',autolimcheck, ...
+                   'Callback', @(menuitem,~) this.ContextMenuCallback(menuitem,control) );
+            uimenu(this.tab.UIContextMenu, ...
+                   'Label','Close', ...
+                   'Callback',@(~,~) this.delete());
+        end        
+        
+        % Context Menu Item Callback
+        function ContextMenuCallback(this,menuitem,control)
+            switch menuitem.Label
+                case 'Vector Field'
+                    switch menuitem.Checked
+                        case 'on'
+                            this.vecfield = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            this.vecfield = true;
+                            menuitem.Checked='on';
+                    end
+                    
+                case 'Initial Conditions'
+                    switch menuitem.Checked
+                        case 'on'
+                            this.markinit = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            this.markinit = true;
+                            menuitem.Checked='on';
+                    end
+                    
+                case 'Grid'
+                    switch menuitem.Checked
+                        case 'on'
+                            this.gridflag = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            this.gridflag = true;
+                            menuitem.Checked='on';
+                    end
+                    
+                case 'Hold'
+                    switch menuitem.Checked
+                        case 'on'
+                            this.holdflag = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            this.holdflag = true;
+                            menuitem.Checked='on';
+                    end
+                    
+                case 'Auto Limits'
+                    switch menuitem.Checked
+                        case 'on'
+                            this.autolimflag = false;
+                            menuitem.Checked='off';
+                        case 'off'
+                            this.autolimflag = true;
+                            menuitem.Checked='on';
+                    end                    
+            end 
+            
+            % redraw this panel
+            this.render(control);
+        end
+
+
         % Callback for panel resizing. 
         function SizeChanged(this,parent)
             % get new parent geometry
@@ -471,139 +589,6 @@ classdef bdPhasePortrait < handle
             if isfield(sys.panels.bdPhasePortrait,'autolim')
                 syspanel.autolim = sys.panels.bdPhasePortrait.autolim;
             end
-        end
-
-        % The menu is static so that one menu can serve many instances of the class
-        function menuobj = constructMenu(fig,control)            
-            % init the appdata for the menu
-            appdata.vecfield = control.sys.panels.bdPhasePortrait.vecfield;
-            appdata.markinit = control.sys.panels.bdPhasePortrait.markinit;
-            appdata.grid = control.sys.panels.bdPhasePortrait.grid;
-            appdata.hold = control.sys.panels.bdPhasePortrait.hold;
-            appdata.autolim = control.sys.panels.bdPhasePortrait.autolim;            
-            setappdata(fig,'bdPhasePortrait',appdata);
-            
-            % vector-field menu check string
-            if appdata.vecfield
-                vecfieldcheck = 'on';
-            else
-                vecfieldcheck = 'off';
-            end
-            
-            % initial conditions markers menu check string
-            if appdata.markinit
-                markinitcheck = 'on';
-            else
-                markinitcheck = 'off';
-            end
-            
-            % grid menu check string
-            if appdata.grid
-                gridcheck = 'on';
-            else
-                gridcheck = 'off';
-            end
-            
-            % hold menu check string
-            if appdata.hold
-                holdcheck = 'on';
-            else
-                holdcheck = 'off';
-            end
-            
-            % autolim menu check string
-            if appdata.autolim
-                autolimcheck = 'on';
-            else
-                autolimcheck = 'off';
-            end
-            
-            % construct menu items
-            menuobj = uimenu('Parent',fig, 'Label','Phase Portrait', 'Tag','bdPhasePortraitMenu');
-            uimenu('Parent',menuobj, ...
-                   'Label','Vector Field', ...
-                   'Checked',vecfieldcheck, ...
-                   'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );          
-            uimenu('Parent',menuobj, ...
-                   'Label','Initial Conditions', ...
-                   'Checked',markinitcheck, ...
-                   'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );          
-            uimenu('Parent',menuobj, ...
-                   'Label','Grid', ...
-                   'Checked',gridcheck, ...
-                   'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );
-            uimenu('Parent',menuobj, ...
-                   'Label','Hold', ...
-                   'Checked',holdcheck, ...
-                   'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );
-            uimenu('Parent',menuobj, ...
-                   'Label','Auto Limits', ...
-                   'Checked',autolimcheck, ...
-                   'Callback', @(menuitem,~) bdPhasePortrait.MenuCallback(fig,menuitem,control) );
-        end        
-        
-        % Menu Item Callback
-        function MenuCallback(fig,menuitem,control)
-            % retrieve the appdata
-            appdata = getappdata(fig,'bdPhasePortrait');
-            
-            switch menuitem.Label
-                case 'Vector Field'
-                    switch menuitem.Checked
-                        case 'on'
-                            appdata.vecfield = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            appdata.vecfield = true;
-                            menuitem.Checked='on';
-                    end
-                    
-                case 'Initial Conditions'
-                    switch menuitem.Checked
-                        case 'on'
-                            appdata.markinit = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            appdata.markinit = true;
-                            menuitem.Checked='on';
-                    end
-                    
-                case 'Grid'
-                    switch menuitem.Checked
-                        case 'on'
-                            appdata.grid = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            appdata.grid = true;
-                            menuitem.Checked='on';
-                    end
-                    
-                case 'Hold'
-                    switch menuitem.Checked
-                        case 'on'
-                            appdata.hold = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            appdata.hold = true;
-                            menuitem.Checked='on';
-                    end
-                    
-                case 'Auto Limits'
-                    switch menuitem.Checked
-                        case 'on'
-                            appdata.autolim = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            appdata.autolim = true;
-                            menuitem.Checked='on';
-                    end                    
-            end 
-            
-            % save the new appdata
-            setappdata(fig,'bdPhasePortrait',appdata);
-            
-            % notify all panels to redraw
-            notify(control,'redraw');
         end
         
     end

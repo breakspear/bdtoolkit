@@ -110,7 +110,7 @@ classdef bdSpaceTime < handle
 
             % construct the tab context menu
             this.tab.UIContextMenu = uicontextmenu;
-            uimenu(this.tab.UIContextMenu,'Label','Close Panel', 'Callback',@(~,~) this.delete());
+            uimenu(this.tab.UIContextMenu,'Label','Close', 'Callback',@(~,~) this.delete());
 
             % register a callback for resizing the panel
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
@@ -123,14 +123,6 @@ classdef bdSpaceTime < handle
         function delete(this)
             delete(this.listener);
             delete(this.tab);          
-            % delete the menu if no more bdSpaceTime panels exist
-            %obj = findobj(this.fig,'Tag','bdSpaceTimeTab');
-            %if isempty(obj)
-            %    obj = findobj(this.fig,'Tag','bdSpaceTimeMenu');
-            %    if ~isempty(obj)
-            %        delete(obj);
-            %    end
-            %end
         end
                
         function render(this,control)

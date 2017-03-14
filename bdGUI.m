@@ -94,9 +94,6 @@ classdef bdGUI
                 'MenuBar','none', ...
                 'Toolbar','figure');
             
-            % construct System menu (without any menu items)
-            systemMenu = uimenu('Parent',this.fig, 'Label','System');
-               
             % construct the LHS panel (using an approximate position)
             this.panel1 = uipanel(this.fig,'Units','pixels','Position',[5 5 600 600],'BorderType','none');
             this.tabgroup = uitabgroup(this.panel1);
@@ -110,26 +107,14 @@ classdef bdGUI
             % resize the panels (putting them in their exact position)
             this.SizeChanged();
 
-            % construct Panels menu (without any menu items)
-            panelsMenu = uimenu('Parent',this.fig, 'Label','Panels');
-            uimenu('Parent',panelsMenu, ...
-                    'Label','Equations', ...
-                    'Callback', @(~,~) this.PanelsMenu('bdLatexPanel'));
-            uimenu('Parent',panelsMenu, ...
-                    'Label','Time Portrait', ...
-                    'Callback', @(~,~) this.PanelsMenu('bdTimePortrait'));
-            uimenu('Parent',panelsMenu, ...
-                    'Label','Phase Portrait', ...
-                    'Callback', @(~,~) this.PanelsMenu('bdPhasePortrait'));
-            uimenu('Parent',panelsMenu, ...
-                    'Label','Space-Time', ...
-                    'Callback', @(~,~) this.PanelsMenu('bdSpaceTime'));
-            uimenu('Parent',panelsMenu, ...
-                    'Label','Correlations', ...
-                    'Callback', @(~,~) this.PanelsMenu('bdCorrPanel'));
-            uimenu('Parent',panelsMenu, ...
-                    'Label','Solver Panel', ...
-                    'Callback', @(~,~) this.PanelsMenu('bdSolverPanel'));
+            % Construct the System menu
+            this.SystemMenu(sys);
+
+            % Construct the Panels menu
+            this.PanelsMenu(sys);
+
+            % Construct the Solver menu
+            this.SolverMenu(this.control);
 
             % load each gui panel listed in sys.panels
             if isfield(sys,'panels')
@@ -156,15 +141,11 @@ classdef bdGUI
                 end
             end
             
-            % Populate the System menu
-            this.PopulateSystemMenu(systemMenu,sys);
-            
             % register a callback for resizing the figure
             set(this.fig,'SizeChangedFcn', @(~,~) this.SizeChanged());
 
             % force a recompute
-            notify(this.control,'recompute');
-            
+            notify(this.control,'recompute');            
         end
         
         % Get sys property
@@ -185,78 +166,135 @@ classdef bdGUI
     
     methods (Access=private)
 
-        % Populate the System Menu
-        function PopulateSystemMenu(this,systemMenu,sys)
+        % Construct the System menu
+        function menuobj = SystemMenu(this,sys)
+            % construct System menu
+            menuobj = uimenu('Parent',this.fig, 'Label','System');
+
              % construct menu items
             if isfield(sys,'self')
-                uimenu('Parent',systemMenu, ...
+                uimenu('Parent',menuobj, ...
                        'Label','Reconfigure', ...
-                       'Callback', @(~,~) this.SystemNew() );
+                       'Callback', @(~,~) SystemNew() );
             else
-                uimenu('Parent',systemMenu, ...
+                uimenu('Parent',menuobj, ...
                        'Label','Reconfigure', ...
                        'Enable', 'off');
             end
-            uimenu('Parent',systemMenu, ...
+            uimenu('Parent',menuobj, ...
                    'Label','Load sys', ...
-                   'Callback', @(~,~) this.SystemLoad() );
-            uimenu('Parent',systemMenu, ...
+                   'Callback', @(~,~) SystemLoad() );
+            uimenu('Parent',menuobj, ...
                    'Label','Save sys', ...
-                   'Callback', @(~,~) this.SystemSave() );
-        end
-        
-        % Callback for System-New menu
-        function SystemNew(this)
-            if isfield(this.control.sys,'self')
-                newsys = feval(this.control.sys.self);
-                if ~isempty(newsys)
-                    bdGUI(newsys);
+                   'Callback', @(~,~) SystemSave() );
+
+            % Callback for System-New menu
+            function SystemNew()
+                if isfield(this.control.sys,'self')
+                    newsys = feval(this.control.sys.self);
+                    if ~isempty(newsys)
+                        bdGUI(newsys);
+                    end
                 end
             end
+
+            % Callback for System-Load menu
+            function gui = SystemLoad()
+                fname = uigetfile({'*.mat','MATLAB data file'},'Load system file');
+                if fname~=0
+                    fdata = load(fname,'sys');
+                    if isfield(fdata,'sys')
+                        gui = bdGUI(fdata.sys);
+                    else
+                        uiwait( warndlg({'Missing ''sys'' variable','System is unchanged'},'Load failed') );
+                    end
+                end
+            end
+
+            % Callback for System-Save menu
+            function SystemSave()
+                [fname,pname] = uiputfile('*.mat','Save system file');
+                if fname~=0
+                    sys = this.control.sys;
+                    if isfield(sys,'odeoption')
+                        sys.odeoption = odeset(sys.odeoption,'OutputFcn',[]);
+                    end
+                    if isfield(sys,'ddeoption')
+                        sys.ddeoption = ddeset(sys.ddeoption,'OutputFcn',[]);
+                    end
+                    if isfield(sys,'sdeoption')
+                        sys.sdeoption = odeset(sys.sdeoption,'OutputFcn',[]);
+                    end
+                    save(fullfile(pname,fname),'sys');
+                end
+            end               
         end
-         
-        % Callback for System-Load menu
-        function gui = SystemLoad(~)
-            fname = uigetfile({'*.mat','MATLAB data file'},'Load system file');
-            if fname~=0
-                fdata = load(fname,'sys');
-                if isfield(fdata,'sys')
-                    gui = bdGUI(fdata.sys);
+        
+        % Construct the Panel menu
+        function menuobj = PanelsMenu(this,sys)
+            menuobj = uimenu('Parent',this.fig, 'Label','New Panel');
+            uimenu('Parent',menuobj, ...
+                    'Label','Equations', ...
+                    'Callback', @(~,~) NewPanel('bdLatexPanel'));
+            uimenu('Parent',menuobj, ...
+                    'Label','Time Portrait', ...
+                    'Callback', @(~,~) NewPanel('bdTimePortrait'));
+            uimenu('Parent',menuobj, ...
+                    'Label','Phase Portrait', ...
+                    'Callback', @(~,~) NewPanel('bdPhasePortrait'));
+            uimenu('Parent',menuobj, ...
+                    'Label','Space-Time', ...
+                    'Callback', @(~,~) NewPanel('bdSpaceTime'));
+            uimenu('Parent',menuobj, ...
+                    'Label','Correlations', ...
+                    'Callback', @(~,~) NewPanel('bdCorrPanel'));
+            uimenu('Parent',menuobj, ...
+                    'Label','Solver Panel', ...
+                    'Callback', @(~,~) NewPanel('bdSolverPanel'));
+        
+            % Menu Callback function
+            function NewPanel(classname)
+               if exist(classname,'class')
+                    % construct the panel
+                    feval(classname,this.tabgroup,this.control);
+                    % force a redraw event
+                    notify(this.control,'redraw');
                 else
-                    uiwait( warndlg({'Missing ''sys'' variable','System is unchanged'},'Load failed') );
-                end
+                    dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
+                    uiwait(dlg);
+               end          
+            end            
+        end
+  
+        % Construct the Solver menu
+        function menuobj = SolverMenu(this,control)
+            menuobj = uimenu('Parent',this.fig, 'Label','Solver', 'Tag','bdSolverPanelMenu');
+            checkstr='on';
+             for indx = 1:numel(control.solvermap)
+                uimenu('Parent',menuobj, ...
+                    'Label',control.solvermap(indx).solvername, ...
+                    'Tag', 'bdSolverSelector', ...
+                    'UserData', indx, ...
+                    'Checked',checkstr, ...
+                    'Callback', @(menuitem,~) SolverCallback(menuobj,menuitem,control) );
+                checkstr='off';                
             end
-        end
         
-        % Callback for System-Save menu
-        function SystemSave(this)
-            [fname,pname] = uiputfile('*.mat','Save system file');
-            if fname~=0
-                sys = this.control.sys;
-                if isfield(sys,'odeoption')
-                    sys.odeoption = odeset(sys.odeoption,'OutputFcn',[]);
+            % Solver Menu Item Callback
+            function SolverCallback(menuobj,menuitem,control)
+                % Find all solver menu items and un-check them.
+                menuitems = findobj(menuobj,'Tag','bdSolverSelector');
+                for ix=1:numel(menuitems)                
+                    menuitems(ix).Checked='off';
                 end
-                if isfield(sys,'ddeoption')
-                    sys.ddeoption = ddeset(sys.ddeoption,'OutputFcn',[]);
-                end
-                if isfield(sys,'sdeoption')
-                    sys.sdeoption = odeset(sys.sdeoption,'OutputFcn',[]);
-                end
-                save(fullfile(pname,fname),'sys');
+                % Now check the newly selected menu item
+                menuitem.Checked = 'on';
+                % Set the index of the active solver in the control object
+                control.solveridx = menuitem.UserData;
+                % Recompute using the new solver
+                notify(control,'recompute');  
             end
-        end
-        
-        function PanelsMenu(this,classname)
-           if exist(classname,'class')
-                % construct the panel
-                feval(classname,this.tabgroup,this.control);
-                % force a redraw event
-                notify(this.control,'redraw');
-            else
-                dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
-                uiwait(dlg);
-           end          
-        end
+        end        
         
         function SizeChanged(this)
             % get the new figure size

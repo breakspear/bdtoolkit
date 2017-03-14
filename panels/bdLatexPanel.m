@@ -115,7 +115,7 @@ classdef bdLatexPanel < handle
             
             % construct the tab context menu
             this.tab.UIContextMenu = uicontextmenu;
-            uimenu(this.tab.UIContextMenu,'Label','Close Panel', 'Callback',@(~,~) this.delete());
+            uimenu(this.tab.UIContextMenu,'Label','Close', 'Callback',@(~,~) this.delete());
 
             % register a callback for resizing the panel
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));

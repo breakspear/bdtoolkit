@@ -53,6 +53,9 @@ classdef bdTimePortrait < handle
         solMap          % maps rows in sol.y to entries in vardef
         soxMap          % maps rows in sox.y to entries in auxdef
         listener        % handle to listener
+        gridflag        % grid menu flag
+        holdflag        % hold menu flag
+        autolimflag     % auto limits menu flag        
     end
     
     methods
@@ -144,16 +147,9 @@ classdef bdTimePortrait < handle
                 'Parent', this.tab, ...
                 'Position',[posx posy posw posh]);
             
-            % construct the TimePortrait menu (if it does not already exist)
-            obj = findobj(this.fig,'Tag','bdTimePortraitMenu');
-            if isempty(obj)
-                bdTimePortrait.constructMenu(this.fig,control);
-            end
-            
             % construct the tab context menu
-            this.tab.UIContextMenu = uicontextmenu;
-            uimenu(this.tab.UIContextMenu,'Label','Close Panel', 'Callback',@(~,~) this.delete());
-
+            this.contextMenu(control);
+            
             % register a callback for resizing the panel
             set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
             
@@ -165,21 +161,13 @@ classdef bdTimePortrait < handle
         function delete(this)
             delete(this.listener);
             delete(this.tab);          
-            % delete the menu if no more bdTimePortrait panels exist
-            obj = findobj(this.fig,'Tag','bdTimePortraitTab');
-            if isempty(obj)
-                obj = findobj(this.fig,'Tag','bdTimePortraitMenu');
-                if ~isempty(obj)
-                    delete(obj);
-                end
-            end
         end
         
         function render(this,control)
             %disp('bdTimePortrait.render()')
 
             % retrieve the menu appdata
-            appdata = getappdata(this.fig,'bdTimePortrait');
+            %appdata = getappdata(this.fig,'bdTimePortrait');
 
             % render the upper and lower axes 
             renderax(this.ax1, this.popup1.Value);
@@ -231,7 +219,7 @@ classdef bdTimePortrait < handle
                 end
                 
                 % if 'hold' menu is checked then ...
-                if appdata.hold
+                if this.holdflag
                     % Change existing plots to thin lines 
                     objs = findobj(ax);
                     set(objs,'LineWidth',0.5);               
@@ -248,14 +236,14 @@ classdef bdTimePortrait < handle
                 ylabel(ax,name, 'FontSize',16,'FontWeight','normal');
 
                 % show gridlines (or not)
-                if appdata.grid
+                if this.gridflag
                     grid(ax,'on');
                 else
                     grid(ax,'off')
                 end
 
                 % adjust the y limits (or not)
-                if appdata.autolim
+                if this.autolimflag
                     ylim(ax,'auto')
                 else
                     ylim(ax,'manual');
@@ -270,7 +258,90 @@ classdef bdTimePortrait < handle
     
     
     methods (Access=private)
- 
+
+        function contextMenu(this,control)            
+            % init the menu flags from the sys.panels options     
+            this.gridflag = control.sys.panels.bdTimePortrait.grid;
+            this.holdflag = control.sys.panels.bdTimePortrait.hold;
+            this.autolimflag = control.sys.panels.bdTimePortrait.autolim;            
+            
+            % grid menu check string
+            if this.gridflag
+                gridcheck = 'on';
+            else
+                gridcheck = 'off';
+            end
+            
+            % hold menu check string
+            if this.holdflag
+                holdcheck = 'on';
+            else
+                holdcheck = 'off';
+            end
+            
+            % autolim menu check string
+            if this.autolimflag
+                autolimcheck = 'on';
+            else
+                autolimcheck = 'off';
+            end
+           
+            % construct the tab context menu
+            this.tab.UIContextMenu = uicontextmenu;
+
+            % construct menu items
+            uimenu(this.tab.UIContextMenu, ...
+                   'Label','Grid', ...
+                   'Checked',gridcheck, ...
+                   'Callback', @(menuitem,~) ContextCallback(menuitem) );
+            uimenu(this.tab.UIContextMenu, ...
+                   'Label','Hold', ...
+                   'Checked',holdcheck, ...
+                   'Callback', @(menuitem,~) ContextCallback(menuitem) );
+            uimenu(this.tab.UIContextMenu, ...
+                   'Label','Auto Limits', ...
+                   'Checked',autolimcheck, ...
+                   'Callback', @(menuitem,~) ContextCallback(menuitem) );
+            uimenu(this.tab.UIContextMenu, ...
+                   'Label','Close', ...
+                   'Callback',@(~,~) this.delete());
+        
+            % Context Menu Item Callback
+            function ContextCallback(menuitem)
+                switch menuitem.Label
+                    case 'Grid'
+                        switch menuitem.Checked
+                            case 'on'
+                                this.gridflag = false;
+                                menuitem.Checked='off';
+                            case 'off'
+                                this.gridflag = true;
+                                menuitem.Checked='on';
+                        end
+                    case 'Hold'
+                        switch menuitem.Checked
+                            case 'on'
+                                this.holdflag = false;
+                                menuitem.Checked='off';
+                            case 'off'
+                                this.holdflag = true;
+                                menuitem.Checked='on';
+                        end
+                    case 'Auto Limits'
+                        switch menuitem.Checked
+                            case 'on'
+                                this.autolimflag = false;
+                                menuitem.Checked='off';
+                            case 'off'
+                                this.autolimflag = true;
+                                menuitem.Checked='on';
+                        end
+                end 
+                % redraw this panel
+                this.render(control);
+            end
+        end
+        
         % Callback for panel resizing. 
         function SizeChanged(this,parent)
             % get new parent geometry
@@ -330,95 +401,6 @@ classdef bdTimePortrait < handle
             if isfield(sys.panels.bdTimePortrait,'autolim')
                 syspanel.autolim = sys.panels.bdTimePortrait.autolim;
             end
-        end
-        
-        
-        % The menu is static so that one menu can serve many instances of the class
-        function menuobj = constructMenu(fig,control)            
-            % init the appdata for the menu     
-            appdata.grid = control.sys.panels.bdTimePortrait.grid;
-            appdata.hold = control.sys.panels.bdTimePortrait.hold;
-            appdata.autolim = control.sys.panels.bdTimePortrait.autolim;            
-            setappdata(fig,'bdTimePortrait',appdata);
-            
-            % grid menu check string
-            if appdata.grid
-                gridcheck = 'on';
-            else
-                gridcheck = 'off';
-            end
-            
-            % hold menu check string
-            if appdata.hold
-                holdcheck = 'on';
-            else
-                holdcheck = 'off';
-            end
-            
-            % autolim menu check string
-            if appdata.autolim
-                autolimcheck = 'on';
-            else
-                autolimcheck = 'off';
-            end
-            
-            % construct menu items
-            menuobj = uimenu('Parent',fig, 'Label','Time Portrait', 'Tag','bdTimePortraitMenu');
-            uimenu('Parent',menuobj, ...
-                   'Label','Grid', ...
-                   'Checked',gridcheck, ...
-                   'Callback', @(menuitem,~) bdTimePortrait.MenuCallback(fig,menuitem,control) );
-            uimenu('Parent',menuobj, ...
-                   'Label','Hold', ...
-                   'Checked',holdcheck, ...
-                   'Callback', @(menuitem,~) bdTimePortrait.MenuCallback(fig,menuitem,control) );
-            uimenu('Parent',menuobj, ...
-                   'Label','Auto Limits', ...
-                   'Checked',autolimcheck, ...
-                   'Callback', @(menuitem,~) bdTimePortrait.MenuCallback(fig,menuitem,control) );
-        end        
-        
-        
-        % Menu Item Callback
-        function MenuCallback(fig,menuitem,control)
-            % retrieve the appdata
-            appdata = getappdata(fig,'bdTimePortrait');
-            
-            switch menuitem.Label
-                case 'Grid'
-                    switch menuitem.Checked
-                        case 'on'
-                            appdata.grid = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            appdata.grid = true;
-                            menuitem.Checked='on';
-                    end
-                case 'Hold'
-                    switch menuitem.Checked
-                        case 'on'
-                            appdata.hold = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            appdata.hold = true;
-                            menuitem.Checked='on';
-                    end
-                case 'Auto Limits'
-                    switch menuitem.Checked
-                        case 'on'
-                            appdata.autolim = false;
-                            menuitem.Checked='off';
-                        case 'off'
-                            appdata.autolim = true;
-                            menuitem.Checked='on';
-                    end
-            end 
-            
-            % save the new appdata
-            setappdata(fig,'bdTimePortrait',appdata);
-            
-            % notify all panels to redraw
-            notify(control,'redraw');
         end
         
     end
