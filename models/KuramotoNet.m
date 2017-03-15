@@ -7,10 +7,10 @@
 %       Kij is an (nxn) matrix of connection weights,
 %
 % Example:
-%   n = 20;                 % number of oscillators
-%   Kij = ones(n);          % coupling matrix
-%   sys = Kuramoto(Kij);    % construct the system struct
-%   gui = bdGUI(sys);       % open the Brain Dynamics GUI
+%   n = 20;                    % number of oscillators
+%   Kij = ones(n);             % coupling matrix
+%   sys = KuramotoNet(Kij);    % construct the system struct
+%   gui = bdGUI(sys);          % open the Brain Dynamics GUI
 %
 % Authors
 %   Stewart Heitmann (2016a,2017a)

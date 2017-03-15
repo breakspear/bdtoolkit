@@ -1,6 +1,10 @@
-% MultipNoise Ito SDE with multiplicative noise processes
+% MultiplicativeNoise Ito SDE with multiplicative noise processes
 %   Ito stochastic differential system with multiplicative noise.
 %     dy = -(a + y*b^2)*(1-y^2)*dt + b(1-y^2)*dW
+%
+% Example:
+%   sys = MultiplicativeNoise();    % construct the system struct
+%   gui = bdGUI(sys);               % open the Brain Dynamics GUI
 %
 % Authors
 %   Stewart Heitmann (2016a,2017a)
@@ -33,7 +37,7 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = MultipNoise()
+function sys = MultiplicativeNoise()
     % Handles to our SDE functions
     sys.sdeF = @sdeF;               % deterministic coefficients
     sys.sdeG = @sdeG;               % stochastic coefficients

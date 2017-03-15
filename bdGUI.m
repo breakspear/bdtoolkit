@@ -171,7 +171,7 @@ classdef bdGUI
             % construct System menu
             menuobj = uimenu('Parent',this.fig, 'Label','System');
 
-             % construct menu items
+            % construct menu items
             if isfield(sys,'self')
                 uimenu('Parent',menuobj, ...
                        'Label','Reconfigure', ...
@@ -187,6 +187,10 @@ classdef bdGUI
             uimenu('Parent',menuobj, ...
                    'Label','Save sys', ...
                    'Callback', @(~,~) SystemSave() );
+            uimenu('Parent',menuobj, ...
+                   'Label','Quit', ...
+                   'Separator','on', ...
+                   'Callback', @(~,~) SystemQuit() );
 
             % Callback for System-New menu
             function SystemNew()
@@ -227,7 +231,12 @@ classdef bdGUI
                     end
                     save(fullfile(pname,fname),'sys');
                 end
-            end               
+            end      
+            
+            % Callback for System-Quit menu
+            function SystemQuit()
+                delete(this.fig);
+            end
         end
         
         % Construct the Panel menu

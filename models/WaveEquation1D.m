@@ -108,9 +108,6 @@ function sys = WaveEquation1D(n)
     % Include the Time Portrait panel in the GUI
     sys.panels.bdTimePortrait.title = 'Time Portrait';
  
-    % Include the Phase Portrait panel in the GUI
-    sys.panels.bdPhasePortrait.title = 'Phase Portrait';
-
     % Include the Space-Time panel in the GUI
     sys.panels.bdSpaceTime.title = 'Space-Time';
 

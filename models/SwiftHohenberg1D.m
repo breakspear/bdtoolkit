@@ -96,9 +96,6 @@ function sys = SwiftHohenberg1D(n,dx)
     % Include the Time Portrait panel in the GUI
     sys.panels.bdTimePortrait = [];
  
-    % Include the Phase Portrait panel in the GUI
-    sys.panels.bdPhasePortrait = [];
-
     % Include the Space-Time panel in the GUI
     sys.panels.bdSpaceTime = [];
 
