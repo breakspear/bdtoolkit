@@ -156,20 +156,21 @@ classdef bdCorrPanel < handle
             % dependent diffusion rate.
             switch solvertype
                 case 'sde'
-                    % We have not yet implemented correct interpolation of 
-                    % stochastic processes. We know the SDE solver uses
-                    % fixed time steps so we use the solver's own time steps
-                    % as our interpolant time steps.
+                    % We avoid interpolation by using the solver's own
+                    % time steps as our interpolant time steps. Our only
+                    % restriction is that values for t<0 are ignored.
                     tinterp = find(control.sol.x>=0);
 
                 otherwise
-                    % We assume that interpolation is correct for all
-                    % other solvers. We choose the number of time
-                    % steps of the interpolant to be similar to the
-                    % number of steps chosen by the solver. This avoids
-                    % over-sampling and under-sampling by our interpolation.
+                    % We use interpolation for all other solvers to ensure
+                    % that our correlation used fixed-size time steps.
+                    % We choose the number of time steps of the interpolant
+                    % to be similar to the number of steps chosen by the
+                    % solver. This avoids over-sampling and under-sampling.
                     % The number of time steps we choose need not be exact.
-                    tinterp = linspace(0,control.sol.x(end),numel(control.sol.x));                        
+                    t0 = max(0,control.sol.x(1));
+                    t1 = control.sol.x(end);
+                    tinterp = linspace(t0,t1,numel(control.sol.x));                        
             end
 
             % read the variable selector

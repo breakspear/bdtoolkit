@@ -130,13 +130,14 @@ classdef bdSpaceTime < handle
             varnum = this.popup.Value;
             %varstr = this.popup.String{varnum};
             yindx = this.varindx{varnum};
-            tend  = control.sol.x(end);
-            this.t = linspace(0,tend,1001);
+            t0 = max(control.sol.x(1), 0); 
+            t1  = control.sol.x(end);
+            this.t = linspace(t0,t1,1001);
             this.Y = bdEval(control.sol,this.t,yindx);
             this.img.CData = this.Y;
             this.img.XData = this.t;
             this.img.YData = yindx - yindx(1) + 1;
-            xlim(this.ax,[0 tend]);
+            xlim(this.ax,[t0 t1]);
             ylim(this.ax,[0.5 numel(yindx)+0.5]);
             %title(this.ax,varstr);
             n = numel(yindx);
