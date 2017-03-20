@@ -1,4 +1,4 @@
-classdef bdGUI
+classdef bdGUI < handle
     %bdGUI - The Brain Dynamics Toolbox Graphic User Interface.
     %   Opens a dynamical system model (sys) with the Brain Dynamics
     %   Toolbox graphical user interface.
@@ -38,18 +38,23 @@ classdef bdGUI
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
+    properties
+        fig             % handle to the application figure
+    end
+    
     properties (Dependent)
         sys             % system definition structure
         sol             % current output of the solver
         sox             % current auxiliary variables
+        panels          % current panel object handles
     end
     
     properties (Access=private)
-        fig             % handle to application figure
         control         % handle to the bdControl object
-        panel1          % handle to uipanel 1
-        panel2          % handle to uipanel 2
+        uipanel1        % handle to uipanel 1
+        uipanel2        % handle to uipanel 2
         tabgroup        % handle to tabgroup in panel1
+        panelobjs = {}; % list of handles to panel objects
     end
     
     methods
@@ -95,14 +100,14 @@ classdef bdGUI
                 'Toolbar','figure');
             
             % construct the LHS panel (using an approximate position)
-            this.panel1 = uipanel(this.fig,'Units','pixels','Position',[5 5 600 600],'BorderType','none');
-            this.tabgroup = uitabgroup(this.panel1);
+            this.uipanel1 = uipanel(this.fig,'Units','pixels','Position',[5 5 600 600],'BorderType','none');
+            this.tabgroup = uitabgroup(this.uipanel1);
             
             % construct the RHS panel (using an approximate position)
-            this.panel2 = uipanel(this.fig,'Units','pixels','Position',[5 5 300 600],'BorderType','none');
+            this.uipanel2 = uipanel(this.fig,'Units','pixels','Position',[5 5 300 600],'BorderType','none');
 
             % construct the control panel
-            this.control = bdControl(this.panel2,sys);
+            this.control = bdControl(this.uipanel2,sys);
 
             % resize the panels (putting them in their exact position)
             this.SizeChanged();
@@ -118,22 +123,12 @@ classdef bdGUI
 
             % load each gui panel listed in sys.panels
             if isfield(sys,'panels')
-                guifields = fieldnames(sys.panels);
-                for indx = 1:numel(guifields)
-                    classname = guifields{indx};
+                panelnames = fieldnames(sys.panels);
+                for indx = 1:numel(panelnames)
+                    classname = panelnames{indx};
                     if exist(classname,'class')
-                        % construct the panel
-                        feval(classname,this.tabgroup,this.control);
-                        % add the panel to the Panels menu if necessary
-                        switch classname
-                            case {'bdLatexPanel','bdTimePortrait','bdPhasePortrait','bdSpaceTime','bdCorrPanel','bdSolverPanel'}
-                                % Nothing to do. The Panel menu has these by default
-                            otherwise
-                                % Add a menu item for the novel panel
-                                uimenu('Parent',panelsMenu, ...
-                                       'Label',classname, ...
-                                       'Callback', @(~,~) this.PanelsMenu(classname));
-                        end
+                        % construct the panel, keep a handle to it.
+                        this.panelobjs{end+1} = feval(classname,this.tabgroup,this.control);
                     else
                         dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
                         uiwait(dlg);
@@ -146,7 +141,7 @@ classdef bdGUI
 
             % force a recompute
             notify(this.control,'recompute');            
-        end
+        end       
         
         % Get sys property
         function sys = get.sys(this)
@@ -162,10 +157,34 @@ classdef bdGUI
         function sox = get.sox(this)
             sox = this.control.sox;
         end
+        
+        % Get panels property
+        function panels = get.panels(this)  
+            % first remove any stale (deleted) handles from panelobjs
+            for indx = numel(this.panelobjs):-1:1
+                if ~isvalid(this.panelobjs{indx})
+                    this.panelobjs(indx) = [];
+                end
+            end           
+            % return a panels struct with object handles arranged by name
+            panels = [];
+            for indx = 1:numel(this.panelobjs)
+                obj = this.panelobjs{indx};
+                meta = metaclass(obj);
+                name = meta.Name;
+                if isfield(panels,name)
+                    objs = getfield(panels,name);
+                    objs(end+1) = obj;
+                else
+                    objs = obj;
+                end
+                panels = setfield(panels,name,objs);
+            end
+        end        
+        
     end
-    
+       
     methods (Access=private)
-
         % Construct the System menu
         function menuobj = SystemMenu(this,sys)
             % construct System menu
@@ -241,6 +260,7 @@ classdef bdGUI
         
         % Construct the Panel menu
         function menuobj = PanelsMenu(this,sys)
+            classnames = {'bdLatexPanel','bdTimePortrait','bdPhasePortrait','bdSpaceTime','bdCorrPanel','bdSolverPanel'};
             menuobj = uimenu('Parent',this.fig, 'Label','New Panel');
             uimenu('Parent',menuobj, ...
                     'Label','Equations', ...
@@ -260,19 +280,41 @@ classdef bdGUI
             uimenu('Parent',menuobj, ...
                     'Label','Solver Panel', ...
                     'Callback', @(~,~) NewPanel('bdSolverPanel'));
-        
+      
+            % add any custom gui panels to the menu and also to this.panelclasses
+            if isfield(sys,'panels')
+                panelnames = fieldnames(sys.panels);
+                for indx = 1:numel(panelnames)
+                    classname = panelnames{indx};
+                    if exist(classname,'class')
+                        switch classname
+                            case classnames
+                                % Nothing to do. We have this one already.
+                            otherwise
+                                % Add a menu item for the novel panel
+                                uimenu('Parent',menuobj, ...
+                                       'Label',classname, ...
+                                       'Callback', @(~,~) NewPanel(classname));
+                                % Remember the name of the novel panel class
+                                classnames{end} = classname;
+                        end
+                    end
+                end
+            end 
+            
             % Menu Callback function
             function NewPanel(classname)
                if exist(classname,'class')
-                    % construct the panel
-                    feval(classname,this.tabgroup,this.control);
+                    % construct the panel and remember the handle
+                    this.panelobjs{end+1} = feval(classname,this.tabgroup,this.control);
                     % force a redraw event
                     notify(this.control,'redraw');
                 else
                     dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
                     uiwait(dlg);
-               end          
-            end            
+                end          
+            end
+            
         end
   
         % Construct the Solver menu
@@ -320,12 +362,12 @@ classdef bdGUI
             % resize the LHS panel
             w1 = figw - panel2w - 10;
             h1 = figh - 10;
-            this.panel1.Position = [5 5 w1 h1];
+            this.uipanel1.Position = [5 5 w1 h1];
             
             % resize the RHS panel
             w2 = panel2w;
             h2 = figh - 10;
-            this.panel2.Position = [8+w1 5 w2 h2];            
+            this.uipanel2.Position = [8+w1 5 w2 h2];            
         end
     end
     
