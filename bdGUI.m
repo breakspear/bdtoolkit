@@ -60,6 +60,13 @@ classdef bdGUI < handle
     methods
         % bdGUI(sys) or bdGUI()
         function this = bdGUI(varargin)
+            % add the bdtoolkit/solvers directory to the path
+            addpath(fullfile(fileparts(mfilename('fullpath')),'solvers'));
+
+            % add the bdtoolkit/panels directory to the path
+            addpath(fullfile(fileparts(mfilename('fullpath')),'panels'));
+            
+            % process the input arguments
             switch nargin
                 case 0
                     % prompt user to select a system file to load

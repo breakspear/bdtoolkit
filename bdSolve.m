@@ -75,6 +75,9 @@
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
 function [sol,sox] = bdSolve(sys,tspan,solverfun,solvertype)
+        % add the bdtoolkit/solvers directory to the path
+        addpath(fullfile(fileparts(mfilename('fullpath')),'solvers'));
+
         % check the number of output variables
         if nargout>2
             error('Too many output variables');
