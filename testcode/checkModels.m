@@ -76,13 +76,13 @@ sys = OrnsteinUhlenbeck(n);
 bdSysCheck(sys);
 disp '===';
 
-disp 'TESTING MultipNoise';
-sys = MultipNoise();
+disp 'TESTING MultiplicativeNoise';
+sys = MultiplicativeNoise();
 bdSysCheck(sys);
 disp '===';
 
-disp 'TESTING DDEdemo1';
-sys = DDEdemo1();
+disp 'TESTING WilleBaker';
+sys = WilleBaker();
 bdSysCheck(sys);
 disp '===';
 
