@@ -1,20 +1,19 @@
-# Release Notes for the Brain Dynamics Toolbox.
+# Release Notes
+# Brain Dynamics Toolbox
 
-#### Version 2017a (?? March 2017)
-Released in conjuction with the following paper:
-*Heitmann, Aburn, Breakspear (2017) The Brain Dynamics Toolbox: An open-source software package for simulating dynamical systems in MATLAB.*
+## Version 2017a
+Released ??? March 2017.
 
-New features include:
-(1) The GUI now supports multiple instances of plot panels that can be loaded at run-time via pull-down menus.
-(2) Time and Phase portraits now support plot 'hold on/off'.
-(3) More flexible syntax for defining system parameters and variables in the *sys* struct.
-(4) Automatic validation of *sys* structs at load-time.
-(5) System fields *tspan*, *odesolver*, *odeoption*, *ddesolver* and *ddeoption* may now be omitted if the default settings are acceptable.
-(6) The set of example models has been substantially revised.
+Requires Matlab 2014b or newer.
+
+Major new features:
+(1) Dynamic loading of GUI plot panels.
+(2) Enhanced GUI class properties allow the solver output and panel objects to be accessed directly. 
+(3) New *sys* struct has a more flexible syntax for defining system parameters and variables.
+(4) Improved validation of *sys* structs.
+(6) Time and Phase portraits now support graphic hold.
+(7) All example models have been revised.
  
-Bug fixes include:
-(1) interpolation of time in space-time plots.
-
 **This version is not backwards compatible with version 2016a.** In particular: 
 (1) *sys.pardef, sys.vardef, sys.auxdef, sys.lagdef* were changed from cell arrays to struct arrays; 
 (2) *sys.gui* was renamed *sys.panels*;
@@ -26,11 +25,15 @@ Bug fixes include:
 (8) *sdeStratonovich* was renamed *sdeSH*;
 (9) *bdVerify* was renamed *bdSysCheck*;
 (10) *bdUtils* was renamed *bd*;
-(11) The *gui.control* property was replaced by *gui.sys, gui.sol* and *gui.aux*.
+(11) The *gui.control* property was replaced by *gui.sys, gui.sol* and *gui.sox*.
+(12) The *sys* fields *tspan*, *odesolver*, *odeoption*, *ddesolver* and *ddeoption* are no longer mandatory.
 
-**Important message to users migrating from 2016a to 2017a.** Scripts and sys structures written for 2016a will need to be modified to accommodate the changes above. We highly recommend running *bdSysCheck* on existing system definitions when migrating old code. It will detect obsolete and invalid sys fields and issue helpful warnings. 
+**Important message to users migrating from 2016a to 2017a.** Scripts written for 2016a will need to be modified to accommodate the changes above. We recommend using *bdSysCheck* when migrating old code. It will quickly detect obsolete and invalid fields in existing *sys* structures. 
 
+## Version 2016a
+Released 24 Dec 2016.
 
-#### Version 2016a (24 Dec 2016)
-The first public release of the Brain Dynamics Toolbox on GitHub. Requires MATLAB 2014b or newer.
+Requires Matlab 2014b or newer.
+
+First public release of The Brain Dynamics Toolbox.
 
