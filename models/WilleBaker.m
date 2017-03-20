@@ -1,5 +1,5 @@
-% DDEdemo1  Delay Differential Equations with constant delays 
-%   This is based on the simple example of Wille' and Baker for DDE23.
+% WilleBaker Delay Differential Equations with constant delays 
+%   This is based on the example of Wille' and Baker for DDE23.
 %   Extra parameters (a,b,c,d) have been included for demonstration.
 %   
 %   The differential equations
@@ -78,16 +78,15 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = DDEdemo1()
+function sys = WilleBaker()
     % Handle to our DDE and auxiliary functions
     sys.ddefun = @ddefun;
     sys.auxfun = @auxfun;
     
     % DDE parameters
-    sys.pardef = [ struct('name','a', 'value',-1);
+    sys.pardef = [ struct('name','a', 'value', 1);
                    struct('name','b', 'value', 1);
-                   struct('name','c', 'value',-1);
-                   struct('name','d', 'value', 1) ];
+                   struct('name','c', 'value', 1) ];
                
     % DDE lag parameters
     sys.lagdef = [ struct('name','tau1', 'value',1.0);
@@ -110,20 +109,21 @@ function sys = DDEdemo1()
     
     % Include the Latex (Equations) panel in the GUI
     sys.panels.bdLatexPanel.title = 'Equations'; 
-    sys.panels.bdLatexPanel.latex = {'\textbf{DDEdemo1}';
+    sys.panels.bdLatexPanel.latex = {'\textbf{Will\''e \& Baker (1992) Example 3}';
         '';
-        'Delay Differential Equation with constant time delays';
-        '\qquad $\dot y_1(t) = a\,y_1(t-\tau_1)$';
-        '\qquad $\dot y_2(t) = b\,y_1(t-\tau_1) + c\,y_2(t-\tau_2)$';
-        '\qquad $\dot y_3(t) = d\,y_2(t)$';
+        'Delay Differential Equations';
+        '\qquad $a\,\dot y_1(t) = y_1(t-\tau_1)$';
+        '\qquad $b\,\dot y_2(t) = y_1(t-\tau_1) + y_2(t-\tau_2)$';
+        '\qquad $c\,\dot y_3(t) = y_2(t)$';
         'where';
         '\qquad $y_1(t), y_2(t), y_3(t)$ are the dynamic variables,';
-        '\qquad $a,b,c,d$ are scalar constants,';
         '\qquad $\tau_1,\tau_2$ are constant time delays.';
+        '\qquad $a,b,c$ are time scale constants,';
+        '\qquad Initial conditions are constant for $t\leq 0$';
         '';
-        'Notes';
-        '\qquad 1. The equations of Wille'' and Baker (see DDEX1, DDE23)' ;   
-        '\qquad 2. Constant initial conditions apply for $t{<}t_0$' };
+        'References';
+        '\qquad 1. Will\''e and Baker (1992) DELSOL. Appl Num Math (9) 3-5.' ;   
+        '\qquad 2. Matlab example code DDEX1.m.' };   
     
     % Include the Time Portrait panel in the GUI
     sys.panels.bdTimePortrait = [];
@@ -138,14 +138,14 @@ function sys = DDEdemo1()
     sys.self = str2func(mfilename);
 end
 
-% The DDE function.
-function dYdt = ddefun(t,Y,Z,a,b,c,d)  
-    Ylag1 = Z(:,1);                     % Y(t-lag1)
-    Ylag2 = Z(:,2);                     % Y(t-lag2)
-    dy1dt = a*Ylag1(1);                 % y'_1(t) = a*y_1(t-1)
-    dy2dt = b*Ylag1(1) + c*Ylag2(2);    % y'_2(t) = b*y_1(t-1) + c*y_2(t-0.2)
-    dy3dt = d*Y(2);                     % y'_3(t) = d*y_2(t)
-    dYdt = [dy1dt; dy2dt; dy3dt];       % return a column vector
+% The DDE function where Y and dYdt are (3x1) and Z is (3x2).
+function dYdt = ddefun(t,Y,Z,a,b,c)  
+    Ylag1 = Z(:,1);                      % Y(t-tau1)
+    Ylag2 = Z(:,2);                      % Y(t-tau2)
+    dy1dt = Ylag1(1) ./ a;               % a * y'_1(t) = y_1(t-tau1)
+    dy2dt = (Ylag1(1) + Ylag2(2)) ./ b;  % b * y'_2(t) = y_1(t-tau1) + y_2(t-tau2)
+    dy3dt = Y(2) ./ c;                   % c * y'_3(t) = y_2(t)
+    dYdt = [dy1dt; dy2dt; dy3dt];        % return a column vector
 end
 
 % The toolbox applies this auxillary function to the solution returned by
