@@ -1,5 +1,5 @@
 # Brain Dynamics Toolbox
-*Version 2017a* 
+##Version 2017a 
 
 The Brain Dynamics Toolbox provides a convenient graphical user interface for exploring dynamical systems in MATLAB.  Users implement their own dynamical equations (as matlab scripts) and use the toolbox graphical interface to view phase portraits and other plots in real-time. The same models can also be run as MATLAB scripts without the graphics interface. The toolbox includes solvers for Ordinary Differential Equations (ODE), Delay Differential Equations (DDE) and Stochastic Differential Equations (SDE). The plotting tools are modular so that users can create custom plots according to their needs. Custom solver routines can also be used. The user interface is designed for dynamical systems with large numbers of variables and parameters, as is often the case in dynamical models of the brain. Hence the name, *Brain Dynamics Toolbox*.
 
@@ -7,21 +7,47 @@ The Brain Dynamics Toolbox provides a convenient graphical user interface for ex
 Dowload the latest release from the [bdtoolkit](https://github.com/breakspear/bdtoolkit/releases) repository on GitHub
 
 ## Getting Started
-The toolbox requires MATLAB 2014b or newer. Unzip the toolbox files into a directory of your choosing. The main toolbox scripts are located in the top level of the *bdtoolkit* directory. The solver routines (*solvers*) and plotting tools (*panels*) are located in their own subdirectories.  The *models* subdirectory contains example dynamical systems. All of these directories should be in your matlab PATH variable. You may then run the *bdGUI* application and load one of the pre-defined models (eg HindmarshRose.mat) using the *System-Load* menu.
+The toolbox requires MATLAB 2014b or newer. Unzip the toolbox files into a directory of your choosing. The main toolbox scripts are located in the *bdtoolkit* directory which must be in your matlab PATH variable. The *bdtoolkit/models* directory contains example scripts that are also advisable to have in your PATH.
 
 ```matlab
+    $ unzip bdtoolkit-2017a.zip
+    $ matlab
     >> addpath bdtoolkit
-    >> addpath bdtoolkit/solvers
-    >> addpath bdtoolkit/panels
     >> addpath bdtoolkit/models
-    >> bdGUI
-    Open bdtoolkit/models/HindmarshRose.mat
-
 ```
-## How it works
-The brain dynamics toolkit uses the Matlab ODE and DDE solvers to integrate (solve) a set of dynamical equations provided by the user. The user supplies the right hand side of the dynamical equation as a function in the same way they do for *ode45*. The difference is that the user-supplied function, as well as additional information about the dynamical system (parameter names, variable names, etc), are encapsulated within a special structure known as the *system struct*. It contains everything that the toolbox needs to know about solving and plotting the dynamical system. 
 
-A typical system struct has the following fields:
+Each dynamical system (model) is defined by a specially formatted data structure that we call a *sys* struct. An existing *sys* struct can be loaded from a *mat* file or a new one can be constructed from a model-specific script. The *models* directory contains both scripts and *mat* files for numerous dynamical systems.
+The following example shows how to load the pre-defined *sys* struct for the Hindmarsh-Rose model from a *mat* file into the graphical toolbox (bdGUI).
+
+```matlab
+   >> load HindmarshRose.mat sys     % load the sys struct from file
+   >> bdGUI(sys);                    % run the graphic user interface
+```
+
+The toolbox allows the user to vary the model's parameters and solve the dynamical equations by forward-integration. However some aspects of any model are fixed at construction, such as the number of neurons in the Hindmarsh-Rose model.
+The next example shows how to use the HindmarshRose.m script to construct a *sys* struct for a network of 242 neurons using a connectivity matrix (MacCrtx) from the CoCoMac connectome database (cocomac242.mat). 
+
+```matlab
+   >> load cocomac242.mat MacCrtx    % load the connectivity matrix from file
+   >> sys = HindmarshRose(MacCrtx);  % construct a sys struct for the model
+   >> bdGUI(sys);                    % run the graphic user interface
+```
+
+This final example shows how to construct a system of n=21 randomly connected Hindmarsh-Rose neurons with a user-defined connectivty matrix (Kij). 
+
+```matlab
+   >> help HindmarshRose             % model-specific help
+   >> n = 21;                        % number of neurons
+   >> Kij = rand(n);                 % random connectivity matrix (nxn)
+   >> sys = HindmarshRose(Kij);      % construct the sys struct
+   >> bdGUI(sys);                    % run the graphic user interface
+```
+Many of the model scripts shipped with the toolkit follow this same basic approach: The script determines the size of the model (number of dynamical equations) from some input parameter (such as a connectivity matrix) and then returns a suitable *sys* struct for use with the graphic toolbox. However each script is unique. Use the *help* function for the details of each model.
+
+## How it works
+The toolkit uses standard ODE, DDE and (new) SDE solvers to integrate (solve) a set of dynamical equations provided by the user. The user supplies the right hand side of their dynamical equation as a Matlab function, in the same way as is done for the Matlab *ode45* solver. That user-supplied function and additional information about the dynamical system (parameter names, variable names, solver options, plotting options) are encapsulated within a special structure known as the *sys struct*. It contains everything that the toolbox needs to know about solving and plotting the dynamical system. 
+
+A typical sys struct has the following structure:
 
 ```matlab
     % Handle to a user-defined ODE function
@@ -40,6 +66,15 @@ A typical system struct has the following fields:
     % ODE solver options
     sys.odeoption.AbsTol = 1e-3;
     sys.odeoption.RelTol = 1e-6;
+
+    % Time Portrait options
+    sys.panels.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait.grid = True;
+    
+    % Phase Portrait options
+    sys.panels.bdPhasePortrait.title = 'Phase Portrait';
+    sys.panels.bdPhasePortrait.vecfield = True;
+
 ```
 
 The *sys.odefun* field is a function handle to a user-defined function of the form:
@@ -50,30 +85,9 @@ The *sys.odefun* field is a function handle to a user-defined function of the fo
     end
 ```
 
-## Models
-The toolkit ships with a collection of pre-defined models in the *bdtoolkit/models* directory. Each model is a matlab script that returns a *sys* struct which the user then loads into the graphical user interface (bdGUI). Use the matlab HELP function for the syntax of each script. 
+## Plotting Panels
 
-```matlab
-    >> help LinearODE      % get help on the LinearODE model.
-    >> sys = LinearODE();  % construct the system structure.
-    >> gui = bdGUI(sys);   % load it into the toolkit GUI.
-```
-
-## Panels
-
-The default plotting tools (panels) are loaded by the GUI in accordance with the model's `sys.panels` options. Those options corespond to the names of the panel classes which are located in the *bdtoolkit/panels* directory. The code snippet below gives an example. 
-
-```matlab
-    % Options for the Time Portrait panel
-    sys.panels.bdTimePortrait.title = 'Time Portrait';
-    sys.panels.bdTimePortrait.grid = True;
-    
-    % Options for the Phase Potrait panel
-    sys.panels.bdPhasePortrait.title = 'Phase Portrait';
-    sys.panels.bdPhasePortrait.vecfield = True;
-```
-
-The user can always load new panels at run-time so not all panels need to be predefined in the *sys* structure. Nontheless doing so is beneficial when model-specific options are involved. A common example is the *bdLatexPanel* which is used to display the relevant mathematical equations using latex. The following example is from *LinearODE.m*.
+The plotting tools (panels) are modular by design so that custom panels may be written by the user. The standard panels are located in the *bdtoolkit/panels* directory. These include time portraits, phase portraits, space-time plots, correlation plots, latex equations and solver statistics. The user may load any panel into the graphic toolbox at run-time. For convenience, the toolbox pre-loads panels that are listed in the model's *sys.panels* options. A typical example is the *bdLatexPanel* which displays mathematical equations using latex. The following example is from *LinearODE.m* which implements a coupled pair of linear Ordinary Differential Equations.
 
 ```matlab
     sys.panels.bdLatexPanel.title = 'Equations'; 
@@ -88,16 +102,16 @@ The user can always load new panels at run-time so not all panels need to be pre
 ```
 
 ## Useful utilities
-The `bdSysCheck` function is a helpful tool for validating the system structure of a new model. It checks that the various fields of the sys struct are properly defined. It also tests the user-defined function handle(s) to verify that they return data in the proper format. Any new model should be tested with *bdSysCheck* as standard practice.
+The `bdSysCheck` function is a helpful tool for validating the system structure of a new model. It checks that the various fields of the sys struct are properly defined. It also tests the user-defined function handle(s) to verify that they return data in the proper format. It is recommended that custom models be routinely checked with *bdSysCheck* during development.
 
-The `bdSolve` function solves a user-supplied model without invoking the graphic user interface. It is useful for batch processing. Likewise, the `bdSetValue` and `bdGetValue` functions provide convenient methods to set and get the values of *sys.pardef* and *sys.vardef* data structures from within batch scripts.
+The `bdSolve` function solves a user-supplied model without invoking the graphic user interface. It is useful for batch processing. The `bdSetValue` and `bdGetValue` functions are also useful for setting and getting the values of *sys.pardef* and *sys.vardef* data structures in batch scripts.
   
 The `bdLoadMatrix` function is useful for loading matrix data from a file.
 
 The `bdEditScalars`, `bdEditVector` and `bdEditMatrix` functions are useful for interactively editing scalars, vectors and matrices, respectively.
 
 ## Going Further
-The best way to proceed is to inspect the example code in the *models* directory. Several introductory models are provided: (i) *LinearODE* illustrates a simple Ordinary Differential Equation; (ii) *DDEdemo1* illustrates a simple Delay Differential Equation; (iii) *MultiplicativeNoise* illustrates a simple Stochastic Differential Equation.
+The best way to proceed is to browse the example code in the *models* directory. The  *LinearODE* model illustrates a simple Ordinary Differential Equation. The *WilleBaker* model illustrates a simple Delay Differential Equation. The *MultiplicativeNoise* model illustrates a simple Stochastic Differential Equation.
 
 ## BSD License
 This software is freely available under the 2-clause BSD license.  
