@@ -11,8 +11,8 @@ Major new features:
 (2) Enhanced GUI class properties allow the solver output and panel objects to be accessed directly. 
 (3) New *sys* struct has a more flexible syntax for defining system parameters and variables.
 (4) Improved validation of *sys* structs.
-(6) Time and Phase portraits now support graphic hold.
-(7) All example models have been revised.
+(5) Time and Phase portraits now support graphic hold.
+(6) All example models have been revised.
  
 **This version is not backwards compatible with version 2016a.** In particular: 
 (1) *sys.pardef, sys.vardef, sys.auxdef, sys.lagdef* were changed from cell arrays to struct arrays; 
