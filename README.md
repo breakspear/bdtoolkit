@@ -34,7 +34,7 @@ The next example shows how to use the HindmarshRose.m script to construct a *sys
    >> bdGUI(sys);                    % run the graphic user interface
 ```
 
-This final example shows how to construct a system of n=21 randomly connected Hindmarsh-Rose neurons with a user-defined connectivty matrix (Kij). 
+This final example shows how to construct a system of n=21 randomly connected Hindmarsh-Rose neurons with a user-defined connectivity matrix (Kij). 
 
 ```matlab
    >> help HindmarshRose             % model-specific help

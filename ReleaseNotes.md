@@ -2,7 +2,7 @@
 # Brain Dynamics Toolbox
 
 ## Version 2017a
-Released ??? March 2017.
+Released 21 March 2017.
 
 Requires Matlab 2014b or newer.
 
@@ -35,5 +35,5 @@ Released 24 Dec 2016.
 
 Requires Matlab 2014b or newer.
 
-First public release of The Brain Dynamics Toolbox.
+This version is the first public release of the Brain Dynamics Toolbox.
 
