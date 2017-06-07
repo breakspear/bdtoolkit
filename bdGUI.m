@@ -4,11 +4,11 @@ classdef bdGUI < handle
     %   Toolbox graphical user interface.
     %   
     %EXAMPLE
-    %   sys = ODEdemo1();
+    %   sys = LinearODE();
     %   gui = bdGUI(sys);
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a)
+    %  Stewart Heitmann (2016a,2017a,2017b)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -43,10 +43,11 @@ classdef bdGUI < handle
     end
     
     properties (Dependent)
-        sys             % system definition structure
-        sol             % current output of the solver
-        sox             % current auxiliary variables
-        panels          % current panel object handles
+        par             % system parameters (read/write)
+        sys             % system definition structure (read only)
+        sol             % current output of the solver (read only)
+        sox             % current auxiliary variables (read only)
+        panels          % current panel object handles (read only)
     end
     
     properties (Access=private)
@@ -150,6 +151,63 @@ classdef bdGUI < handle
             notify(this.control,'recompute');            
         end       
         
+        % Get par property
+        function par = get.par(this)
+            % return a struct with paramater values stored by name
+            par = [];
+            for indx = 1:numel(this.control.sys.pardef)
+                name = this.control.sys.pardef(indx).name;
+                value = this.control.sys.pardef(indx).value;
+                par = setfield(par,name,value);
+            end
+        end 
+        
+        % Set par property
+        function this = set.par(this,value)
+            % Assert the incoming value is a struct
+            if ~isstruct(value)
+                warning('bdGUI: Illegal par value. Input must be a struct');
+                return
+            end
+            
+            % Make a working copy of the control.sys.pardef array 
+            syspardef = this.control.sys.pardef;
+            
+            % For each field name in the incoming value struct ... 
+            vfields = fieldnames(value);
+            for vindx = 1:numel(vfields)
+                % Get the name, value and size of the field
+                vfield = vfields{vindx};
+                vvalue = getfield(value,vfield);
+                vsize = size(vvalue);
+                
+                % Find the syspardef entry with the same name                
+                [val,idx] = bdGetValue(syspardef,vfield);
+                if isempty(val)
+                    warning(['bdGUI: Unknown parameter [',vfield,'].']);
+                    return
+                end
+                
+                % Assert the incoming value is the correct shape and size.
+                if ~isequal(size(val),vsize)
+                    warning(['bdGUI: Parameter size mismatch [',vfield,'].']);
+                    return
+                end
+                
+                % Update the  working copy
+                syspardef(idx).value = vvalue;
+            end
+            
+            % Everything must have gone well, so update the sys.pardef 
+            % in teh control panel with the working copy.
+            this.control.sys.pardef = syspardef;
+            
+            % Notify the control panel to refresh its widgets
+            % and then to recompute the trajectory.
+            notify(this.control,'refresh');
+            notify(this.control,'recompute');
+        end
+
         % Get sys property
         function sys = get.sys(this)
             sys = this.control.sys;

@@ -1,11 +1,12 @@
 %bdGetValue  Read a named value from a pardef/vardef/lagdef cell array.
 %Usage:
-%   val = bdGetValue(xxxdef,'name')
+%   [val,idx] = bdGetValue(xxxdef,'name')
 %where
 %   xxxdef is the incoming pardef, vardef, lagdef or auxdef cell array.
 %   name is the string name of the element to be updated.
-%   val is the corresponding value found in the cell array or [] if
-%     no mathcing name field was found.
+%   val is the corresponding value found in the cell array.
+%   idx is the corresponding index of the relevant cell array.
+%   Both val and indx are returned empty if no matching name was found.
 %
 %EXAMPLE
 %  pardef = [ struct('name','a', 'value', 1);
@@ -17,7 +18,7 @@
 %     2     3     4
 %  
 %AUTHORS
-%  Stewart Heitmann (2016a,2017a)
+%  Stewart Heitmann (2016a,2017a,2017b)
 
 % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -46,14 +47,16 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function val = bdGetValue(xxxdef,name)
+function [val,idx] = bdGetValue(xxxdef,name)
     val = [];
+    idx = [];
     nvar = numel(xxxdef);
     for indx=1:nvar
         if strcmp(xxxdef(indx).name,name)==1
             val = xxxdef(indx).value;
+            idx = indx;
             return
         end
     end
-    warning('bdGetValue() failed to find a matching name');
+    %warning('bdGetValue() failed to find a matching name');
 end

@@ -3,7 +3,7 @@ classdef bdControl < handle
     %  Internal toolbox object not intended to be called by end-users.
     % 
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a)
+    %  Stewart Heitmann (2016a,2017a,2017b)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -48,11 +48,13 @@ classdef bdControl < handle
         cpustart    % cpu start time
         cpu         % handle to cpu clock
         pro         % handle to progress counter
+%        listeners   % array of listeners
     end
     
     events
         recompute   % signals that sol must be recomputed
         redraw      % signals that sol must be replotted
+        refresh     % signals the widgets to refresh their values 
     end
     
     methods
@@ -75,6 +77,9 @@ classdef bdControl < handle
             
             % take a working copy of the system struct
             this.sys = sys;
+            
+            % init the listener array
+            %this.listeners = event.listener.empty(0);
             
             % contrsuct the solver map
             this.solvermap = bd.solverMap(sys); 
@@ -125,7 +130,7 @@ classdef bdControl < handle
                         yoffset = yoffset + rowh;
             
                         % construct edit box for the scalar
-                        uicontrol('Style','edit', ...
+                        uiobj = uicontrol('Style','edit', ...
                             'String',num2str(parval,'%0.4g'), ...
                             'Value',parval, ...
                             'HorizontalAlignment','right', ...
@@ -137,6 +142,10 @@ classdef bdControl < handle
                             'Callback', @(hObj,~) this.ScalarParameter(hObj,parindx), ...
                             'Position',[0 panelh-yoffset boxw boxh]);
                         
+                        % listen to the control panel for widget refresh events
+                        %this.listeners(end+1) = addlistener(this,'parwidget',@(~,~) this.UpdateParWidgets(parindx,uiobj));    
+                        addlistener(this,'refresh',@(~,~) this.ScalarParameterRefresh(parindx,uiobj));    
+
                         % string label
                         uicontrol('Style','text', ...
                             'String',parstr, ...
@@ -156,12 +165,15 @@ classdef bdControl < handle
                         ax = axes('parent', panel, ...
                             'Units','pixels', ...
                             'Position',[0 panelh-yoffset boxw boxh]);
-                        bar(ax,parval, ...
+                        barobj = bar(ax,parval, ...
                             'ButtonDownFcn', @(hObj,~) this.VectorParameter(hObj,parstr,parindx) );
                         xlim([0.5 numel(parval)+0.5]);
                         set(ax,'Tag','bdControlWidget', 'UserData',yoffset);
                         axis 'off';
-                        
+
+                        % listen to the control panel for widget refresh events
+                        addlistener(this,'refresh',@(~,~) this.VectorParameterRefresh(parindx,barobj));    
+
                         % string label
                         uicontrol('Style','text', ...
                             'String',parstr, ...
@@ -181,10 +193,13 @@ classdef bdControl < handle
                         ax = axes('parent', panel, ...
                             'Units','pixels', ...
                             'Position',[0 panelh-yoffset boxw boxw]);
-                        imagesc(parval(:,:,1), 'Parent',ax, ...
+                        imObj = imagesc(parval(:,:,1), 'Parent',ax, ...
                             'ButtonDownFcn', @(hObj,~) this.MatrixParameter(hObj,parstr,parindx) );
                         axis off;
                         set(ax,'Tag','bdControlWidget', 'UserData',yoffset); 
+
+                        % listen to the control panel for widget refresh events
+                        addlistener(this,'refresh',@(~,~) this.MatrixParameterRefresh(parindx,imObj));    
 
                         % string label
                         uicontrol('Style','text', ...
@@ -555,7 +570,7 @@ classdef bdControl < handle
             % listen for recompute events
             addlistener(this,'recompute',@(~,~) RecomputeListener(this));
         end
-               
+        
     end
     
     
@@ -577,11 +592,18 @@ classdef bdControl < handle
             end            
         end
         
-        % Callback for ODE parameter edit box
+        % Callback for parameter edit box
         function ScalarParameter(this,editObj,parindx)
             this.ScalarCallback(editObj);
             this.sys.pardef(parindx).value = editObj.Value;
             notify(this,'recompute');
+        end
+        
+        % Refresh listener for parameter edit box
+        function ScalarParameterRefresh(this,parindx,uiobj)
+            parval = this.sys.pardef(parindx).value;
+            uiobj.Value = parval;
+            uiobj.String = num2str(parval,'%0.4g');
         end
         
         % Callback for DDE lag edit box
@@ -591,14 +613,14 @@ classdef bdControl < handle
             notify(this,'recompute');
         end
         
-        % Callback for ODE variable edit box
+        % Callback for variable edit box
         function ScalarVariable(this,editObj,varindx)
             this.ScalarCallback(editObj);
             this.sys.vardef(varindx).value = editObj.Value;
             notify(this,'recompute');
         end
 
-        % Callback for ODE time domain edit box
+        % Callback for time domain edit box
         function ScalarTspan(this,hObj,tindx)
             this.ScalarCallback(hObj);
             this.sys.tspan(tindx) = hObj.Value;
@@ -627,13 +649,19 @@ classdef bdControl < handle
             hObj.String = num2str(val,'%0.4g');
         end
         
-        % Callback for ODE parameter vector widget
+        % Callback for parameter vector widget
         function VectorParameter(this,barObj,name,parindx)
             this.VectorCallback(barObj,name);
             this.sys.pardef(parindx).value = reshape(barObj.YData, size(this.sys.pardef(parindx).value));
             notify(this,'recompute');
         end
 
+        % Refresh listener for vector parameter widget
+        function VectorParameterRefresh(this,parindx,barObj)
+            parval = this.sys.pardef(parindx).value
+            barObj.YData = parval;
+        end
+        
         % Callback for DDE lag vector widget
         function VectorLag(this,barObj,name,lagindx)
             this.VectorCallback(barObj,name);
@@ -666,13 +694,19 @@ classdef bdControl < handle
             set(barObj,'Ydata',data);
         end
         
-        % Callback for ODE parameter matrix widget
+        % Callback for parameter matrix widget
         function MatrixParameter(this,imObj,name,parindx)
             % open dialog box for editing a matrix
             this.sys.pardef(parindx).value = bdEditMatrix(this.sys.pardef(parindx).value,name);
             % update the image data in the control panel
             set(imObj,'CData',this.sys.pardef(parindx).value);
             notify(this,'recompute');
+        end
+
+        % Refresh listener for matrix parameter widget
+        function MatrixParameterRefresh(this,parindx,imObj)
+            parval = this.sys.pardef(parindx).value
+            imObj.CData = parval;
         end
 
         % Callback for DDE lag matrix widget
