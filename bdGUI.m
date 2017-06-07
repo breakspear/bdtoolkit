@@ -246,14 +246,14 @@ classdef bdGUI < handle
                 [fname,pname] = uiputfile('*.mat','Save system file');
                 if fname~=0
                     sys = this.control.sys;
-                    if isfield(sys,'odeoption')
-                        sys.odeoption = odeset(sys.odeoption,'OutputFcn',[]);
+                    if isfield(sys,'odeoption') && isfield(sys.odeoption,'OutputFcn')
+                        sys.odeoption = rmfield(sys.odeoption,'OutputFcn');
                     end
-                    if isfield(sys,'ddeoption')
-                        sys.ddeoption = ddeset(sys.ddeoption,'OutputFcn',[]);
+                    if isfield(sys,'ddeoption') && isfield(sys.ddeoption,'OutputFcn')
+                        sys.ddeoption = rmfield(sys.ddeoption,'OutputFcn');
                     end
-                    if isfield(sys,'sdeoption')
-                        sys.sdeoption = odeset(sys.sdeoption,'OutputFcn',[]);
+                    if isfield(sys,'sdeoption') && isfield(sys.sdeoption,'OutputFcn')
+                        sys.sdeoption = rmfield(sys.sdeoption,'OutputFcn');
                     end
                     save(fullfile(pname,fname),'sys');
                 end
@@ -267,7 +267,7 @@ classdef bdGUI < handle
         
         % Construct the Panel menu
         function menuobj = PanelsMenu(this,sys)
-            classnames = {'bdLatexPanel','bdTimePortrait','bdPhasePortrait','bdSpaceTime','bdCorrPanel','bdSolverPanel'};
+            classnames = {'bdLatexPanel','bdTimePortrait','bdPhasePortrait','bdSpaceTime','bdCorrPanel','bdHilbert','bdSolverPanel','bdTrapPanel'};
             menuobj = uimenu('Parent',this.fig, 'Label','New Panel');
             uimenu('Parent',menuobj, ...
                     'Label','Equations', ...
@@ -285,8 +285,14 @@ classdef bdGUI < handle
                     'Label','Correlations', ...
                     'Callback', @(~,~) NewPanel('bdCorrPanel'));
             uimenu('Parent',menuobj, ...
+                    'Label','Hilbert Transform', ...
+                    'Callback', @(~,~) NewPanel('bdHilbert'));
+            uimenu('Parent',menuobj, ...
                     'Label','Solver Panel', ...
                     'Callback', @(~,~) NewPanel('bdSolverPanel'));
+            uimenu('Parent',menuobj, ...
+                    'Label','Trap Panel', ...
+                    'Callback', @(~,~) NewPanel('bdTrapPanel'));
       
             % add any custom gui panels to the menu and also to this.panelclasses
             if isfield(sys,'panels')
