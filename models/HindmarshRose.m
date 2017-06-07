@@ -1,11 +1,13 @@
 % HindmarshRose   Network of Hindmarsh-Rose neurons
-% The Hindmarsh-Rose equations
+% sys = HindmarshRose(Kij)
+% Constructs a system definition for the Hindmarsh-Rose model
 %    x' = y - a*x.^3 + b*x.^2 - z + I - gs*(x-Vs).*Inet;
 %    y' = c - d*x.^2 - y;
 %    z' = r*(s*(x-x0)-z);
 % where
 %    Inet = Kij*F(x-theta);
 %    F(x) = 1./(1+exp(-x));
+%    Kij is a network connectivity matrix (nxn).
 %   
 % Example:
 %   n = 20;                           % Number of neurons

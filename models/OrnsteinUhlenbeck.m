@@ -83,7 +83,7 @@ function sys = OrnsteinUhlenbeck(n)
     sys.sdesolver = {@sdeEM};           % Euler-Murayama Method
     
     % SDE solver options
-    sys.sdeoption.InitialStep = 0.01;   % Solver step size
+    sys.sdeoption.InitialStep = 0.1;    % Solver step size
     sys.sdeoption.NoiseSources = n;     % Number of noise sources
 
     % Latex (Equations) panel
@@ -111,7 +111,7 @@ function sys = OrnsteinUhlenbeck(n)
     sys.panels.bdSolverPanel = [];      
     
     % Default time span (optional)
-    sys.tspan = [0 10];  
+    sys.tspan = [0 2000];  
            
     % Function hook for the bdGUI System-Reconfigure menu
     sys.self = @self;    
