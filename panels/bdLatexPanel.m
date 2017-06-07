@@ -109,7 +109,8 @@ classdef bdLatexPanel < handle
                     % latex syntax error occured. Colour the offending text red.
                     obj.Color = [1 0 0];                    
                     % issue a syntax error
-                    uiwait( warndlg({'latex syntax error in sys.panels.bdLatexPanel.latex',latex{l}},'bdLatexPanel','modal') );
+                    %uiwait( warndlg({'latex syntax error in sys.panels.bdLatexPanel.latex',latex{l}},'bdLatexPanel','modal') );
+                    uiwait( warndlg('latex syntax error','bdLatexPanel','modal') );                   
                     yoffset = yoffset + 24;                   % skip one line (approx)
                 else
                     yoffset = yoffset + 1.1*obj.Extent(4);    % skip one line (exactly)
