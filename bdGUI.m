@@ -44,6 +44,8 @@ classdef bdGUI < handle
     
     properties (Dependent)
         par             % system parameters (read/write)
+        var             % system initial conditions (read/write)
+        lag             % DDE time lags (read/write)
         sys             % system definition structure (read only)
         sol             % current output of the solver (read only)
         sox             % current auxiliary variables (read only)
@@ -208,6 +210,128 @@ classdef bdGUI < handle
             notify(this.control,'recompute');
         end
 
+        % Get var (initial conditions) property
+        function var = get.var(this)
+            % return a struct with initial values stored by name
+            var = [];
+            for indx = 1:numel(this.control.sys.vardef)
+                name = this.control.sys.vardef(indx).name;
+                value = this.control.sys.vardef(indx).value;
+                var = setfield(var,name,value);
+            end
+        end 
+        
+        % Set var (initial conditions) property
+        function this = set.var(this,value)
+            % Assert the incoming value is a struct
+            if ~isstruct(value)
+                warning('bdGUI: Illegal var value. Input must be a struct');
+                return
+            end
+            
+            % Make a working copy of the control.sys.vardef array 
+            sysvardef = this.control.sys.vardef;
+            
+            % For each field name in the incoming value struct ... 
+            vfields = fieldnames(value);
+            for vindx = 1:numel(vfields)
+                % Get the name, value and size of the field
+                vfield = vfields{vindx};
+                vvalue = getfield(value,vfield);
+                vsize = size(vvalue);
+                
+                % Find the sysvardef entry with the same name                
+                [val,idx] = bdGetValue(sysvardef,vfield);
+                if isempty(val)
+                    warning(['bdGUI: Unknown variable [',vfield,'].']);
+                    return
+                end
+                
+                % Assert the incoming value is the correct shape and size.
+                if ~isequal(size(val),vsize)
+                    warning(['bdGUI: Variable size mismatch [',vfield,'].']);
+                    return
+                end
+                
+                % Update the  working copy
+                sysvardef(idx).value = vvalue;
+            end
+            
+            % Everything must have gone well, so update the sys.vardef 
+            % in the control panel with the working copy.
+            this.control.sys.vardef = sysvardef;
+            
+            % Notify the control panel to refresh its widgets
+            % and then to recompute the trajectory.
+            notify(this.control,'refresh');
+            notify(this.control,'recompute');
+        end
+        
+        % Get lag property
+        function lag = get.lag(this)
+            % return a struct with initial values stored by name
+            lag = [];
+            if isfield(this.control.sys,'lagdef')
+                for indx = 1:numel(this.control.sys.lagdef)
+                    name = this.control.sys.lagdef(indx).name;
+                    value = this.control.sys.lagdef(indx).value;
+                    lag = setfield(lag,name,value);
+                end
+            end
+        end 
+        
+        % Set lag property
+        function this = set.lag(this,value)
+            % Assert the incoming value is a struct
+            if ~isstruct(value)
+                warning('bdGUI: Illegal lag value. Input must be a struct');
+                return
+            end
+            
+            % Assert the current system has lag parameters
+            if ~isfield(this.control.sys,'lagdef')
+                warning('bdGUI: No lag parameters exist in this model');
+                return
+            end
+            
+            % Make a working copy of the control.sys.lagdef array
+            syslagdef = this.control.sys.lagdef;
+            
+            % For each field name in the incoming value struct ... 
+            vfields = fieldnames(value);
+            for vindx = 1:numel(vfields)
+                % Get the name, value and size of the field
+                vfield = vfields{vindx};
+                vvalue = getfield(value,vfield);
+                vsize = size(vvalue);
+                
+                % Find the syslagdef entry with the same name                
+                [val,idx] = bdGetValue(syslagdef,vfield);
+                if isempty(val)
+                    warning(['bdGUI: Unknown lag parameter [',vfield,'].']);
+                    return
+                end
+                
+                % Assert the incoming value is the correct shape and size.
+                if ~isequal(size(val),vsize)
+                    warning(['bdGUI: Lag parameter size mismatch [',vfield,'].']);
+                    return
+                end
+                
+                % Update the  working copy
+                syslagdef(idx).value = vvalue;
+            end
+            
+            % Everything must have gone well, so update the sys.lagdef 
+            % in the control panel with the working copy.
+            this.control.sys.lagdef = syslagdef;
+            
+            % Notify the control panel to refresh its widgets
+            % and then to recompute the trajectory.
+            notify(this.control,'refresh');
+            notify(this.control,'recompute');
+        end       
+        
         % Get sys property
         function sys = get.sys(this)
             sys = this.control.sys;
@@ -325,7 +449,7 @@ classdef bdGUI < handle
         
         % Construct the Panel menu
         function menuobj = PanelsMenu(this,sys)
-            classnames = {'bdLatexPanel','bdTimePortrait','bdPhasePortrait','bdSpaceTime','bdCorrPanel','bdHilbert','bdSolverPanel','bdTrapPanel'};
+            classnames = {'bdLatexPanel','bdTimePortrait','bdPhasePortrait','bdSpaceTime','bdCorrPanel','bdHilbert','bdSurrogate','bdSolverPanel','bdTrapPanel'};
             menuobj = uimenu('Parent',this.fig, 'Label','New Panel');
             uimenu('Parent',menuobj, ...
                     'Label','Equations', ...
@@ -345,6 +469,9 @@ classdef bdGUI < handle
             uimenu('Parent',menuobj, ...
                     'Label','Hilbert Transform', ...
                     'Callback', @(~,~) NewPanel('bdHilbert'));
+            uimenu('Parent',menuobj, ...
+                    'Label','Surrogate Signal', ...
+                    'Callback', @(~,~) NewPanel('bdSurrogate'));
             uimenu('Parent',menuobj, ...
                     'Label','Solver Panel', ...
                     'Callback', @(~,~) NewPanel('bdSolverPanel'));

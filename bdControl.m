@@ -280,7 +280,7 @@ classdef bdControl < handle
                             yoffset = yoffset + rowh;
 
                             % construct edit box for the scalar
-                            uicontrol('Style','edit', ...
+                            uiobj = uicontrol('Style','edit', ...
                                 'String',num2str(lagval,'%0.4g'), ...
                                 'Value',lagval, ...
                                 'HorizontalAlignment','right', ...
@@ -291,6 +291,9 @@ classdef bdControl < handle
                                 'Tag', 'bdControlWidget', ...
                                 'Callback', @(hObj,~) this.ScalarLag(hObj,lagindx), ...
                                 'Position',[0 panelh-yoffset boxw boxh]);
+                           
+                            % listen to the control panel for widget refresh events
+                            addlistener(this,'refresh',@(~,~) this.ScalarLagRefresh(lagindx,uiobj));    
 
                             % string label
                             uicontrol('Style','text', ...
@@ -311,11 +314,14 @@ classdef bdControl < handle
                             ax = axes('parent', panel, ...
                                 'Units','pixels', ...
                                 'Position',[0 panelh-yoffset boxw boxh]);
-                            bar(ax,lagval, ...
+                            barobj = bar(ax,lagval, ...
                                 'ButtonDownFcn', @(hObj,~) this.VectorLag(hObj,lagstr,lagindx) );
                             xlim([0.5 numel(lagval)+0.5]);
                             set(ax,'Tag','bdControlWidget', 'UserData',yoffset);
                             axis 'off';
+
+                            % listen to the control panel for widget refresh events
+                            addlistener(this,'refresh',@(~,~) this.VectorLagRefresh(lagindx,barobj));    
 
                             % string label
                             uicontrol('Style','text', ...
@@ -336,10 +342,13 @@ classdef bdControl < handle
                             ax = axes('parent', panel, ...
                                 'Units','pixels', ...
                                 'Position',[0 panelh-yoffset boxw boxw]);
-                            imagesc(lagval, 'Parent',ax, ...
+                            imObj = imagesc(lagval, 'Parent',ax, ...
                                 'ButtonDownFcn', @(hObj,~) this.MatrixLag(hObj,lagstr,lagindx) );
                             axis off;
                             set(ax,'Tag','bdControlWidget', 'UserData',yoffset); 
+
+                            % listen to the control panel for widget refresh events
+                            addlistener(this,'refresh',@(~,~) this.MatrixLagRefresh(lagindx,imObj));    
 
                             % string label
                             uicontrol('Style','text', ...
@@ -382,7 +391,7 @@ classdef bdControl < handle
                         yoffset = yoffset + rowh;
                 
                         % construct edit box for the scalar
-                        uicontrol('Style','edit', ...
+                        uiobj = uicontrol('Style','edit', ...
                             'String',num2str(varval,'%0.4g'), ...
                             'Value',varval, ...
                             'HorizontalAlignment','right', ...
@@ -393,6 +402,9 @@ classdef bdControl < handle
                             'Tag', 'bdControlWidget', ...
                             'Callback', @(hObj,~) this.ScalarVariable(hObj,varindx), ...
                             'Position',[0 panelh-yoffset boxw boxh]);
+                        
+                        % listen to the control panel for widget refresh events
+                        addlistener(this,'refresh',@(~,~) this.ScalarVariableRefresh(varindx,uiobj));    
 
                         % string label
                         uicontrol('Style','text', ...
@@ -413,11 +425,14 @@ classdef bdControl < handle
                         ax = axes('parent', panel, ...
                             'Units','pixels', ... 
                             'Position',[0 panelh-yoffset boxw boxh]);
-                        bar(ax,varval, ...
+                        barobj = bar(ax,varval, ...
                             'ButtonDownFcn', @(hObj,~) this.VectorVariable(hObj,varstr,varindx) );
                         xlim([0.5 numel(varval)+0.5]);
                         set(ax,'Tag','bdControlWidget', 'UserData',yoffset);
                         axis 'off';
+
+                        % listen to the control panel for widget refresh events
+                        addlistener(this,'refresh',@(~,~) this.VectorVariableRefresh(varindx,barobj));    
 
                         % string label
                         uicontrol('Style','text', ...
@@ -438,11 +453,14 @@ classdef bdControl < handle
                         ax = axes('parent', panel, ...
                             'Units','pixels', ...
                             'Position',[0 panelh-yoffset+2.5 boxw boxw]);
-                        imagesc(varval, 'Parent',ax, ...
+                        imObj = imagesc(varval, 'Parent',ax, ...
                             'ButtonDownFcn', @(hObj,~) this.MatrixVariable(hObj,varstr,varindx) );
                         axis off;
                         set(ax,'Tag','bdControlWidget', 'UserData',yoffset);                         
                         
+                        % listen to the control panel for widget refresh events
+                        addlistener(this,'refresh',@(~,~) this.MatrixVariableRefresh(varindx,imObj));    
+
                         % string label
                         uicontrol('Style','text', ...
                             'String',varstr, ...
@@ -613,6 +631,13 @@ classdef bdControl < handle
             notify(this,'recompute');
         end
         
+        % Refresh listener for DDE lag edit box
+        function ScalarLagRefresh(this,lagindx,uiobj)
+            lagval = this.sys.lagdef(lagindx).value;
+            uiobj.Value = lagval;
+            uiobj.String = num2str(lagval,'%0.4g');
+        end
+        
         % Callback for variable edit box
         function ScalarVariable(this,editObj,varindx)
             this.ScalarCallback(editObj);
@@ -620,6 +645,13 @@ classdef bdControl < handle
             notify(this,'recompute');
         end
 
+        % Refresh listener for variable edit box
+        function ScalarVariableRefresh(this,varindx,uiobj)
+            varval = this.sys.vardef(varindx).value;
+            uiobj.Value = varval;
+            uiobj.String = num2str(varval,'%0.4g');
+        end        
+        
         % Callback for time domain edit box
         function ScalarTspan(this,hObj,tindx)
             this.ScalarCallback(hObj);
@@ -658,7 +690,7 @@ classdef bdControl < handle
 
         % Refresh listener for vector parameter widget
         function VectorParameterRefresh(this,parindx,barObj)
-            parval = this.sys.pardef(parindx).value
+            parval = this.sys.pardef(parindx).value;
             barObj.YData = parval;
         end
         
@@ -669,11 +701,23 @@ classdef bdControl < handle
             notify(this,'recompute');
         end
         
+        % Refresh listener for DDE lag widget
+        function VectorLagRefresh(this,lagindx,barObj)
+            lagval = this.sys.lagdef(lagindx).value;
+            barObj.YData = lagval;
+        end
+
         % Callback for ODE variable vector widget
         function VectorVariable(this,barObj,name,varindx)
             this.VectorCallback(barObj,name);
             this.sys.vardef(varindx).value = reshape(barObj.YData, size(this.sys.vardef(varindx).value));
             notify(this,'recompute');
+        end
+        
+        % Refresh listener for vector variable widget
+        function VectorVariableRefresh(this,varindx,barObj)
+            varval = this.sys.vardef(varindx).value;
+            barObj.YData = varval;
         end
         
         % Callback for generic vector widget
@@ -705,7 +749,7 @@ classdef bdControl < handle
 
         % Refresh listener for matrix parameter widget
         function MatrixParameterRefresh(this,parindx,imObj)
-            parval = this.sys.pardef(parindx).value
+            parval = this.sys.pardef(parindx).value;
             imObj.CData = parval;
         end
 
@@ -718,7 +762,13 @@ classdef bdControl < handle
             notify(this,'recompute');
         end
 
-        % Callback for ODE varoable matrix widget
+        % Refresh listener for DDE lag matrix widget
+        function MatrixLagRefresh(this,lagindx,imObj)
+            lagval = this.sys.lagdef(lagindx).value;
+            imObj.CData = lagval;
+        end
+        
+        % Callback for ODE variable matrix widget
         function MatrixVariable(this,imObj,name,varindx)
             % open dialog box for editing a matrix
             this.sys.vardef(varindx).value = bdEditMatrix(this.sys.vardef(varindx).value,name);
@@ -727,6 +777,12 @@ classdef bdControl < handle
             notify(this,'recompute');
         end
         
+        % Refresh listener for variable matrix widget
+        function MatrixVariableRefresh(this,varindx,imObj)
+            varval = this.sys.vardef(varindx).value;
+            imObj.CData = varval;
+        end
+
         % Listener for the compute flag
         function RecomputeListener(this)
             % Do nothing if the HALT button is active

@@ -58,12 +58,6 @@ classdef bdTrapPanel < handle
                 'Units','points', ...
                 'TooltipString','Right click for menu');
 
-            % get tab geometry (in points)
-            %parentx = this.tab.Position(1);
-            %parenty = this.tab.Position(2);
-            %parentw = this.tab.Position(3);
-            %parenth = this.tab.Position(4);
-
             % construct the trap axes
             this.ax = axes('Parent',this.tab, ...
                 'Units','normal', 'Position',[0.1 0.5 0.85 0.45]);
@@ -126,7 +120,7 @@ classdef bdTrapPanel < handle
        
        function render(this,~)
             % debugging 
-            disp('bdTrapPanel.render()') 
+            %disp('bdTrapPanel.render()') 
             
             % Error messages are accumulate in this cell array.
             errmsgs = {};
