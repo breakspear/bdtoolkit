@@ -11,7 +11,7 @@ classdef bdSurrogate < handle
     %
     %AUTHORS
     %  Stewart Heitmann (2017b)
-    %  Michael Breakspear (2017b)
+    %  Incorporates original code from Michael Breakspear.
 
     % Copyright (C) 2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.

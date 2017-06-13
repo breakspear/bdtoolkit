@@ -10,7 +10,7 @@ classdef bdSpaceTime < handle
     %   sys.panels.bdSpaceTime.title = 'Space-Time'
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a)
+    %  Stewart Heitmann (2016a,2017a,2017b)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -40,7 +40,7 @@ classdef bdSpaceTime < handle
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
-    properties
+    properties (Access=public)
         Y           % matrix of Y values versus time (n x t)
         t           % vector of time points (1 x t)
     end

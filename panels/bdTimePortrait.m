@@ -12,7 +12,7 @@ classdef bdTimePortrait < handle
     %   sys.panels.bdTimePortrait.autolim = true
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a)
+    %  Stewart Heitmann (2016a,2017a,2017b)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -41,6 +41,14 @@ classdef bdTimePortrait < handle
     % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
+    properties (Access=public)
+        t               % time domain
+        y1              % values for the upper plot (n1 x t)
+        y2              % values for the lower plot (n2 x t)
+        y1row           % index of the highlighted row in y1 
+        y2row           % index of the highlighted row in y2 
+    end
+    
     properties (Access=private) 
         fig             % handle to parent figure
         tab             % handle to uitab object
@@ -174,12 +182,12 @@ classdef bdTimePortrait < handle
             %appdata = getappdata(this.fig,'bdTimePortrait');
 
             % render the upper and lower axes 
-            renderax(this.ax1, this.popup1.Value);
-            renderax(this.ax2, this.popup2.Value);            
+            [this.t,this.y1,this.y1row] = renderax(this.ax1, this.popup1.Value);
+            [~,this.y2,this.y2row] = renderax(this.ax2, this.popup2.Value);            
             xlabel(this.ax2,'time', 'FontSize',14);
 
             % Yindx is the global index of the selected variable
-            function renderax(ax,popindx)
+            function [t,y,yrow] = renderax(ax,popindx)
                 % find the non-negative time entries in sol.x
                 tindx = find(control.sol.x>=0);
                 t = control.sol.x(tindx);
