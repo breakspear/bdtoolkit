@@ -43,6 +43,11 @@ classdef bdPhasePortrait < handle
     % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
+    properties (Access=public)
+        x = []              % values of the 1st variable
+        y = []              % values of the 2nd variable
+        z = []              % values of the 3rd variable
+    end
     
     properties (Access=private) 
         fig                 % handle to parent figure
@@ -220,16 +225,16 @@ classdef bdPhasePortrait < handle
             % 
             if this.checkbox3D.Value
                 % plot current trajectory in 3D
-                x = control.sol.y(xindx,tindx);
-                y = control.sol.y(yindx,tindx);
-                z = control.sol.y(zindx,tindx);
+                this.x = control.sol.y(xindx,tindx);
+                this.y = control.sol.y(yindx,tindx);
+                this.z = control.sol.y(zindx,tindx);
 
-                plot3(this.ax, x,y,z, 'color','k','Linewidth',1);
+                plot3(this.ax, this.x, this.y, this.z, 'color','k','Linewidth',1);
                 if this.markinit
-                    plot3(this.ax, x(1),y(1),z(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
+                    plot3(this.ax, this.x(1), this.y(1), this.z(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
                 end
                 if steadystate
-                    plot3(this.ax, x(end),y(end),z(end), 'color','k', 'marker','o', 'markerfacecolor','k', 'markersize',6);               
+                    plot3(this.ax, this.x(end), this.y(end), this.z(end), 'color','k', 'marker','o', 'markerfacecolor','k', 'markersize',6);               
                 end
                 
                 xlabel(this.ax,xstr, 'FontSize',16);
@@ -242,7 +247,7 @@ classdef bdPhasePortrait < handle
                     ylimit = this.ax.YLim;
                     [xmesh,ymesh,dxmesh,dymesh] = this.VectorField2D(control,tindx(1),xindx,yindx,xlimit,ylimit);
 
-                    zmesh = ones(size(xmesh)) .* z(1);
+                    zmesh = ones(size(xmesh)) .* this.z(1);
                     dzmesh = zeros(size(zmesh));
                     
                     % plot vector field
@@ -254,15 +259,16 @@ classdef bdPhasePortrait < handle
 
            else
                 % plot current trajectory in 2D
-                x = control.sol.y(xindx,tindx);
-                y = control.sol.y(yindx,tindx);
+                this.x = control.sol.y(xindx,tindx);
+                this.y = control.sol.y(yindx,tindx);
+                this.z = [];
 
-                plot(this.ax, x,y, 'color','k','Linewidth',1);
+                plot(this.ax, this.x, this.y, 'color','k','Linewidth',1);
                 if this.markinit
-                    plot(this.ax, x(1),y(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
+                    plot(this.ax, this.x(1), this.y(1), 'color','k', 'marker','pentagram', 'markerfacecolor','y', 'markersize',12);
                 end
                 if steadystate
-                    plot(this.ax, x(end),y(end), 'color','k', 'marker','o', 'markerfacecolor','k', 'markersize',6);               
+                    plot(this.ax, this.x(end), this.y(end), 'color','k', 'marker','o', 'markerfacecolor','k', 'markersize',6);               
                 end
                 
                 xlabel(this.ax,xstr, 'FontSize',16);
