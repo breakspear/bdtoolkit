@@ -12,11 +12,11 @@
 %   for t<=0.
 %
 % Example 1: Using the Brain Dynamics GUI
-%   sys = DDEdemo1();       % construct the system struct
+%   sys = WilleBaker();     % construct the system struct
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 % 
 % Example 2: Using the Brain Dynamics command-line solver
-%   sys = DDEdemo1();                               % get system struct
+%   sys = WilleBaker();                             % get system struct
 %   sys.pardef = bdSetValue(sys.pardef,'a',-1);     % set 'a' parameter
 %   sys.pardef = bdSetValue(sys.pardef,'b', 1);     % set 'b' parameter
 %   sys.pardef = bdSetValue(sys.pardef,'c',-1);     % set 'c' parameter
@@ -34,7 +34,7 @@
 %   xlabel('time'); ylabel('y');
 %
 % Example 2: Calling DDE23 manually
-%   sys = DDEdemo1();                       % construct the system struct
+%   sys = WilleBaker();                     % construct the system struct
 %   ddefun = sys.ddefun;                    % get DDE function handle
 %   [a,b,c,d] = deal(sys.pardef{:,2});      % default parameter values
 %   [tau1,tau2] = deal(sys.lagdef{:,2});    % default lag values
@@ -49,7 +49,7 @@
 %   legend('y1','y2','y3');
 %
 % Authors
-%   Stewart Heitmann (2016a,2017a)
+%   Stewart Heitmann (2016a,2017a,2017b)
 
 % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
