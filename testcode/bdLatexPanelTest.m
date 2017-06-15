@@ -1,5 +1,5 @@
-% Test function for bdStaticPanel
-function [control,latexpanel1,latexpanel2] = bdStaticPanelTest(sys)
+% Test function for bdLatexPanel
+function [control,latexpanel1,latexpanel2] = bdLatexPanelTest(sys)
     % ensure bdControl is in the path
     if ~exist('bdControl.m','file')
         addpath ..

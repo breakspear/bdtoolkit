@@ -11,7 +11,7 @@ classdef bdLatexPanel < handle
     %   sys.panels.bdLatexPanel.latex = {'latex string','latex string',...}
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a)
+    %  Stewart Heitmann (2016a,2017a,2017b)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -56,6 +56,9 @@ classdef bdLatexPanel < handle
 
             % apply default settings to sys.panels.bdLatexPanel
             control.sys.panels.bdLatexPanel = bdLatexPanel.syscheck(control.sys);
+            
+            % get the latex string from the sys structure
+            latex = control.sys.panels.bdLatexPanel.latex;
 
             % construct the uitab
             this.tab = uitab(tabgroup, ...
@@ -64,14 +67,15 @@ classdef bdLatexPanel < handle
                 'Units','points', ...
                 'TooltipString','Right click for menu');
 
-            % get tab geometry (in points)
-            %parentx = this.tab.Position(1);
-            %parenty = this.tab.Position(2);
-            %parentw = this.tab.Position(3);
-            parenth = this.tab.Position(4);
+            % construct scrolling uipanel
+            panelh = numel(latex)*32 + 32;      % only approximate (exact height depends on font:pixel ratio)
+            scrollpanel = bdScroll(this.tab,900,panelh,'BackgroundColor',[1 1 1]); 
+
+            % get panel height
+            parenth = scrollpanel.panel.Position(4);
 
             % construct the axes
-            ax = axes('Parent',this.tab, ...
+            ax = axes('Parent',scrollpanel.panel, ...
                 'Units','normal', ...
                 'Position',[0 0 1 1], ...
                 'XTick', [], ...
@@ -84,8 +88,7 @@ classdef bdLatexPanel < handle
             % because (i) the latex interpreter has limited memory for
             % monumental strings, and (ii) it is difficult for the user
             % to locate latex syntax errors in monumental strings.
-            yoffset = 4;   % points
-            latex = control.sys.panels.bdLatexPanel.latex;
+            yoffset = 8;   % points
             for l = 1:numel(latex)
                 
                 % special case: small skip for empty strings
@@ -95,13 +98,12 @@ classdef bdLatexPanel < handle
                 end 
                 
                 % render the text
-                obj = text(4,parenth-yoffset, latex{l}, ...
+                obj = text(8,parenth-yoffset, latex{l}, ...
                     'interpreter','latex', ...
                     'Parent',ax, ...
                     'Units','points', ...
                     'FontSize',16, ...
                     'VerticalAlignment','top', ...
-                    'Tag', 'bdLatexPanelWidget', ...
                     'UserData', yoffset); 
                
                 % error handling 
@@ -121,9 +123,6 @@ classdef bdLatexPanel < handle
             % construct the tab context menu
             this.tab.UIContextMenu = uicontextmenu;
             uimenu(this.tab.UIContextMenu,'Label','Close', 'Callback',@(~,~) this.delete());
-
-            % register a callback for resizing the panel
-            set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
         end
         
         % Destructor
@@ -132,30 +131,8 @@ classdef bdLatexPanel < handle
         end
 
     end
-    
-    methods (Access = private)
-    
-        % Callback for panel resizing. This function relies on each
-        % widget having its desired yoffset stored in its UserData field.
-        function SizeChanged(~,panel)
-            % get new parent geometry
-            panelh = panel.Position(4);
-            
-            % find all widgets in the control panel
-            objs = findobj(panel,'Tag','bdLatexPanelWidget');
-            
-            % for each widget, adjust its y position according to its preferred position
-            for indx = 1:numel(objs)
-                obj = objs(indx);                       % get the widget handle
-                yoffset = obj.UserData;                 % retrieve the preferred y position from UserData.
-                obj.Position(2) = panelh - yoffset;     % apply the preferred y position
-            end            
-        end
-    
-    end
-    
-    methods (Static)
         
+    methods (Static)    
         % Check the sys.panels struct
         function syspanel = syscheck(sys)
             % Default panel settings
@@ -179,7 +156,6 @@ classdef bdLatexPanel < handle
                 syspanel.latex = sys.panels.bdLatexPanel.latex;
             end            
         end   
-        
     end
 end
 

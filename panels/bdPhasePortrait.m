@@ -14,7 +14,7 @@ classdef bdPhasePortrait < handle
     %   sys.panels.bdPhasePortrait.autolim = true
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a)
+    %  Stewart Heitmann (2016a,2017a,2017b)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
