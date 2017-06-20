@@ -451,9 +451,9 @@ classdef bdGUI < handle
 
             % Callback for System-Load menu
             function gui = SystemLoad()
-                fname = uigetfile({'*.mat','MATLAB data file'},'Load system file');
+                [fname, pname] = uigetfile({'*.mat','MATLAB data file'},'Load system file');
                 if fname~=0
-                    fdata = load(fname,'sys');
+                    fdata = load(fullfile(pname,fname),'sys');
                     if isfield(fdata,'sys')
                         gui = bdGUI(fdata.sys);
                     else
