@@ -38,13 +38,19 @@ classdef bdGUI < handle
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
+    properties (Constant=true)
+        version = '2017b';
+    end
+    
     properties
         fig             % handle to the application figure
     end
-    
+        
     properties (Dependent)
         par             % system parameters (read/write)
-        var             % system initial conditions (read/write)
+        var0            % initial conditions (read/write)
+        var             % solution varables (read only)
+        t               % solution time steps
         lag             % DDE time lags (read/write)
         sys             % system definition structure (read only)
         sol             % current output of the solver (read only)
@@ -57,7 +63,7 @@ classdef bdGUI < handle
         uipanel1        % handle to uipanel 1
         uipanel2        % handle to uipanel 2
         tabgroup        % handle to tabgroup in panel1
-        panelobjs = {}; % list of handles to panel objects
+        panelmgr = [];  % contains handles to panel class objects
     end
     
     methods
@@ -138,7 +144,12 @@ classdef bdGUI < handle
                     classname = panelnames{indx};
                     if exist(classname,'class')
                         % construct the panel, keep a handle to it.
-                        this.panelobjs{end+1} = feval(classname,this.tabgroup,this.control);
+                        classhndl = feval(classname,this.tabgroup,this.control);
+                        if ~isfield(this.panelmgr,classname)
+                            this.panelmgr.(classname) = classhndl;
+                        else
+                            this.panelmgr.(classname)(end+1) = classhndl;
+                        end
                     else
                         dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
                         uiwait(dlg);
@@ -160,12 +171,12 @@ classdef bdGUI < handle
             for indx = 1:numel(this.control.sys.pardef)
                 name = this.control.sys.pardef(indx).name;
                 value = this.control.sys.pardef(indx).value;
-                par = setfield(par,name,value);
+                par.(name) = value;
             end
         end 
         
         % Set par property
-        function this = set.par(this,value)
+        function set.par(this,value)
             % Assert the incoming value is a struct
             if ~isstruct(value)
                 warning('bdGUI: Illegal par value. Input must be a struct');
@@ -180,7 +191,7 @@ classdef bdGUI < handle
             for vindx = 1:numel(vfields)
                 % Get the name, value and size of the field
                 vfield = vfields{vindx};
-                vvalue = getfield(value,vfield);
+                vvalue = value.(vfield);
                 vsize = size(vvalue);
                 
                 % Find the syspardef entry with the same name                
@@ -210,19 +221,19 @@ classdef bdGUI < handle
             notify(this.control,'recompute');
         end
 
-        % Get var (initial conditions) property
-        function var = get.var(this)
+        % Get var0 (initial conditions) property
+        function var0 = get.var0(this)
             % return a struct with initial values stored by name
-            var = [];
+            var0 = [];
             for indx = 1:numel(this.control.sys.vardef)
                 name = this.control.sys.vardef(indx).name;
                 value = this.control.sys.vardef(indx).value;
-                var = setfield(var,name,value);
+                var0.(name) = value;
             end
         end 
         
-        % Set var (initial conditions) property
-        function this = set.var(this,value)
+        % Set var0 (initial conditions) property
+        function set.var0(this,value)
             % Assert the incoming value is a struct
             if ~isstruct(value)
                 warning('bdGUI: Illegal var value. Input must be a struct');
@@ -237,7 +248,7 @@ classdef bdGUI < handle
             for vindx = 1:numel(vfields)
                 % Get the name, value and size of the field
                 vfield = vfields{vindx};
-                vvalue = getfield(value,vfield);
+                vvalue = value.(vfield);
                 vsize = size(vvalue);
                 
                 % Find the sysvardef entry with the same name                
@@ -267,6 +278,27 @@ classdef bdGUI < handle
             notify(this.control,'recompute');
         end
         
+        % Get var (solution variables) property
+        function var = get.var(this)
+            % return a struct with the solution variables stored by name
+            var = [];
+            solindx = 0;
+            for indx = 1:numel(this.control.sys.vardef)
+                % get name and length of variable
+                name = this.control.sys.vardef(indx).name;
+                len = numel(this.control.sys.vardef(indx).value);
+                % compute the index of the variable in sol.y
+                solindx = solindx(end) + (1:len);
+                % return the solution variables
+                var.(name) = this.control.sol.y(solindx,:);
+            end
+        end
+
+        % Get t (solution time steps) property
+        function t = get.t(this)
+            t = this.control.sol.x;
+        end
+
         % Get lag property
         function lag = get.lag(this)
             % return a struct with initial values stored by name
@@ -275,13 +307,13 @@ classdef bdGUI < handle
                 for indx = 1:numel(this.control.sys.lagdef)
                     name = this.control.sys.lagdef(indx).name;
                     value = this.control.sys.lagdef(indx).value;
-                    lag = setfield(lag,name,value);
+                    lag.(name) = value;
                 end
             end
         end 
         
         % Set lag property
-        function this = set.lag(this,value)
+        function set.lag(this,value)
             % Assert the incoming value is a struct
             if ~isstruct(value)
                 warning('bdGUI: Illegal lag value. Input must be a struct');
@@ -302,7 +334,7 @@ classdef bdGUI < handle
             for vindx = 1:numel(vfields)
                 % Get the name, value and size of the field
                 vfield = vfields{vindx};
-                vvalue = getfield(value,vfield);
+                vvalue = value.(vfield);
                 vsize = size(vvalue);
                 
                 % Find the syslagdef entry with the same name                
@@ -348,32 +380,39 @@ classdef bdGUI < handle
         end
         
         % Get panels property
-        function panels = get.panels(this)  
-            % first remove any stale (deleted) handles from panelobjs
-            for indx = numel(this.panelobjs):-1:1
-                if ~isvalid(this.panelobjs{indx})
-                    this.panelobjs(indx) = [];
-                end
-            end           
-            % return a panels struct with object handles arranged by name
+        function panels = get.panels(this) 
+            % Returns a deep copy of the class properties in panelmgr
             panels = [];
-            for indx = 1:numel(this.panelobjs)
-                obj = this.panelobjs{indx};
-                meta = metaclass(obj);
-                name = meta.Name;
-                if isfield(panels,name)
-                    objs = getfield(panels,name);
-                    objs(end+1) = obj;
-                else
-                    objs = obj;
+
+            % Clean the panelmgr of any stale handles to panel classes
+            % that have since been destroyed.
+            this.CleanPanelMgr();
+
+            % for each class in panelmgr
+            classnames = fieldnames(this.panelmgr);
+            for cindx = 1:numel(classnames)
+                classname = classnames{cindx};
+                classcount = numel(this.panelmgr.(classname));
+                panels.(classname) = [];
+
+                % for each instance of the class
+                for iindx = 1:classcount
+                    % for each field in the class
+                    fldnames = fieldnames(this.panelmgr.(classname));
+                    for findx = 1:numel(fldnames)
+                        fname = fldnames{findx};
+                        % deep copy of class properties to output
+                        panels.(classname)(iindx).(fname) = this.panelmgr.(classname)(iindx).(fname);
+                    end                    
                 end
-                panels = setfield(panels,name,objs);
-            end
-        end        
-        
+            end    
+        end
+
     end
        
+    
     methods (Access=private)
+        
         % Construct the System menu
         function menuobj = SystemMenu(this,sys)
             % construct System menu
@@ -390,15 +429,15 @@ classdef bdGUI < handle
                        'Enable', 'off');
             end
             uimenu('Parent',menuobj, ...
-                   'Label','Load sys', ...
+                   'Label','Load', ...
                    'Callback', @(~,~) SystemLoad() );
             uimenu('Parent',menuobj, ...
-                   'Label','Save sys', ...
-                   'Callback', @(~,~) SystemSave() );
+                   'Label','Save', ...
+                   'Callback', @(~,~) this.SystemSaveDialog() );
             uimenu('Parent',menuobj, ...
                    'Label','Quit', ...
                    'Separator','on', ...
-                   'Callback', @(~,~) SystemQuit() );
+                   'Callback', @(~,~) delete(this.fig));
 
             % Callback for System-New menu
             function SystemNew()
@@ -418,33 +457,403 @@ classdef bdGUI < handle
                     if isfield(fdata,'sys')
                         gui = bdGUI(fdata.sys);
                     else
-                        uiwait( warndlg({'Missing ''sys'' variable','System is unchanged'},'Load failed') );
+                        uiwait( warndlg({'Missing ''sys'' structure.','Load aborted.'},'Load failed') );
                     end
+                end
+            end            
+        end
+        
+        % Construct the System-Save Dialog
+        function SystemSaveDialog(this)
+            % construct dialog box
+            dlg = figure('Units','pixels', ...
+                'Position',[randi(300,1,1) randi(300,1,1), 200, 450], ...
+                'MenuBar','none', ...
+                'Name','System Save', ...
+                'NumberTitle','off', ...
+                'ToolBar', 'none', ...
+                'Resize','off');
+
+            % container for the scrolling panel
+            panel = uipanel('Parent', dlg, ...
+                'Units','pixels', ...
+                'Position',[10 50 182 390], ...
+                'BorderType','none');
+
+            % construct scrolling uipanel
+            npar = numel(this.control.sys.pardef);
+            nvar = numel(this.control.sys.vardef);
+            if isfield(this.control.sys,'lagdef')
+                nlag = numel(this.control.sys.lagdef);
+            else
+                nlag = 0;
+            end
+            %panelh = (npar+nvar+nlag)*30 + 200;
+            panelh = 1000;
+            scroll = bdScroll(panel,175, panelh);
+            
+            % Populate the contents of the scroling uipanel
+            this.PopulateSaveDialog(scroll.panel)
+
+            % construct the 'Cancel' button
+            uicontrol('Style','pushbutton', ...
+                'String','Cancel', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', dlg, ...
+                'Callback', @(~,~) delete(dlg), ...
+                'Position',[60 15 60 20]);
+
+            % construct the 'Save' button
+            uicontrol('Style','pushbutton', ...
+                'String','Save', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', dlg, ...
+                'Callback', @(~,~) this.SystemSaveMenu(dlg,scroll.panel), ... 
+                'Position',[130 15 60 20]);
+        end
+        
+        % Populate the System Save Dialog panel with model data
+        function PopulateSaveDialog(this,panel)
+            % geometry of the panel
+            panelw = panel.Position(3);
+            panelh = panel.Position(4);
+
+            % Begin placing widgets at the top left of panel
+            yoffset = 25;
+            boxh = 20;
+            rowh = 22;            
+
+            % SYSTEM title
+            uicontrol('Style','text', ...
+                'String','System', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','bold', ...
+                'Parent', panel, ...
+                'Position',[10 panelh-yoffset panelw boxh]);
+
+            % next row
+            yoffset = yoffset + rowh;
+
+            % sys check box
+            uicontrol('Style','checkbox', ...
+                'String','sys', ...
+                'Value', 1, ...
+                'Tag', 'bdExportSys', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', panel, ...
+                'Position',[20 panelh-yoffset panelw boxh]);
+
+            % next row
+            yoffset = yoffset + rowh;
+
+            % sol check box
+            uicontrol('Style','checkbox', ...
+                'String','sol', ...
+                'Tag', 'bdExportSol', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', panel, ...
+                'Position',[20 panelh-yoffset panelw boxh]);
+
+            % next row
+            yoffset = yoffset + 1.25*rowh;
+
+            % PARAMETERS title
+            uicontrol('Style','text', ...
+                'String','Parameters', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','bold', ...
+                'Parent', panel, ...
+                'Position',[10 panelh-yoffset panelw boxh]);
+
+            % next row
+            yoffset = yoffset + rowh;
+
+            % for each entry in sys.pardef
+            for indx = 1:numel(this.control.sys.pardef)
+                % get name of parameter
+                name = this.control.sys.pardef(indx).name;
+
+                % parameter check box
+                uicontrol('Style','checkbox', ...
+                    'String', name, ...
+                    'UserData', struct('name',name,'indx',indx), ...
+                    'Tag', 'bdExportPar', ...
+                    'HorizontalAlignment', 'left', ...
+                    'FontUnits', 'pixels', ...
+                    'FontSize', 12, ...
+                    'Parent', panel, ...
+                    'Position', [20 panelh-yoffset panelw boxh]);
+
+                % next row
+                yoffset = yoffset + rowh;
+            end
+
+            % skip quarter row
+            yoffset = yoffset + 0.25*rowh;
+
+            % SOLUTION title
+            uicontrol('Style','text', ...
+                'String','Solution Variables', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','bold', ...
+                'Parent', panel, ...
+                'Position',[10 panelh-yoffset panelw boxh]);
+
+            % next row
+            yoffset = yoffset + rowh;  
+
+            % for each entry in sys.vardef
+            solindx = 0;
+            for indx = 1:numel(this.control.sys.vardef)
+                % get name and length of variable
+                name = this.control.sys.vardef(indx).name;
+                len = numel(this.control.sys.vardef(indx).value);
+                % compute the index of the variable in sol.y
+                solindx = solindx(end) + (1:len);
+                % variable check box
+                uicontrol('Style','checkbox', ...
+                    'String',name, ...
+                    'UserData', struct('name',name,'solindx',solindx), ...
+                    'Tag', 'bdExportVar', ...
+                    'HorizontalAlignment','left', ...
+                    'FontUnits','pixels', ...
+                    'FontSize',12, ...
+                    'Parent', panel, ...
+                    'Position',[20 panelh-yoffset panelw boxh]);
+
+                % next row
+                yoffset = yoffset + rowh;
+            end
+
+            % skip quarter row
+            yoffset = yoffset + 0.25*rowh;
+
+            % TIME DOMAIN title
+            uicontrol('Style','text', ...
+                'String','Time Domain', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','bold', ...
+                'Parent', panel, ...
+                'Position',[10 panelh-yoffset panelw boxh]);
+
+            % next row
+            yoffset = yoffset + rowh;                                    
+
+            % time check box
+            uicontrol('Style','checkbox', ...
+                'String','t', ...
+                'Tag', 'bdExportTime', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', panel, ...
+                'Position',[20 panelh-yoffset panelw boxh]);
+
+            % next row
+            yoffset = yoffset + 1.25*rowh;
+
+            % PANELS title
+            uicontrol('Style','text', ...
+                'String','Panels', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','bold', ...
+                'Parent', panel, ...
+                'Position',[10 panelh-yoffset panelw boxh]);
+
+            % next row
+            yoffset = yoffset + rowh;
+
+            % Clean the panelmgr of any stale handles to panel classes
+            % that have since been destroyed.
+            this.CleanPanelMgr();
+
+            % for each class in panelmgr
+            classnames = fieldnames(this.panelmgr);
+            for cindx = 1:numel(classnames)
+                classname = classnames{cindx};
+
+                % Panel Name
+                uicontrol('Style','text', ...
+                'String',classname, ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', panel, ...
+                'Position',[20 panelh-yoffset panelw boxh]);
+
+                % next row
+                yoffset = yoffset + rowh;
+
+                % for each field in the class
+                fldnames = fieldnames(this.panelmgr.(classname));
+                for findx = 1:numel(fldnames)
+                    fldname = fldnames{findx};
+
+                    % field checkbox
+                    uicontrol('Style','checkbox', ...
+                        'String',fldname, ...
+                        'Tag', [classname,'.',fldname], ...
+                        'HorizontalAlignment','left', ...
+                        'FontUnits','pixels', ...
+                        'FontSize',12, ...
+                        'Parent', panel, ...
+                        'Position',[30 panelh-yoffset panelw boxh]);      
+
+                    % next row
+                    yoffset = yoffset + rowh;
+                end
+            end
+            
+            % Fit the scroll panel height to the last widget.
+            % This doesn't work and I don't know why.
+            %panelx = panel.Position(1);
+            %panely = panel.Position(2);
+            %panelw = panel.Position(3);
+            %panelh = panel.Position(4);
+            %panel.Position = [panelx, panely-yoffset, panelw, yoffset];
+        end
+        
+        % System-Save menu callback
+        function SystemSaveMenu(this,dlg,panel)
+            % initialise the outgoing data to empty 
+            data = [];
+            
+            % The matlab save function wont save an empty struct
+            % so we ensure that our struct always has something in it.
+            data.bdtoolbox = this.version;      % toolkit version string
+            data.date = date();                 % today's date
+    
+            % find the sys checkbox widget in the scroll panel
+            objs = findobj(panel,'Tag','bdExportSys');
+            if objs.Value>0
+                % include the sys struct in the outgoing data
+                data.sys = this.control.sys;
+                % remove any OutputFcn options from the sys struct 
+                if isfield(data.sys,'odeoption') && isfield(data.sys.odeoption,'OutputFcn')
+                    data.sys.odeoption = rmfield(data.sys.odeoption,'OutputFcn');
+                end
+                if isfield(data.sys,'ddeoption') && isfield(data.sys.ddeoption,'OutputFcn')
+                    data.sys.ddeoption = rmfield(data.sys.ddeoption,'OutputFcn');
+                end
+                if isfield(data.sys,'sdeoption') && isfield(data.sys.sdeoption,'OutputFcn')
+                    data.sys.sdeoption = rmfield(data.sys.sdeoption,'OutputFcn');
                 end
             end
 
-            % Callback for System-Save menu
-            function SystemSave()
-                [fname,pname] = uiputfile('*.mat','Save system file');
-                if fname~=0
-                    sys = this.control.sys;
-                    if isfield(sys,'odeoption') && isfield(sys.odeoption,'OutputFcn')
-                        sys.odeoption = rmfield(sys.odeoption,'OutputFcn');
-                    end
-                    if isfield(sys,'ddeoption') && isfield(sys.ddeoption,'OutputFcn')
-                        sys.ddeoption = rmfield(sys.ddeoption,'OutputFcn');
-                    end
-                    if isfield(sys,'sdeoption') && isfield(sys.sdeoption,'OutputFcn')
-                        sys.sdeoption = rmfield(sys.sdeoption,'OutputFcn');
-                    end
-                    save(fullfile(pname,fname),'sys');
+            % find the sol checkbox widget in the scroll panel
+            objs = findobj(panel,'Tag','bdExportSol');
+            if objs.Value>0
+                % include the sol struct in the outgoing data
+                data.sol = this.control.sol;
+                % remove the OutputFcn option from the sol.extdata.options struct 
+                if isfield(data.sol,'extdata') && isfield(data.sol.extdata,'options') && isfield(data.sol.extdata.options,'OutputFcn')
+                    data.sol.extdata.options = rmfield(data.sol.extdata.options,'OutputFcn');
                 end
-            end      
-            
-            % Callback for System-Quit menu
-            function SystemQuit()
-                delete(this.fig);
             end
+
+            % find all parameter checkbox widgets in the scroll panel
+            objs = findobj(panel,'Tag','bdExportPar');
+            for obj = objs'                         % for each checkbox widget ...
+                if obj.Value>0                      % if checkbox is enabled then ...
+                    name = obj.UserData.name;       % get the parameter name
+                    indx = obj.UserData.indx;       % get the parameter indx
+                    % ensure data.par exists
+                    if ~isfield(data,'par')
+                        data.par = [];
+                    end
+                    % include the parameter values in the outgoing data
+                    data.par.(name) = this.control.sys.pardef(indx).value;
+                end
+            end
+
+            % find all solution variable checkbox widgets in the scroll panel
+            objs = findobj(panel,'Tag','bdExportVar');
+            for obj = objs'                         % for each checkbox widget ...
+                if obj.Value>0                      % if checkbox is enabled then ...
+                    name = obj.UserData.name;       % get the variable name
+                    solindx = obj.UserData.solindx; % get the solution indx
+                    % ensure data.var exists
+                    if ~isfield(data,'var')
+                        data.var = [];
+                    end
+                    % include the variable values in the outgoing data
+                    data.var.(name) = this.control.sol.y(solindx,:);
+                end
+            end
+
+            % find the time checkbox widget in the scroll panel
+            objs = findobj(panel,'Tag','bdExportTime');
+            if objs.Value>0
+                % include the time steps in the outgoing data
+                data.t = this.control.sol.x;
+            end
+
+            % Clean the panelmgr of any stale handles to panel classes
+            % that have since been destroyed.
+            this.CleanPanelMgr();
+
+            % for each class in panelmgr
+            classnames = fieldnames(this.panelmgr);
+            for cindx = 1:numel(classnames)
+                classname = classnames{cindx};
+                classcount = numel(this.panelmgr.(classname));
+               
+                % for each instance of the class
+                for iindx = 1:classcount                    
+                    % for each field in the class
+                    fldnames = fieldnames(this.panelmgr.(classname));
+                    for findx = 1:numel(fldnames)
+                        fldname = fldnames{findx};
+
+                        % find the matching checkbox widget
+                        objs = findobj(panel,'Tag',[classname,'.',fldname]);
+                        if objs.Value>0        % if the checkbox is enabled then ...
+                            % ensure data.panels exists
+                            if ~isfield(data,'panels')
+                                data.panels = [];
+                            end
+                            % ensure data.panels.(classname) exists
+                            if ~isfield(data.panels,classname)
+                                data.panels.(classname) = [];
+                            end
+                            % ensure data.panels.(classname).(fldname) exists
+                            if ~isfield(data.panels.(classname),fldname)
+                                data.panels.(classname).(fldname) = [];
+                            end
+                            % include the field values in the outgoing data
+                            data.panels.(classname)(iindx).(fldname) = this.panelmgr.(classname)(iindx).(fldname);
+                        end
+                    end
+               
+                end
+            end
+            
+            % Save data to mat file
+            [fname,pname] = uiputfile('*.mat','Save system file');
+            if fname~=0
+                save(fullfile(pname,fname),'-struct','data');
+            end
+            
+            % Close the dialog box
+            delete(dlg);
         end
         
         % Construct the Panel menu
@@ -503,8 +912,14 @@ classdef bdGUI < handle
             % Menu Callback function
             function NewPanel(classname)
                if exist(classname,'class')
-                    % construct the panel and remember the handle
-                    this.panelobjs{end+1} = feval(classname,this.tabgroup,this.control);
+                    % construct the panel, keep a handle to it.
+                    classhndl = feval(classname,this.tabgroup,this.control);
+                    if ~isfield(this.panelmgr,classname)
+                        this.panelmgr.(classname) = classhndl;
+                    else
+                        this.panelmgr.(classname)(end+1) = classhndl;
+                    end
+                    
                     % force a redraw event
                     notify(this.control,'redraw');
                 else
@@ -545,6 +960,33 @@ classdef bdGUI < handle
             end
         end        
         
+        % Remove stale (deleted) class handles from this.panelmgr.
+        % We need to do this because the panel classes can delete themselves
+        % without informing the GUI that they are gone.
+        function CleanPanelMgr(this)
+            % for each class in panelmgr
+            classnames = fieldnames(this.panelmgr);
+            for cindx = 1:numel(classnames)
+                classname = classnames{cindx};
+                classcount = numel(this.panelmgr.(classname));
+
+                % for each instance of the class (in reverse order)
+                for iindx = classcount:-1:1
+                    % remove any handles to invalid classes
+                    if ~isvalid(this.panelmgr.(classname)(iindx))
+                        this.panelmgr.(classname)(iindx) = [];
+                    end
+                end
+                
+                % remove empty classes
+                if isempty(this.panelmgr.(classname))
+                    this.panelmgr = rmfield(this.panelmgr,classname);
+                end
+            end    
+            
+        end
+        
+        % Callback for window resize events
         function SizeChanged(this)
             % get the new figure size
             figw = this.fig.Position(3);
@@ -567,6 +1009,7 @@ classdef bdGUI < handle
             h2 = figh - 10;
             this.uipanel2.Position = [8+w1 5 w2 h2];            
         end
+        
     end
     
 end
