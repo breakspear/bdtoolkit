@@ -87,53 +87,68 @@ classdef bdCorrPanel < handle
             % get tab geometry
             parentw = this.tab.Position(3);
             parenth = this.tab.Position(4);
-
-            % plot axes
-            posx = 50;
-            posy = 80;
-            posw = parentw-120;
-            posh = parenth-90;
-            this.ax = axes('Parent',this.tab, ...
-                'Units','pixels', ...
-                'Position',[posx posy posw posh]);           
-
-            % plot image (empty)
-            this.img = imagesc([],'Parent',this.ax);
-            xlabel('node', 'FontSize',16);
-            ylabel('node', 'FontSize',16);
-                        
-            % Force CLim to manual mode and add a colorbar
-            this.ax.CLim = [-1 1];
-            this.ax.CLimMode = 'manual';
-            colorbar('peer',this.ax);
             
-            % var selector
-            posx = 10;
-            posy = 10;
-            posw = 100;
-            posh = 20;
+            % check that we have the statistics toolbox
+            if isempty(which('corr'))
+                % Statistics Toolbox is missing 
+                uicontrol('Style','text', ...
+                          'String','Requires the Matlab Statistics and Machine Learning Toolbox', ...
+                          'Parent', this.tab, ...
+                          'HorizontalAlignment','center', ...
+                          'Units','normal', ...
+                          'Position',[0 0.5 1 0.1]);
 
-            %popuplist = {this.solMap.name, this.salMap.name};
-            popuplist = {this.varMap.name, this.auxMap.name};
-            this.popup = uicontrol('Style','popup', ...
-                'String', popuplist, ...
-                'Value', 1, ...
-                'Callback', @(~,~) this.selectorCallback(control), ...
-                'HorizontalAlignment','left', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'Parent', this.tab, ...
-                'Position',[posx posy posw posh]);
+                % construct the tab context menu
+                this.tab.UIContextMenu = uicontextmenu;
+                uimenu(this.tab.UIContextMenu,'Label','Close', 'Callback',@(~,~) this.delete());
+            else            
+                % plot axes
+                posx = 50;
+                posy = 80;
+                posw = parentw-120;
+                posh = parenth-90;
+                this.ax = axes('Parent',this.tab, ...
+                    'Units','pixels', ...
+                    'Position',[posx posy posw posh]);           
 
-            % construct the tab context menu
-            this.tab.UIContextMenu = uicontextmenu;
-            uimenu(this.tab.UIContextMenu,'Label','Close', 'Callback',@(~,~) this.delete());
+                % plot image (empty)
+                this.img = imagesc([],'Parent',this.ax);
+                xlabel('node', 'FontSize',16);
+                ylabel('node', 'FontSize',16);
 
-            % register a callback for resizing the panel
-            set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
+                % Force CLim to manual mode and add a colorbar
+                this.ax.CLim = [-1 1];
+                this.ax.CLimMode = 'manual';
+                colorbar('peer',this.ax);
 
-            % listen to the control panel for redraw events
-            this.listener = addlistener(control,'redraw',@(~,~) this.render(control));    
+                % var selector
+                posx = 10;
+                posy = 10;
+                posw = 100;
+                posh = 20;
+
+                %popuplist = {this.solMap.name, this.salMap.name};
+                popuplist = {this.varMap.name, this.auxMap.name};
+                this.popup = uicontrol('Style','popup', ...
+                    'String', popuplist, ...
+                    'Value', 1, ...
+                    'Callback', @(~,~) this.selectorCallback(control), ...
+                    'HorizontalAlignment','left', ...
+                    'FontUnits','pixels', ...
+                    'FontSize',12, ...
+                    'Parent', this.tab, ...
+                    'Position',[posx posy posw posh]);
+
+                % construct the tab context menu
+                this.tab.UIContextMenu = uicontextmenu;
+                uimenu(this.tab.UIContextMenu,'Label','Close', 'Callback',@(~,~) this.delete());
+
+                % register a callback for resizing the panel
+                set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
+
+                % listen to the control panel for redraw events
+                this.listener = addlistener(control,'redraw',@(~,~) this.render(control));    
+            end    
         end
         
         % Destructor
