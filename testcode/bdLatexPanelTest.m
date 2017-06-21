@@ -29,7 +29,7 @@ function [control,latexpanel1,latexpanel2] = bdLatexPanelTest(sys)
     latexpanel2 = bdLatexPanel(tabgroup1,control);
     
     % force a recompute
-    notify(control,'recompute');
+    %notify(control,'recompute');
 end
 
 function SizeChanged(fig,panel1,panel2)
