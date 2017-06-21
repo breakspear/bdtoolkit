@@ -1,8 +1,8 @@
 # Brain Dynamics Toolbox
 
-##Version 2017a 
+##Version 2017b 
 
-The Brain Dynamics Toolbox provides a convenient graphical user interface for exploring dynamical systems in MATLAB.  Users implement their own dynamical equations (as matlab scripts) and use the toolbox graphical interface to view phase portraits and other plots in real-time. The same models can also be run as MATLAB scripts without the graphics interface. The toolbox includes solvers for Ordinary Differential Equations (ODE), Delay Differential Equations (DDE) and Stochastic Differential Equations (SDE). The plotting tools are modular so that users can create custom plots according to their needs. Custom solver routines can also be used. The user interface is designed for dynamical systems with large numbers of variables and parameters, as is often the case in dynamical models of the brain. Hence the name, *Brain Dynamics Toolbox*.
+The [Brain Dynamics Toolbox](http://bdtoolbox.blogspot.com) provides a convenient graphical user interface for exploring dynamical systems in MATLAB.  Users implement their own dynamical equations (as matlab scripts) and use the toolbox graphical interface to view phase portraits and other plots in real-time. The same models can also be run as MATLAB scripts without the graphics interface. The toolbox includes solvers for Ordinary Differential Equations (ODE), Delay Differential Equations (DDE) and Stochastic Differential Equations (SDE). The plotting tools are modular so that users can create custom plots according to their needs. Custom solver routines can also be used. The user interface is designed for dynamical systems with large numbers of variables and parameters, as is often the case in dynamical models of the brain. Hence the name, *Brain Dynamics Toolbox*.
 
 ## Download
 Dowload the latest release from the [bdtoolkit](https://github.com/breakspear/bdtoolkit/releases) repository on GitHub
@@ -11,7 +11,7 @@ Dowload the latest release from the [bdtoolkit](https://github.com/breakspear/bd
 The toolbox requires MATLAB 2014b or newer. Unzip the toolbox files into a directory of your choosing. The main toolbox scripts are located in the *bdtoolkit* directory which must be in your matlab PATH variable. The *bdtoolkit/models* directory contains example scripts that are also advisable to have in your PATH.
 
 ```matlab
-    $ unzip bdtoolkit-2017a.zip
+    $ unzip bdtoolkit-2017b.zip
     $ matlab
     >> addpath bdtoolkit
     >> addpath bdtoolkit/models
@@ -55,11 +55,11 @@ A typical sys struct has the following structure:
     sys.odefun = @odefun;
     
     % ODE parameter definitions
-    sys.pardef = [ struct('name','a', 'value',-1);
-                   struct('name','b', 'value',0.01) ];
+    sys.pardef = [ struct('name','a', 'value',-1);			% a = -1
+                   struct('name','b', 'value',0.01) ];		% b = 0.01
                    
     % ODE state variable definitions
-    sys.vardef = struct('name','y', 'value',0.9);
+    sys.vardef = struct('name','y', 'value',0.9);			% y = 0.9
     
     % Time span of the solution
     sys.tspan = [0 5];
@@ -86,9 +86,9 @@ The *sys.odefun* field is a function handle to a user-defined function of the fo
     end
 ```
 
-## Plotting Panels
+## Display Panels
 
-The plotting tools (panels) are modular by design so that custom panels may be written by the user. The standard panels are located in the *bdtoolkit/panels* directory. These include time portraits, phase portraits, space-time plots, correlation plots, latex equations and solver statistics. The user may load any panel into the graphic toolbox at run-time. For convenience, the toolbox pre-loads panels that are listed in the model's *sys.panels* options. A typical example is the *bdLatexPanel* which displays mathematical equations using latex. The following example is from *LinearODE.m* which implements a coupled pair of linear Ordinary Differential Equations.
+The plotting tools (display panels) are modular by design so that custom panels may be written by the user. The standard panels are located in the *bdtoolkit/panels* directory. The list of standard panels continues to grow. It currently includes time portraits, phase portraits, space-time plots, linear correlation, Hilbert transforms, latex equations and solver statistics. The user may load any of these panels into the toolbox at run-time. The toolbox also pre-loads those panels that are listed in the model's *sys.panels* options. A typical example is the *bdLatexPanel* which displays mathematical equations using latex. The following example is from *LinearODE.m* which implements a coupled pair of linear Ordinary Differential Equations.
 
 ```matlab
     sys.panels.bdLatexPanel.title = 'Equations'; 
@@ -111,22 +111,43 @@ The `bdLoadMatrix` function is useful for loading matrix data from a file.
 
 The `bdEditScalars`, `bdEditVector` and `bdEditMatrix` functions are useful for interactively editing scalars, vectors and matrices, respectively.
 
+The `Trap Panel` is useful for detecting erroneous drawing commands by user-defined GUI panels. 
+
 ## Going Further
-The best way to proceed is to browse the example code in the *models* directory. The  *LinearODE* model illustrates a simple Ordinary Differential Equation. The *WilleBaker* model illustrates a simple Delay Differential Equation. The *MultiplicativeNoise* model illustrates a simple Stochastic Differential Equation.
+A user manual is currently being written. Until that is published, the best way to proceed is to browse the example code in the *models* directory.
+
+Ordinary Differential Equations:
+
+* *BTF2003ODE* - Breakspear, Terry & Friston (2003) Neural mass model.
+* *FitzhughNagumo* - Generalized FitzHugh-Nagumo neural oscillator.
+* *HindmarshRose* - Network of Hindmarsh-Rose neurons.
+* *HopfieldNet* - Hopfield Network.
+* *KuramotoNet* - Network of Kuramoto phase oscillators.
+* *LinearODE* - A simple Ordinary Differential Equation.
+* *SwiftHohenberg1D* -  Discretised Swift-Hohenberg PDE in one spatial dimension.
+* *VanDerPolOscillators* - Network of Van Der Pol oscillators.
+* *WaveEquation1D* - Discretized wave equation (PDE) in one spatial dimension.
+ 
+Delay Differential Equations:
+
+* *BTF2003DDE* - Breakspear, Terry & Friston (2003) Neural mass model with time delays.
+* *WilleBaker* - A simple Delay Differential Equation.
+
+Stochastic Differential Equations:
+
+* *BrownianMotion* - Geometric Brownian motion.
+* *BTF2003SDE* - Breakspear, Terry & Friston (2003) Neural mass model with multiplicative noise.
+* *FRRB2012* - Freyer, Roberts, Ritter & Breakspear (2012) Canoncial subcritical Hopf model with multiplicative noise.
+* *FRRB2012b* - Freyer, Roberts, Ritter & Breakspear (2012) Network variant of FRRB2012.
+* *MultiplicativeNoise* - A simple example of multiplicative noise.
+* *Ornstein Uhlenbeck* - Multiple independent Ornstein-Uhlenbeck processes.
+* *RFB2017* - Roberts, Friston & Breakspear (2017) Isolated neural mass with multiplicative noise.
 
 ## BSD License
-This software is freely available under the 2-clause BSD license.  
-
-> Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-> 
->1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
->
->2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
->
->THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+This software is freely available under the [2-clause BSD license](https://opensource.org/licenses/BSD-2-Clause).  
 
 ## Contributors
-* Michael Breakspear, Joint Project Leader 
-* Stewart Heitmann, Joint Project Leader & Lead Developer
+* Michael Breakspear, Project Leader
+* Stewart Heitmann, Project Leader, Lead Developer
 * Matthew Aburn
 

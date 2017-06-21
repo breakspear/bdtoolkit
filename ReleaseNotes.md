@@ -1,39 +1,52 @@
 # Release Notes
 # Brain Dynamics Toolbox
 
-## Version 2017a
-Released 21 March 2017.
+## Version 2017b
+Released 21 June 2017. 
+
+Major new features include:
+(i) Equation parameters and variables can now be directly manipulated from the workspace via the new bdGUI class properties (par, var0, var, lag, t).
+(ii) The System-Save menu now includes solution variables and display panel outputs.
+(iii) Three new display panels were added (bdHilbert, bdSurrogate, bdTrapPanel).
+(iv) Six new models were added (BTF2003ODE, BTF2003DDE, BTF2003SDE, FRRB2012, FRRB2012b, RFB2017).
+(v) Scrollbars were added to the Equations panel. (vi) All panels were refined to make their outputs more accessible to the workspace.
 
 Requires Matlab 2014b or newer.
 
-Major new features:
-(1) Dynamic loading of GUI plot panels.
-(2) Enhanced GUI class properties allow the solver output and panel objects to be accessed directly. 
-(3) New *sys* struct has a more flexible syntax for defining system parameters and variables.
-(4) Improved validation of *sys* structs.
-(5) Time and Phase portraits now support graphic hold.
-(6) All example models have been revised.
+## Version 2017a
+Released 21 March 2017.
+
+Major new features include:
+(i) Dynamic loading of GUI plot panels.
+(ii) Enhanced GUI class properties allow the solver output and panel objects to be accessed directly. 
+(iii) New *sys* struct fromat with more flexible syntax for defining system parameters and variables.
+(iv) Improved validation of *sys* structs.
+(v) Time and Phase portraits now support graphic hold.
+(vi) All example models have been revised.
  
 **This version is not backwards compatible with version 2016a.** In particular: 
-(1) *sys.pardef, sys.vardef, sys.auxdef, sys.lagdef* were changed from cell arrays to struct arrays; 
-(2) *sys.gui* was renamed *sys.panels*;
-(3) SDE function handles were renamed *sys.sdeF* and *sys.sdeG*;
-(4) *bdCorrelationPanel* was renamed *bdCorrPanel*;
-(5) *bdSpaceTimePortrait* was renamed *bdSpaceTime*;
-(6) *odeEuler* was renamed *odeEul*;
-(7) *sdeIto* was renamed *sdeEM*;
-(8) *sdeStratonovich* was renamed *sdeSH*;
-(9) *bdVerify* was renamed *bdSysCheck*;
-(10) *bdUtils* was renamed *bd*;
-(11) The *gui.control* property was replaced by *gui.sys, gui.sol* and *gui.sox*.
-(12) The *sys* fields *tspan*, *odesolver*, *odeoption*, *ddesolver* and *ddeoption* are no longer mandatory.
+(i) *sys.pardef, sys.vardef, sys.auxdef, sys.lagdef* were changed from cell arrays to struct arrays; 
+(ii) *sys.gui* was renamed *sys.panels*;
+(iii) SDE function handles were renamed *sys.sdeF* and *sys.sdeG*;
+(iv) *bdCorrelationPanel* was renamed *bdCorrPanel*;
+(v) *bdSpaceTimePortrait* was renamed *bdSpaceTime*;
+(vi) *odeEuler* was renamed *odeEul*;
+(vii) *sdeIto* was renamed *sdeEM*;
+(viii) *sdeStratonovich* was renamed *sdeSH*;
+(ix) *bdVerify* was renamed *bdSysCheck*;
+(x) *bdUtils* was renamed *bd*;
+(xi) The *gui.control* property was replaced by *gui.sys, gui.sol* and *gui.sox*;
+(xii) The *sys* fields *tspan*, *odesolver*, *odeoption*, *ddesolver* and *ddeoption* are no longer mandatory.
 
-**Important message to users migrating from 2016a to 2017a.** Scripts written for 2016a will need to be modified to accommodate the changes above. We recommend using *bdSysCheck* when migrating old code. It will quickly detect obsolete and invalid fields in existing *sys* structures. 
+**Important message to users migrating from 2016a to 2017a.** Scripts written for 2016a will need to be modified to accommodate the changes above. We recommend using *bdSysCheck* when migrating old code. It detects obsolete and invalid *sys* fields. 
+
+Requires Matlab 2014b or newer.
+
 
 ## Version 2016a
 Released 24 Dec 2016.
 
-Requires Matlab 2014b or newer.
+The first public release of the Brain Dynamics Toolbox.
 
-This version is the first public release of the Brain Dynamics Toolbox.
+Requires Matlab 2014b or newer.
 
