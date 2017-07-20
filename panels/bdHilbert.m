@@ -273,6 +273,9 @@ classdef bdHilbert < handle
                 % compute the phase angles from the Hilbert transfrom
                 p2 = angle(h2);
              
+                % repeat the rows of p2 to match this.p
+                p2 = p2(ones(1,size(this.p,1)),:);
+                
                 % adjust the phase angles of the first variable relative to this one
                 this.p = this.p - p2;
             end

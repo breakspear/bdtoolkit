@@ -104,6 +104,7 @@ end
 function G = sdeG(~,r,~,~,eta,rho)
     n = numel(r);                 % number of instances
     I1 = eye(n).*(1-rho).*eta;    % eta * (1-rho)
-    I2 = eye(n).*r.*rho.*eta;     % eta * rho * r   
+    I2 = diag(r.*rho.*eta);       % eta * rho * r   
+    
     G = [I1, I2];                 % return G as (n x 2n) matrix
 end

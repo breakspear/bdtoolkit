@@ -358,7 +358,7 @@ classdef bdSurrogate < handle
             syspanel.autolim = true;
             
             % Nothing more to do if sys.panels.bdSurrogate is undefined
-            if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdHilbert')
+            if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdSurrogate')
                 return;
             end
             
