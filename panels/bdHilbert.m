@@ -107,7 +107,7 @@ classdef bdHilbert < handle
             parenth = this.tab.Position(4);
 
             % check that we have the signal processing toolbox
-            if isempty(which('hilbert'))
+            if ~license('test','Signal_Toolbox')
                 % Signal Processing Toolbox is missing 
                 uicontrol('Style','text', ...
                           'String','Requires the Matlab Signal Processing Toolbox', ...
