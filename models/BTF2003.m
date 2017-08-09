@@ -1,22 +1,23 @@
-% BTF2003ODE  Neural Mass Model by Breakspear, Terry and Friston (2003)
+% BTF2003  Breakspear, Terry and Friston (2003)
 %   Modulation of excitatory synaptic coupling facilitates synchronization
 %   and complex dynamics in a biophysical model of neuronal dynamics.
 %   Network: Comput. Neural Syst., 14 (2003) 703-732  
 %   PII: S0954-898X(03)55346-5
 %
 % Usage:
-%   sys = BTF2003ODE(Kij)
+%   sys = BTF2003(Kij)
 %   where Kij is an (nxn) connectivity matrix in which the entry at row i
 %   and column j is the weight of the connection from node i to node j.
+%   The diagonals of Kij should be zero.
 %
 % Example:
-%   load cocomac242 MacCrtx        % Load a connectivity matrix. 
-%   sys = BTF2003ODE(MacCrtx);     % Construct the system struct.
-%   gui = bdGUI(sys);              % Open the Brain Dynamics GUI.
+%   load cocomac242 MacCrtx     % Load a connectivity matrix. 
+%   sys = BTF2003(MacCrtx);     % Construct the system struct.
+%   gui = bdGUI(sys);           % Open the Brain Dynamics GUI.
 %
 % Authors
 %   Michael Breakspear (2017b)
-%   Stewart Heitmann (2017b)
+%   Stewart Heitmann (2017b,2017c)
 
 % Copyright (C) 2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -45,10 +46,15 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = BTF2003ODE(Kij)
+function sys = BTF2003(Kij)
     % determine the number of nodes from Kij
     n = size(Kij,1);
 
+    % Warn if the diagonals of Kij are non-zero
+    if any(diag(Kij))
+        warning('The diagonal entries of Kij should be zero to avoid double-dipping on self connections');
+    end
+    
     % Handle to our ODE function
     sys.odefun = @odefun;
     
@@ -63,6 +69,9 @@ function sys = BTF2003ODE(Kij)
         % Time constant of inhibition
         struct('name','b',    'value',  0.10);
 
+        % Relative contribution of excitatory connection between versus within enembles
+        struct('name','C',    'value',  0);
+
         % Relative contribution of NMDA versus AMPA receptors
         struct('name','r',    'value',  0.25); 
 
@@ -70,12 +79,16 @@ function sys = BTF2003ODE(Kij)
         struct('name','phi',  'value',  0.7);
 
         % Ion channel parameters
-        struct('name','gion', 'value', [1.1, 2.0, 6.70, 0.5]);     % Ion Conductances [gCa, gK, gNa, gL]
-        struct('name','Vion', 'value', [1.0,-0.7, 0.53,-0.5]);     % Nernst Potential [VCa, VK, VNa, VL]
+        struct('name','ion',  'value', [ 1.10,  2.00, 6.70,  0.5 ;      % Ion Conductances [gCa, gK, gNa, gL]
+                                         1.00, -0.70, 0.53, -0.5 ;      % Nernst Potential [VCa, VK, VNa, VL]
+                                        -0.01,  0.00, 0.30,  NaN ;      % Firing threshold [TCa, TK, TNa, unused]
+                                         0.15,  0.30, 0.15,  NaN ] );   % Firing fun slope [deltaCa, deltaK, deltaNa, unused]
                    
         % Gain parameters
-        struct('name','thrsh', 'value', [ 0.0, 0.0,-0.01, 0.00, 0.30]);    % Firing threshold [VT, ZT, TCa, TK, TNa]
-        struct('name','delta', 'value', [ 0.7, 0.7, 0.15, 0.30, 0.15]);    % Firing fun slope [deltaV, deltaZ, deltaCa, deltaK, deltaNa]
+        struct('name','VT',    'value', zeros(n,1));               % [VT_1,...,VT_n]
+        struct('name','ZT',    'value', zeros(n,1));               % [ZT_1,...,ZT_n]
+        struct('name','deltaV','value', 0.7*ones(n,1));            % [deltaV_1,...,deltaV_n]
+        struct('name','deltaZ','value', 0.7*ones(n,1));            % [deltaZ_1,...,deltaZ_n]
 
         % Strength of subcortical input
         struct('name','I',    'value', 0.3);
@@ -95,11 +108,16 @@ function sys = BTF2003ODE(Kij)
     % Include the Latex (Equations) panel in the GUI
     sys.panels.bdLatexPanel.title = 'Equations'; 
     sys.panels.bdLatexPanel.latex = {
-        '\textbf{Breakspear, Terry \& Friston (2003)} Network: Comput Neural Syst (14).';
-        'Neural network comprised of densely connected local ensembles of excitatory';
+        '\textbf{BTF2003}';
+        'Breakspear, Terry \& Friston (2003) Network: Comput Neural Syst (14).';
+        'A network of neural masses comprising densely connected local ensembles of excitatory';
         'and inhibitory neurons with long-range excitatory coupling between ensembles.';
-        '\qquad $\dot{V}^{(j)}= -\Big(g_{Ca} +  r\,a_{ee} \sum_i K_{ij} Q_V^{(i)} / k^{(j)} \Big)\,m_{Ca}^{(j)}\,(V^{(j)} {-} V_{Ca}) \, - \, \Big(g_{Na}\,m_{Na}^{(j)} + \sum_i K_{ij} Q_V^{(i)} / k^{(j)} \Big)\,(V^{(j)} {-} V_{Na}) $';
-        '\qquad \qquad \quad $ - \, g_K\,W^{(j)}\,(V^{(j)} {-} V_K) \, - \, g_L\,(V^{(j)} {-} V_L) \, - \, a_{ie}\,Z^{(j)}\,Q_Z^{(j)} + a_{ne}\,I,$';
+        '\qquad $\dot{V}^{(j)} = -\big(g_{Ca} + (1{-}C)\,r\,a_{ee}\, Q_V^{(j)} + C\,r\,a_{ee}\,\langle Q_V \rangle^{(j)} \big)\,m_{Ca}^{(j)}\,(V^{(j)} {-} V_{Ca})$';
+        '\qquad \qquad \quad $ - \, \big(g_{Na}\,m_{Na}^{(j)} + (1{-}C)\,a_{ee}\,Q_V^{(j)} + C\,a_{ee}\, \langle Q_V \rangle^{(j)} \big)\,(V^{(j)} {-} V_{Na}) $';
+        '\qquad \qquad \quad $ - \, g_K\,W^{(j)}\,(V^{(j)} {-} V_K)$';
+        '\qquad \qquad \quad $ - \, g_L\,(V^{(j)} {-} V_L)$';
+        '\qquad \qquad \quad $ - \, a_{ie}\,Z\,Q_Z^{(j)}$';
+        '\qquad \qquad \quad $ + \, a_{ne}\,I$';
         '';
         '\qquad $\dot{W}^{(j)} = \frac{\phi}{\tau}\,(m_K^{(j)} {-} W^{(j)})$';
         '';
@@ -108,17 +126,22 @@ function sys = BTF2003ODE(Kij)
         '\qquad $V^{(j)}$ is the average membrane potential of \textit{excitatory} cells in the $j^{th}$ neural ensemble,';
         '\qquad $W^{(j)}$ is the proportion of open Potassium channels in the $j^{th}$ neural ensemble,';
         '\qquad $Z^{(j)}$ is the average membrane potential of \textit{inhibitory} cells in the $j^{th}$ neural ensemble,';
-        '\qquad $m_{ion}^{(j)} = \frac{1}{2} \big(1 + \tanh((V^{(i)}{-}V_{ion})/\delta_{ion})\big)$ is the proportion of open ion channels for a given $V$,';
-        '\qquad $Q_{V}^{(j)} = \frac{1}{2} \big(1 + \tanh((V^{(i)}{-}V_{T})/\delta_{V})\big)$ is the mean firing rate of \textit{excitatory} cells in the $j^{th}$ ensemble,';
-        '\qquad $Q_{Z}^{(j)} = \frac{1}{2} \big(1 + \tanh((Z^{(i)}{-}Z_{T})/\delta_{Z})\big)$ is the mean firing rate of \textit{inhibitory} cells in the $j^{th}$ ensemble,';
-        '\qquad $K_{ij}$ is the network connection weight from ensemble $i$ to ensemble $j$,';
+        '\qquad $m_{ion}^{(j)} = \frac{1}{2} \big(1 + \tanh((V^{(j)}{-}V_{ion})/\delta_{ion})\big)$ is the proportion of open ion channels for a given $V$,';
+        '\qquad $Q_{V}^{(j)} = \frac{1}{2} \big(1 + \tanh((V^{(j)}{-}V_{T}^{(j)})/\delta_{V}^{(j)})\big)$ is the mean firing rate of \textit{excitatory} cells in the $j^{th}$ ensemble,';
+        '\qquad $Q_{Z}^{(j)} = \frac{1}{2} \big(1 + \tanh((Z^{(j)}{-}Z_{T}^{(j)})/\delta_{Z}^{(j)})\big)$ is the mean firing rate of \textit{inhibitory} cells in the $j^{th}$ ensemble,';
+        '\qquad $\langle Q \rangle^{(j)} = \sum_i Q_V^{(i)} K_{ij} / k^{(j)}$, is the connectivity-weighted input to the $j^{th}$ ensemble,';
+        '\qquad $K_{ij}$ is the network connection weight from ensemble $i$ to ensemble $j$ (diagonals should be zero),';
         '\qquad $k^{(j)} = \sum_i K_{ij}$ is the sum of incoming connection weights to ensemble $j$,';
-        '\qquad a $= [a_{ee},a_{ei},a_{ie},a_{ne},a_{ni}]$ are the connection weights ($a_{ei}$ denotes $e$ to $i$),';
+        '\qquad a $= [a_{ee},a_{ei},a_{ie},a_{ne},a_{ni}]$ are the connection weights ($a_{ei}$ denotes excitatory-to-inhibitory),';
         '\qquad b is the time constant of inhibition,';
+        '\qquad C is the relative coupling between (versus within) ensembles,';
         '\qquad r is the number of NMDA receptors relative to the number of AMPA receptors,';
         '\qquad phi $=\frac{\phi}{\tau}$ is the temperature scaling factor,';
-        '\qquad gion $= [g_{Ca},g_{K},g_{Na},g_L]$ are the ion conducances, Vion $= [V_{Ca},V_{K},V_{Na},V_L]$ are the Nernst potentials,';
-        '\qquad thrsh $= [V_T,Z_T,T_{Ca},T_K,T_{Na}]$ are the gain thresholds, delta $= [\delta_V,\delta_Z,\delta_{Ca},\delta_K,\delta_{Na}]$ are the gain slopes,';
+        '\qquad ion $= [g_{Ca},g_{K},g_{Na},g_L ; \enskip V_{Ca},V_{K},V_{Na},V_L; \enskip  T_{Ca},T_K,T_{Na},{-}; \enskip  \delta_{Ca},\delta_K,\delta_{Na},{-}]$,';
+        '\qquad VT $= [V_T^{(1)},\dots,V_T^{(n)}]$';
+        '\qquad ZT $= [Z_T^{(1)},\dots,Z_T^{(n)}]$';
+        '\qquad deltaV $= [\delta_V^{(1)},\dots,\delta_V^{(n)}]$,';
+        '\qquad deltaZ $= [\delta_V^{(1)},\dots,\delta_V^{(n)}]$,';
         '\qquad $I$ is the strength of the subcortical input.';
         };
     
@@ -141,7 +164,7 @@ function sys = BTF2003ODE(Kij)
     sys.self = @self;
 end
 
-function dYdt = odefun(~,Y,Kij,a,b,r,phi,gion,Vion,thrsh,delta,I)  
+function dYdt = odefun(~,Y,Kij,a,b,C,r,phi,ion,VT,ZT,deltaV,deltaZ,I)  
     % Extract incoming values from Y
     Y = reshape(Y,[],3);        % reshape Y to 3 columns
     V = Y(:,1);                 % 1st column of Y contains vector V
@@ -149,67 +172,63 @@ function dYdt = odefun(~,Y,Kij,a,b,r,phi,gion,Vion,thrsh,delta,I)
     Z = Y(:,3);                 % 3rd column of Y contains vector Z
 
     % Extract conductance parameters
-    gCa = gion(1);
-    gK  = gion(2);
-    gNa = gion(3);
-    gL  = gion(4);
+    gCa = ion(1,1);
+    gK  = ion(1,2);
+    gNa = ion(1,3);
+    gL  = ion(1,4);
     
     % Extract Nerst potentials
-    VCa = Vion(1);
-    VK  = Vion(2);
-    VNa = Vion(3);
-    VL  = Vion(4);
+    VCa = ion(2,1);
+    VK  = ion(2,2);
+    VNa = ion(2,3);
+    VL  = ion(2,4);
     
     % Extract Gain threshold parameters
-    VT  = thrsh(1);
-    ZT  = thrsh(2);
-    TCa = thrsh(3);
-    TK  = thrsh(4);
-    TNa = thrsh(5);
+    TCa = ion(3,1);
+    TK  = ion(3,2);
+    TNa = ion(3,3);
     
     % Extract Gain slope parameters
-    deltaV  = delta(1);
-    deltaZ  = delta(2);
-    deltaCa = delta(3);
-    deltaK  = delta(4);
-    deltaNa = delta(5);
+    deltaCa = ion(4,1);
+    deltaK  = ion(4,2);
+    deltaNa = ion(4,3);
     
-    % extract connection weights
+    % Extract connection weights
     aee = a(1);     % E to E synaptic strength
     aei = a(2);     % E to I synaptic strength
     aie = a(3);     % I to E synaptic strength
     ane = a(4);     % any to E synaptic strength
     ani = a(5);     % any to I synaptic strength
     
-    % firing-rate functions
+    % Compute Firing-rate functions
     Qv = gain(V, VT, deltaV);       % (nx1) vector
     Qz = gain(Z, ZT, deltaZ);       % (nx1) vector
 
-    % fraction of open channels
+    % Compute fraction of open channels
     mCa = gain(V, TCa, deltaCa);    % (nx1) vector
     mK  = gain(V, TK,  deltaK );    % (nx1) vector
     mNa = gain(V, TNa, deltaNa);    % (nx1) vector
     
-    % mean firing rates
+    % Compute Mean firing rates
     k = sum(Kij)';                  % (1xn) vector
     QvMean = ((Qv'*Kij)')./k;       % (1xn) vector
     QvMean(isnan(QvMean)) = 0;    
 
-    % excitatory cell dynamics
-    dV = -(gCa + r.*aee.*QvMean).*mCa.*(V-VCa) ...
+    % Excitatory cell dynamics
+    dV = -(gCa + (1-C).*r.*aee.*Qv + C.*r.*aee.*QvMean).*mCa.*(V-VCa) ...
          - gK.*W.*(V-VK) ...
          - gL.*(V-VL) ... 
-         - (gNa.*mNa + aee.*QvMean).*(V-VNa) ...
+         - (gNa.*mNa + (1-C).*aee.*Qv + C.*aee.*QvMean).*(V-VNa) ...
          + ane.*I ...
          - aie.*Qz.*Z;
      
     % K cell dynamics
     dW = phi.*(mK-W);
     
-    % inhibitory cell dynamics
+    % Inhibitory cell dynamics
     dZ = b.*(ani.*I + aei.*Qv.*V);
 
-    % return a column vector
+    % Return a column vector
     dYdt = [dV; dW; dZ]; 
 end
 

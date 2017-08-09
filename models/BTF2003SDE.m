@@ -15,7 +15,7 @@
 %   gui = bdGUI(sys);           % Open the Brain Dynamics GUI.
 %
 % Authors
-%   Stewart Heitmann (2017b)
+%   Stewart Heitmann (2017b,2017c)
 
 % Copyright (C) 2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -48,6 +48,11 @@ function sys = BTF2003SDE(Kij)
     % determine the number of nodes from Kij
     n = size(Kij,1);
 
+    % Warn if the diagonals of Kij are non-zero
+    if any(diag(Kij))
+        warning('The diagonal entries of Kij should be zero to avoid double-dipping on self connections');
+    end
+    
     % Handle to our SDE functions
     sys.sdeF = @sdeF;
     sys.sdeG = @sdeG;
@@ -62,6 +67,9 @@ function sys = BTF2003SDE(Kij)
         
         % Time constant of inhibition
         struct('name','b',    'value',  0.10);
+
+        % Relative contribution of excitatory connection between versus within enembles
+        struct('name','C',    'value',  0);
 
         % Relative contribution of NMDA versus AMPA receptors
         struct('name','r',    'value',  0.25); 
@@ -101,11 +109,17 @@ function sys = BTF2003SDE(Kij)
     % Include the Latex (Equations) panel in the GUI
     sys.panels.bdLatexPanel.title = 'Equations'; 
     sys.panels.bdLatexPanel.latex = {
-        '\textbf{Breakspear, Terry \& Friston (2003)} Network: Comput Neural Syst (14).';
-        'Stochastic variant of a neural network comprised of densely connected local ensembles of excitatory';
-        'and inhibitory neurons with long-range excitatory coupling between ensembles.';
-        '\qquad $dV^{(j)} = \Big(\, -\big(g_{Ca} + r\,a_{ee} \sum_i K_{ij} Q_V^{(i)} / k^{(j)} \big)\,m_{Ca}^{(j)}\,(V^{(j)} {-} V_{Ca}) \, - \, \big(g_{Na}\,m_{Na}^{(j)} + a_{ee} \sum_i K_{ij} Q_V^{(i)} / k^{(j)} \big)\,(V^{(j)} {-} V_{Na}) $';
-        '\qquad \qquad \qquad \enskip $ - \, g_K\,W^{(j)}\,(V^{(j)} {-} V_K) \, - \, g_L\,(V^{(j)} {-} V_L) \, - \, a_{ie}\,Z^{(j)}\,Q_Z^{(j)} + a_{ne}\,I\, \Big) \, dt \, + \, a_{ne}\, \Big(\alpha + \beta\,V^{(j)} \Big) \, d\xi^{(j)},$';
+        '\textbf{BTF2003SDE}';
+        'Breakspear, Terry \& Friston (2003) Network: Comput Neural Syst (14).';
+        'Stochastic variant of a network of neural masses comprising densely connected local ensembles of';
+        'excitatory and inhibitory neurons with long-range excitatory coupling between ensembles.';
+        '\qquad $dV^{(j)} = -\big(g_{Ca} + (1-C)\,r\,a_{ee} Q_V^{(j)} + C\,r\,a_{ee}\,\langle Q_V \rangle^{(j)}\big)\,m_{Ca}^{(j)}\,(V^{(j)} {-} V_{Ca}) \, dt $';
+        '\qquad \qquad \quad \enskip $ - \, \big(g_{Na}\,m_{Na}^{(j)} + (1{-}C)\,a_{ee}\,Q_V^{(j)} + C\,a_{ee}\, \langle Q_V \rangle^{(j)} \big)\,(V^{(j)} {-} V_{Na}) \, dt $';
+        '\qquad \qquad \quad \enskip $ - \, g_K\,W^{(j)}\,(V^{(j)} {-} V_K) \, dt$';
+        '\qquad \qquad \quad \enskip $ - \, g_L\,(V^{(j)} {-} V_L) \, dt$';
+        '\qquad \qquad \quad \enskip $ - \, a_{ie}\,Z^{(j)}\,Q_Z^{(j)} \, dt$';
+        '\qquad \qquad \quad \enskip $ + \, a_{ne}\,I \, dt $';
+        '\qquad \qquad \quad \enskip $ + \, a_{ne}\, \Big(\alpha + \beta\,V^{(j)} \Big) \, d\xi^{(j)},$';
         '';
         '\qquad $dW^{(j)} = \frac{\phi}{\tau}\,(m_K^{(j)} {-} W^{(j)}) \, dt ,$';
         '';
@@ -118,14 +132,17 @@ function sys = BTF2003SDE(Kij)
         '\qquad $m_{ion}^{(j)} = \frac{1}{2} \big(1 + \tanh((V^{(j)}{-}V_{ion})/\delta_{ion})\big)$ is the proportion of open ion channels for a given $V$,';
         '\qquad $Q_{V}^{(j)} = \frac{1}{2} \big(1 + \tanh((V^{(j)}{-}V_{T})/\delta_{V})\big)$ is the mean firing rate of \textit{excitatory} cells in the $j^{th}$ ensemble,';
         '\qquad $Q_{Z}^{(j)} = \frac{1}{2} \big(1 + \tanh((Z^{(j)}{-}Z_{T})/\delta_{Z})\big)$ is the mean firing rate of \textit{inhibitory} cells in the $j^{th}$ ensemble,';
-        '\qquad $K_{ij}$ is the network connection weight from ensemble $i$ to ensemble $j$,';
+        '\qquad $\langle Q \rangle^{(j)} = \sum_i Q_V^{(i)} K_{ij} / k^{(j)}$ is the connectivity-weighted input to the $j^{th}$ ensemble,';
+        '\qquad $K_{ij}$ is the network connection weight from ensemble $i$ to ensemble $j$ (diagonals should be zero),';
         '\qquad $k^{(j)} = \sum_i K_{ij}$ is the sum of incoming connection weights to ensemble $j$,';
         '\qquad a $= [a_{ee},a_{ei},a_{ie},a_{ne},a_{ni}]$ are the connection weights ($a_{ei}$ denotes $e$ to $i$),';
         '\qquad b is the time constant of inhibition, ';
         '\qquad r is the number of NMDA receptors relative to the number of AMPA receptors,';
         '\qquad phi $=\frac{\phi}{\tau}$ is the temperature scaling factor,';
-        '\qquad gion $= [g_{Ca},g_{K},g_{Na},g_L]$ are the ion conducances, Vion $= [V_{Ca},V_{K},V_{Na},V_L]$ are the Nernst potentials,';
-        '\qquad thrsh $= [V_T,Z_T,T_{Ca},T_K,T_{Na}]$ are the gain thresholds, delta $= [\delta_V,\delta_Z,\delta_{Ca},\delta_K,\delta_{Na}]$ are the gain slopes,';
+        '\qquad gion $= [g_{Ca},g_{K},g_{Na},g_L]$ are the ion conducances,';
+        '\qquad Vion $= [V_{Ca},V_{K},V_{Na},V_L]$ are the Nernst potentials,';
+        '\qquad thrsh $= [V_T,Z_T,T_{Ca},T_K,T_{Na}]$ are the gain thresholds,';
+        '\qquad delta $= [\delta_V,\delta_Z,\delta_{Ca},\delta_K,\delta_{Na}]$ are the gain slopes,';
         '\qquad $I$ is the strength of the subcortical input.';
         '\qquad $\alpha$ and $\beta$ are the volatility of the \textit{additive} and \textit{multiplicative} noise terms, respectively.';
         };
@@ -152,7 +169,7 @@ end
 % The deterministic part of the model
 %   dY = sdeF(t,Y,Kij,a,b,r,phi,gion,Vion,thrsh,delta,I,alpha,beta) 
 % is from Breakspear, Terry & Friston (2003) Network: Comp Neural Syst (14).
-function dY = sdeF(~,Y,Kij,a,b,r,phi,gion,Vion,thrsh,delta,I,~,~)  
+function dY = sdeF(~,Y,Kij,a,b,C,r,phi,gion,Vion,thrsh,delta,I,~,~)  
     % Extract incoming values from Y
     Y = reshape(Y,[],3);        % reshape Y to 3 columns
     V = Y(:,1);                 % 1st column of Y contains vector V
@@ -207,10 +224,10 @@ function dY = sdeF(~,Y,Kij,a,b,r,phi,gion,Vion,thrsh,delta,I,~,~)
     QvMean(isnan(QvMean)) = 0;    
 
     % excitatory cell dynamics
-    dV = -(gCa + r.*aee.*QvMean).*mCa.*(V-VCa) ...
+    dV = -(gCa + (1-C).*r.*aee.*Qv + C.*r.*aee.*QvMean).*mCa.*(V-VCa) ...
          - gK.*W.*(V-VK) ...
          - gL.*(V-VL) ... 
-         - (gNa.*mNa + aee.*QvMean).*(V-VNa) ...
+         - (gNa.*mNa + (1-C).*aee.*Qv + C.*aee.*QvMean).*(V-VNa) ...
          + ane.*I ...
          - aie.*Qz.*Z;
      
@@ -229,7 +246,7 @@ end
 % returns the (Nxm) noise coefficients where N=3n is the number of state
 % variables and m=n is the number of noise sources. In this case
 % noise is only applied to the first state variable (which is V).
-function G = sdeG(~,Y,~,a,~,~,~,~,~,~,~,~,alpha,beta)
+function G = sdeG(~,Y,~,a,~,~,~,~,~,~,~,~,~,alpha,beta)
     % Extract incoming values from Y
     Y = reshape(Y,[],3);        % reshape Y to 3 columns
     V = Y(:,1);                 % 1st column of Y contains vector V

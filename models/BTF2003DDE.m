@@ -8,15 +8,18 @@
 %   sys = BTF2003DDE(Kij)
 %   where Kij is an (nxn) connectivity matrix in which the entry at row i
 %   and column j is the weight of the connection from node i to node j.
+%   The diagonals of Kij should be zero.
 %
 % Example:
-%   load cocomac242 MacCrtx     % Load a connectivity matrix. 
-%   sys = BTF2003(MacCrtx);     % Construct the system struct.
+%   n = 6;                      % Number of neurons
+%   Kij = randn(n);             % Random connectivity matrix.
+%   Kij = Kij - Kij.*eye(n);    % Force diagonals to zero.
+%   sys = BTF2003DDE(Kij);      % Construct the system struct.
 %   gui = bdGUI(sys);           % Open the Brain Dynamics GUI.
 %
 % Authors
 %   Michael Breakspear (2017b)
-%   Stewart Heitmann (2017b)
+%   Stewart Heitmann (2017b,2017c)
 
 % Copyright (C) 2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -48,6 +51,11 @@
 function sys = BTF2003DDE(Kij)
     % determine the number of nodes from Kij
     n = size(Kij,1);
+
+    % Warn if the diagonals of Kij are non-zero
+    if any(diag(Kij))
+        warning('The diagonal entries of Kij should be zero to avoid double-dipping on self connections');
+    end
 
     % Handle to our DDE function
     sys.ddefun = @ddefun;
@@ -102,13 +110,17 @@ function sys = BTF2003DDE(Kij)
     % Include the Latex (Equations) panel in the GUI
     sys.panels.bdLatexPanel.title = 'Equations'; 
     sys.panels.bdLatexPanel.latex = {
-        '\textbf{Breakspear, Terry \& Friston (2003)} Network: Comput Neural Syst (14).';
-        'Time-delayed variant of a neural network comprised of densely connected local ensembles of excitatory';
-        'and inhibitory neurons with long-range excitatory coupling between ensembles. Transmission delays';
-        'apply only to the long-range connections and all delays are identical.';
-        '\qquad $\dot{V}^{(j)}(t) = -\Big(g_{Ca} + r\,a_{ee}\, K_{jj}\, Q_V^{(j)}(t) + r\,a_{ee}\, \sum_i K_{ij} Q_V^{(i)}(t{-}d) / k^{(j)} \Big)\,m_{Ca}^{(j)}(t)\,\big(V^{(j)}(t) {-} V_{Ca}\big)$';
-        '\qquad \qquad \qquad $ - \, \Big(g_{Na}\,m_{Na}^{(j)}(t) + a_{ee}\,K_{jj}\,Q_V^{(j)}(t) + \,a_{ee}\, \sum_i K_{ij} Q_V^{(i)}(t{-}d) / k^{(j)} \Big)\,\big(V^{(j)}(t) {-} V_{Na}\big) $';
-        '\qquad \qquad \qquad $ - \, g_K\,W^{(j)}(t)\,\big(V^{(j)}(t) {-} V_K\big) \, - \, g_L\,\big(V^{(j)}(t) {-} V_L\big) \, - \, a_{ie}\,Z^{(j)}(t)\,Q_Z^{(j)}(t) + a_{ne}\,I,$';
+        '\textbf{BTF2003DDE}';
+        'Breakspear, Terry \& Friston (2003) Network: Comput Neural Syst (14).';
+        'Time-delayed variant of a network of neural masses comprising densely connected local ensembles of';
+        'excitatory and inhibitory neurons with long-range excitatory coupling between ensembles.';
+        'Transmission delays apply only to the long-range connections and all delays are identical.';
+        '\qquad $\dot{V}^{(j)}(t) = -\Big(g_{Ca} + (1-C)\,r\,a_{ee}\, K_{jj}\, Q_V^{(j)}(t) + C\,r\,a_{ee}\, \frac{1}{k^{(j)}} \sum_i K_{ij} Q_V^{(i)}(t{-}d) \Big)\,m_{Ca}^{(j)}(t)\,\big(V^{(j)}(t) {-} V_{Ca}\big)$';
+        '\qquad \qquad \qquad $ - \, \Big(g_{Na}\,m_{Na}^{(j)}(t) + a_{ee}\,K_{jj}\,Q_V^{(j)}(t) + \,a_{ee}\, \frac{1}{k^{(j)}} \sum_i K_{ij} Q_V^{(i)}(t{-}d) \Big)\,\big(V^{(j)}(t) {-} V_{Na}\big) $';
+        '\qquad \qquad \qquad $ - \, g_K\,W^{(j)}(t)\,\big(V^{(j)}(t) {-} V_K\big)$';
+        '\qquad \qquad \qquad $ - \, g_L\,\big(V^{(j)}(t) {-} V_L\big)$';
+        '\qquad \qquad \qquad $ - \, a_{ie}\,Z^{(j)}(t)\,Q_Z^{(j)}(t)$';
+        '\qquad \qquad \qquad $ + \, a_{ne}\,I,$';
         '';
         '\qquad $\dot{W}^{(j)}(t) = \frac{\phi}{\tau}\,\big(m_K^{(j)}(t) {-} W^{(j)}(t)\big)$';
         '';
@@ -120,15 +132,18 @@ function sys = BTF2003DDE(Kij)
         '\qquad $m_{ion}^{(j)} = \frac{1}{2} \big(1 + \tanh((V^{(j)}{-}V_{ion})/\delta_{ion})\big)$ is the proportion of open ion channels for a given $V$,';
         '\qquad $Q_{V}^{(j)} = \frac{1}{2} \big(1 + \tanh((V^{(j)}{-}V_{T})/\delta_{V})\big)$ is the mean firing rate of \textit{excitatory} cells in the $j^{th}$ ensemble,';
         '\qquad $Q_{Z}^{(j)} = \frac{1}{2} \big(1 + \tanh((Z^{(j)}{-}Z_{T})/\delta_{Z})\big)$ is the mean firing rate of \textit{inhibitory} cells in the $j^{th}$ ensemble,';
-        '\qquad $K_{ij}$ is the network connection weight from ensemble $i$ to ensemble $j$,';
+        '\qquad $K_{ij}$ is the network connection weight from ensemble $i$ to ensemble $j$ (diagonals should be zero),';
         '\qquad $k^{(j)} = \sum_i K_{ij}$ for $i \neq j$ is the sum of incoming connection weights to ensemble $j$,';
         '\qquad a $= [a_{ee},a_{ei},a_{ie},a_{ne},a_{ni}]$ are the connection weights ($a_{ei}$ denotes \textit{excitatory-to-inhibitory}),';
         '\qquad $b$ is the time constant of inhibition,';
+        '\qquad $C$ is the relative contribution of excitatory connections within-ensembles versus between-ensembles,'; 
         '\qquad $d$ is the transmission delay between ensembles,';
         '\qquad $r$ is the number of NMDA receptors relative to the number of AMPA receptors,';
         '\qquad phi $=\frac{\phi}{\tau}$ is the temperature scaling factor,';
-        '\qquad gion $= [g_{Ca},g_{K},g_{Na},g_L]$ are the ion conducances, Vion $= [V_{Ca},V_{K},V_{Na},V_L]$ are the Nernst potentials,';
-        '\qquad thrsh $= [V_T,Z_T,T_{Ca},T_K,T_{Na}]$ are the gain thresholds, delta $= [\delta_V,\delta_Z,\delta_{Ca},\delta_K,\delta_{Na}]$ are the gain slopes,';
+        '\qquad gion $= [g_{Ca},g_{K},g_{Na},g_L]$ are the ion conducances,';
+        '\qquad Vion $= [V_{Ca},V_{K},V_{Na},V_L]$ are the Nernst potentials,';
+        '\qquad thrsh $= [V_T,Z_T,T_{Ca},T_K,T_{Na}]$ are the gain thresholds,';
+        '\qquad delta $= [\delta_V,\delta_Z,\delta_{Ca},\delta_K,\delta_{Na}]$ are the gain slopes,';
         '\qquad $I$ is the strength of the subcortical input.';
         };
     
@@ -207,22 +222,16 @@ function dYdt = ddefun(~,Y,Ylag,Kij,a,b,C,r,phi,gion,Vion,thrsh,delta,I)
     mK  = gain(V, TK,  deltaK );    % (nx1) vector
     mNa = gain(V, TNa, deltaNa);    % (nx1) vector
     
-    % Extract the diagonals from Kij
-    Kii = Kij(1:(n+1):end)';        % (nx1) vector
-    
-    % Zero the diagonals in Kij
-    Kij(1:(n+1):end) = 0;           % (nxn) matrix
-    
-    % mean firing rates (off-diagonals only)
+    % mean firing rates
     k = sum(Kij)';                  % (1xn) vector
     QvMean = ((Qvlag'*Kij)')./k;    % (1xn) vector
     QvMean(isnan(QvMean)) = 0;    
 
     % excitatory cell dynamics
-    dV = -(gCa + r.*aee.*Kii.*Qv + r.*aee.*QvMean).*mCa.*(V-VCa) ...
+    dV = -(gCa + (1-C)*r.*aee.*Qv + C*r.*aee.*QvMean).*mCa.*(V-VCa) ...
          - gK.*W.*(V-VK) ...
          - gL.*(V-VL) ... 
-         - (gNa.*mNa + aee.*Kii.*Qv + aee.*QvMean).*(V-VNa) ...
+         - (gNa.*mNa + (1-C).*aee.*Qv + C.*aee.*QvMean).*(V-VNa) ...
          + ane.*I ...
          - aie.*Qz.*Z;
      
