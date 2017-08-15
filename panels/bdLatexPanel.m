@@ -11,7 +11,7 @@ classdef bdLatexPanel < handle
     %   sys.panels.bdLatexPanel.latex = {'latex string','latex string',...}
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a,2017b)
+    %  Stewart Heitmann (2016a,2017a,2017b,2017c)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.

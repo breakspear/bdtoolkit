@@ -11,7 +11,7 @@ classdef bdCorrPanel < handle
     %   sys.panels.bdCorrPanel.title = 'Correlation'
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a)
+    %  Stewart Heitmann (2016a,2017a,2017c)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.

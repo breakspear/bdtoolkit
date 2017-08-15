@@ -10,7 +10,7 @@ classdef bdSurrogate < handle
     %   sys.panels.bdSurrogate.hold = false
     %
     %AUTHORS
-    %  Stewart Heitmann (2017b)
+    %  Stewart Heitmann (2017b,2017c)
     %  Incorporates original code from Michael Breakspear.
 
     % Copyright (C) 2017 QIMR Berghofer Medical Research Institute
