@@ -15,7 +15,7 @@ function sys = SwiftHohenberg1D(n,dx)
     %   gui = bdGUI(sys);               % open the Brain Dynamics GUI
     %
     % Authors
-    %   Stewart Heitmann (2016a,2017a)
+    %   Stewart Heitmann (2016a,2017a,2017c)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -61,7 +61,7 @@ function sys = SwiftHohenberg1D(n,dx)
     % Our ODE parameters
     sys.pardef = [ struct('name','mu', 'value',1.5);
                    struct('name','nu', 'value',3.0);
-                   struct('name','dx', 'value',0.25) ];
+                   struct('name','dx', 'value',dx) ];
                
     % Our ODE variables
     sys.vardef = struct('name','U', 'value',U0);
