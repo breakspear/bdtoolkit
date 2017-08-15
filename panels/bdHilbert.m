@@ -334,7 +334,7 @@ classdef bdHilbert < handle
             hold on;
 
             % Plot the phase cyliner in ax2
-            plot3(this.ax2, tt, sinp, cosp, 'color',[0.5 0.5 0.5], 'HitTest','off');
+            plot3(this.ax2, tt, 0.975*sinp, 0.975*cosp, 'color',[0.5 0.5 0.5], 'HitTest','off');
             plot3(this.ax2, tt, sinp(yrow,:), cosp(yrow,:), 'color','k', 'Linewidth',1.5);
         end        
     end
