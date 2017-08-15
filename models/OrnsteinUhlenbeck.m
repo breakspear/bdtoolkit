@@ -80,7 +80,7 @@ function sys = OrnsteinUhlenbeck(n)
     sys.vardef = struct('name','Y',  'value',5*ones(n,1));
     
     % Nominate the applicable SDE solvers
-    sys.sdesolver = {@sdeEM};           % Euler-Murayama Method
+    sys.sdesolver = {@sdeEM,@sdeSH};    % Euler-Marayuma, Stratonovich-Huen
     
     % SDE solver options
     sys.sdeoption.InitialStep = 0.1;    % Solver step size
