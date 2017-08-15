@@ -37,7 +37,7 @@
 %   plot(sol2.x,sol2.y,'r');  title('sol2');      % plot 2nd result in red                                      
 %
 % Authors
-%   Stewart Heitmann (2016a,2017a)
+%   Stewart Heitmann (2016a,2017a,2017c)
 
 % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.

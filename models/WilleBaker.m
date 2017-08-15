@@ -33,7 +33,7 @@
 %   plot(tplot,Y);                                  % plot the result
 %   xlabel('time'); ylabel('y');
 %
-% Example 2: Calling DDE23 manually
+% Example 3: Calling DDE23 manually
 %   sys = WilleBaker();                     % construct the system struct
 %   ddefun = sys.ddefun;                    % get DDE function handle
 %   [a,b,c,d] = deal(sys.pardef{:,2});      % default parameter values
@@ -49,7 +49,7 @@
 %   legend('y1','y2','y3');
 %
 % Authors
-%   Stewart Heitmann (2016a,2017a,2017b)
+%   Stewart Heitmann (2016a-2017c)
 
 % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -109,17 +109,18 @@ function sys = WilleBaker()
     
     % Include the Latex (Equations) panel in the GUI
     sys.panels.bdLatexPanel.title = 'Equations'; 
-    sys.panels.bdLatexPanel.latex = {'\textbf{Will\''e \& Baker (1992) Example 3}';
+    sys.panels.bdLatexPanel.latex = {
+        '\textbf{Will\''e \& Baker (1992) Example 3}';
         '';
         'Delay Differential Equations';
-        '\qquad $a\,\dot y_1(t) = y_1(t-\tau_1)$';
-        '\qquad $b\,\dot y_2(t) = y_1(t-\tau_1) + y_2(t-\tau_2)$';
-        '\qquad $c\,\dot y_3(t) = y_2(t)$';
+        '\qquad $a\,\dot y_1(t)=y_1(t-\tau_1)$';
+        '\qquad $b\,\dot y_2(t)=y_1(t-\tau_1)+y_2(t-\tau_2)$';
+        '\qquad $c\,\dot y_3(t)=y_2(t)$';
         'where';
-        '\qquad $y_1(t), y_2(t), y_3(t)$ are the dynamic variables,';
+        '\qquad $y_1(t), y_2(t), y_3(t)$ are state variables,';
         '\qquad $\tau_1,\tau_2$ are constant time delays.';
         '\qquad $a,b,c$ are time scale constants,';
-        '\qquad Initial conditions are constant for $t\leq 0$';
+        '\qquad Initial conditions are assumed constant for $t{<}0$';
         '';
         'References';
         '\qquad 1. Will\''e and Baker (1992) DELSOL. Appl Num Math (9) 3-5.' ;   

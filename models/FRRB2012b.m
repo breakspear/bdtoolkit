@@ -16,7 +16,7 @@
 %   gui = bdGUI(sys);               % open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2017)
+%   Stewart Heitmann (2017b,2017c)
  
 % Copyright (C) 2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
