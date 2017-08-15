@@ -75,7 +75,7 @@ function sys = FRRB2012b(Kij)
     % Include the Latex (Equations) panel in the GUI
     sys.panels.bdLatexPanel.title = 'Equations'; 
     sys.panels.bdLatexPanel.latex = {
-        '\textbf{FFRB2012b}';
+        '\textbf{FRRB2012b}';
         '';
         'A bi-directional network of nodes with canonical Hopf dynamics and multiplicative noise following';
         'Freyer F, Roberts JA, Ritter P, Breakspear M (2012) A Canonical Model of Multistability and Scale-';

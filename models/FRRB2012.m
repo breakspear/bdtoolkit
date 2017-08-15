@@ -67,7 +67,7 @@ function sys = FRRB2012(n)
 
     % Include the Latex (Equations) panel in the GUI
     sys.panels.bdLatexPanel.title = 'Equations'; 
-    sys.panels.bdLatexPanel.latex = {'\textbf{FFRB2012}';
+    sys.panels.bdLatexPanel.latex = {'\textbf{FRRB2012}';
         '';
         'Freyer F, Roberts JA, Ritter P, Breakspear M (2012) A Canonical Model of Multistability and Scale-';
         'Invariance in Biological Systems. \textit{PLoS Comput Biol} 8(8): e1002634. doi:10.1371/journal.pcbi.1002634.';
