@@ -492,7 +492,7 @@ classdef bdGUI < handle
             panelh = 1000;
             scroll = bdScroll(panel,175, panelh);
             
-            % Populate the contents of the scroling uipanel
+            % Populate the contents of the scrolling uipanel
             this.PopulateSaveDialog(scroll.panel)
 
             % construct the 'Cancel' button
@@ -724,7 +724,7 @@ classdef bdGUI < handle
             
             % Fit the scroll panel height to the last widget.
             % This doesn't work and I don't know why.
-            %panelx = panel.Position(1);
+            panelx = panel.Position(1);
             %panely = panel.Position(2);
             %panelw = panel.Position(3);
             %panelh = panel.Position(4);
@@ -733,14 +733,18 @@ classdef bdGUI < handle
         
         % System-Save menu callback
         function SystemSaveMenu(this,dlg,panel)
-            % initialise the outgoing data to empty 
+            % initialise the outgoing data
             data = [];
             
             % The matlab save function wont save an empty struct
             % so we ensure that our struct always has something in it.
             data.bdtoolbox = this.version;      % toolkit version string
             data.date = date();                 % today's date
-    
+                
+            % Clean the panelmgr of any stale handles to panel classes
+            % that have since been destroyed.
+            this.CleanPanelMgr();
+            
             % find the sys checkbox widget in the scroll panel
             objs = findobj(panel,'Tag','bdExportSys');
             if objs.Value>0
@@ -755,6 +759,10 @@ classdef bdGUI < handle
                 end
                 if isfield(data.sys,'sdeoption') && isfield(data.sys.sdeoption,'OutputFcn')
                     data.sys.sdeoption = rmfield(data.sys.sdeoption,'OutputFcn');
+                end
+                % remove empty sdeoption.randn field 
+                if isfield(data.sys,'sdeoption') && isfield(data.sys.sdeoption,'randn') && isempty(data.sys.sdeoption.randn)
+                    data.sys.sdeoption = rmfield(data.sys.sdeoption,'randn');
                 end
             end
 
@@ -805,10 +813,6 @@ classdef bdGUI < handle
                 % include the time steps in the outgoing data
                 data.t = this.control.sol.x;
             end
-
-            % Clean the panelmgr of any stale handles to panel classes
-            % that have since been destroyed.
-            this.CleanPanelMgr();
 
             % for each class in panelmgr
             classnames = fieldnames(this.panelmgr);
@@ -920,6 +924,12 @@ classdef bdGUI < handle
                         this.panelmgr.(classname)(end+1) = classhndl;
                     end
                     
+                    % add an entry to the control panel sys.panels structure
+                    % if there is not one already
+                    if ~isfield(this.control.sys.panels,classname)
+                        this.control.sys.panels.(classname) = [];
+                    end
+                    
                     % force a redraw event
                     notify(this.control,'redraw');
                 else
@@ -980,7 +990,13 @@ classdef bdGUI < handle
                 
                 % remove empty classes
                 if isempty(this.panelmgr.(classname))
+                    % remove it from this.panelmgr
                     this.panelmgr = rmfield(this.panelmgr,classname);
+                    
+                    % remove it from control.sys.panels also
+                    if isfield(this.control.sys.panels,classname)
+                       this.control.sys.panels = rmfield(this.control.sys.panels,classname);
+                    end                        
                 end
             end    
             
