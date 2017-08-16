@@ -1,8 +1,8 @@
-function sol = dde23hack(ddefun,lags,history,tspan,options,varargin) 
-%DDE23hack  Faster version of dde23.
+function sol = dde23a(ddefun,lags,history,tspan,options,varargin) 
+%DDE23a  A faster version of dde23.
 %   This is a pre-release version of dde23 from Mathworks Inc. It includes
 %   bug fixes that improve the computational cost of computing time delays.
-%   It will be likely released in MATLAB R2017a (or later).
+%   It will be likely be included in MATLAB R2017a (or later).
 %
 %   SOL = DDE23(DDEFUN,LAGS,HISTORY,TSPAN) integrates a system of DDEs 
 %   y'(t) = f(t,y(t),y(t - tau_1),...,y(t - tau_k)). The constant, positive 

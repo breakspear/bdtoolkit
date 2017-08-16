@@ -8,11 +8,11 @@ if ~exist('LinearODE.m', 'file')
     error('bdtoolkit/models is not in the matlab path');
 end
 
-disp 'TESTING BTF2003ODE';
+disp 'TESTING BTF2003';
 n = randi(10);
 disp(num2str(n,'n=%d'));
 Kij = rand(n);
-sys = BTF2003ODE(Kij);
+sys = BTF2003(Kij);
 bdSysCheck(sys);
 disp '===';
 

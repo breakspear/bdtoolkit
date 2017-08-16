@@ -104,7 +104,7 @@ function sys = BTF2003DDE(Kij)
     sys.tspan = [0 1000]; 
    
     % Specify DDE solvers and default options
-    sys.ddesolver = {@dde23,@dde23hack};       % DDE solvers
+    sys.ddesolver = {@dde23,@dde23a};          % DDE solvers
     sys.ddeoption = ddeset('RelTol',1e-6);     % DDE solver options    
 
     % Include the Latex (Equations) panel in the GUI
