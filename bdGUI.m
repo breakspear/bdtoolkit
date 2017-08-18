@@ -39,7 +39,7 @@ classdef bdGUI < handle
     % POSSIBILITY OF SUCH DAMAGE.
 
     properties (Constant=true)
-        version = '2017b';
+        version = '2017c';
     end
     
     properties

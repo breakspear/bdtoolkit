@@ -10,7 +10,7 @@ function outdata = bdEditVector(data,name,columnName)
     %then the returned data is identical to the initial data. 
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a)
+    %  Stewart Heitmann (2016a,2017c)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
