@@ -915,12 +915,6 @@ classdef bdGUI < handle
                         this.panelmgr.(classname)(end+1) = classhndl;
                     end
                     
-                    % add an entry to the control panel sys.panels structure
-                    % if there is not one already
-                    if ~isfield(this.control.sys.panels,classname)
-                        this.control.sys.panels.(classname) = [];
-                    end
-                    
                     % force a redraw event
                     notify(this.control,'redraw');
                 else
@@ -983,11 +977,6 @@ classdef bdGUI < handle
                 if isempty(this.panelmgr.(classname))
                     % remove it from this.panelmgr
                     this.panelmgr = rmfield(this.panelmgr,classname);
-                    
-                    % remove it from control.sys.panels also
-                    if isfield(this.control.sys.panels,classname)
-                       this.control.sys.panels = rmfield(this.control.sys.panels,classname);
-                    end                        
                 end
             end    
             
