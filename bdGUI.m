@@ -480,13 +480,14 @@ classdef bdGUI < handle
                 'Position',[10 50 182 390], ...
                 'BorderType','none');
 
-            % Construct scrolling uipanel with fixed width and height.
-            % The height will be adjusted by PopulateSaveDialog.
+            % Construct scrolling uipanel. We create it with an arbitrary
+            % height (1000 pixels) that will be adjusted once the panel
+            % contents have been created.
             scroll = bdScroll(panel,175, 1000);
             
             % Populate the contents of the scrolling uipanel
             this.PopulateSaveDialog(scroll.panel)
-            
+
             % construct the 'Cancel' button
             uicontrol('Style','pushbutton', ...
                 'String','Cancel', ...
@@ -714,12 +715,10 @@ classdef bdGUI < handle
                 end
             end
             
-            % Fit the scroll panel height to the number of widgets.
-             panely = scrollpanel.Position(2);
-             panelh = scrollpanel.Position(4);
-             offset = yoffset - panelh;
-             scrollpanel.Position(4)= panelh+offset;    % this invokes the SizeChangedCallback
-             scrollpanel.Position(2)= panely-offset;    % this does not
+            % Adjust the height of the scrollpanel and vertically align
+            % the widgets to the (new) top of the panel.
+            scrollpanel.Position(4) = yoffset + 30;
+            bd.alignTop(scrollpanel,10);
         end
         
         % System-Save menu callback

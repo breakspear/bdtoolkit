@@ -169,21 +169,6 @@ classdef bdScroll < handle
         function SizeChangedUser(this,src)
             %disp('bdScroll.SizeChangedUser');
 
-            % We need to vertically shift all children of the user panel
-            % to keep them top-justified. However we don't know the size
-            % of the geometry change. As a workaround, we find the minimal
-            % distance between all objects and the top of the panel. We
-            % then adjust the y-position of every object by that amount.
-            panelh = src.Position(4);
-            yshift = panelh;
-            for indx=1:numel(src.Children)
-                shift = panelh - src.Children(indx).Position(2) - src.Children(indx).Position(4) - 5;
-                yshift = min(yshift,shift);
-            end
-            for indx=1:numel(src.Children)
-                src.Children(indx).Position(2) = src.Children(indx).Position(2) + yshift;
-            end
-             
             % re-align the user panel to the top of the viewport.
             vpanely = this.vpanel.Position(2);
             vpanelh = this.vpanel.Position(4);

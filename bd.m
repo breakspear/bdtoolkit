@@ -4,7 +4,7 @@ classdef bd
     %  when building custom GUI panels.
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a)
+    %  Stewart Heitmann (2016a,2017a,2017c)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -35,6 +35,109 @@ classdef bd
     % POSSIBILITY OF SUCH DAMAGE.
 
     methods (Static)
+        
+        % Vertically shifts all children of a uipanel so that the top-most
+        % child is exactly <gap> pixels from the top of the panel.
+        function alignTop(panel,gap)
+            % work in pixels
+            panelunits = panel.Units;
+            panel.Units = 'pixels';
+
+            % get height of panel
+            panelh = panel.Position(4);
+
+            % Find the vertical extent of the highest child in the panel
+            ymax = 0;
+            for indx=1:numel(panel.Children)
+                % work in pixels
+                childunits = panel.Children(indx).Units;
+                panel.Children(indx).Units = 'pixels';
+
+                % compute the vertical extent of the child
+                if isfield(panel.Children(indx),'Extent')
+                    childh = panel.Children(indx).Extent(4);
+                else
+                    childh = panel.Children(indx).Position(4);
+                end
+                ychild = panel.Children(indx).Position(2) + childh;
+
+                % remember the maximum y 
+                ymax = max(ymax,ychild);
+
+                % restore the original units for the child object
+                panel.Children(indx).Units = childunits;
+            end
+
+            % Shift all objects vertically to achieve the desired gap (pixels)
+            % between the highest child and the top of the panel 
+            yshift = panelh - ymax - gap;
+            for indx=1:numel(panel.Children)
+                % work in pixels
+                childunits = panel.Children(indx).Units;
+                panel.Children(indx).Units = 'pixels';
+
+                % shift the vertical position
+                panel.Children(indx).Position(2) = panel.Children(indx).Position(2) + yshift;
+
+                % restore the original units for the child object
+                panel.Children(indx).Units = childunits;
+            end
+
+            % restore the original units for the panel
+            panel.Units = panelunits;
+        end
+
+        
+%         % Returns the hull geometry of all children within a uipanel where
+%         % marginw and marginh specify the margins of the hull.
+%         function pos = childHull(panel,marginw,marginh)
+%             % work in pixels
+%             panelunits = panel.Units;
+%             panel.Units = 'pixels';
+% 
+%             % init hull coords
+%             xmin = NaN;
+%             xmax = NaN;
+%             ymin = NaN;
+%             ymax = NaN;    
+% 
+%             % Find the vertical extent of the highest child in the panel
+%             for indx=1:numel(panel.Children)
+%                 % work in pixels
+%                 childunits = panel.Children(indx).Units;
+%                 panel.Children(indx).Units = 'pixels';
+% 
+%                 % get the x,y position of teh child
+%                 childx = panel.Children(indx).Position(1);
+%                 childy = panel.Children(indx).Position(2);
+% 
+%                 % get the width and height (extent) of the child
+%                 try
+%                     childw = panel.Children(indx).Extent(3);
+%                     childh = panel.Children(indx).Extent(4);
+%                 catch
+%                     childw = panel.Children(indx).Position(3);
+%                     childh = panel.Children(indx).Position(4);
+%                 end
+% 
+%                 % remember the extremes
+%                 xmin = min(xmin,childx);
+%                 xmax = max(xmax,childx+childw);
+%                 ymin = min(ymin,childy);
+%                 ymax = max(ymax,childy+childh);
+% 
+%                 % restore the original units for the child object
+%                 panel.Children(indx).Units = childunits;
+% 
+%             end
+% 
+%             % restore the original units for the panel
+%             panel.Units = panelunits;
+% 
+%             % return value
+%             pos = [xmin-marginw ymin-marginh xmax-xmin+2*marginw+1 ymax-ymin+2*marginh+1];        
+%         end
+        
         
         % Returns a struct array which maps the ODE variables described
         % in vardef{} to the corresponding row entries in sol.y.
