@@ -11,8 +11,8 @@
 %   The diagonals of Kij should be zero.
 %
 % Example:
-%   load cocomac242 MacCrtx     % Load a connectivity matrix. 
-%   sys = BTF2003(MacCrtx);     % Construct the system struct.
+%   load cocomac047 CIJ         % Load a connectivity matrix. 
+%   sys = BTF2003(CIJ);         % Construct the system struct.
 %   gui = bdGUI(sys);           % Open the Brain Dynamics GUI.
 %
 % Authors
