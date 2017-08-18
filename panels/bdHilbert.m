@@ -106,8 +106,9 @@ classdef bdHilbert < handle
             parentw = this.tab.Position(3);
             parenth = this.tab.Position(4);
 
-            % check that we have the signal processing toolbox
-            if ~license('test','Signal_Toolbox')
+            % check that we have the signal processing toolbox (for the hilbert
+            % function)
+            if ~license('test','Signal_Toolbox') || ~exist('hilbert','file')
                 % Signal Processing Toolbox is missing 
                 uicontrol('Style','text', ...
                           'String','Requires the Matlab Signal Processing Toolbox', ...

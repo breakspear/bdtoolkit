@@ -89,7 +89,7 @@ classdef bdCorrPanel < handle
             parenth = this.tab.Position(4);
             
             % check that we have the statistics toolbox (for the corr function)
-            if ~license('test','Statistics_Toolbox')
+            if ~license('test','Statistics_Toolbox') || ~exist('corr','file')
                 % Statistics Toolbox is missing 
                 uicontrol('Style','text', ...
                           'String','Requires the Matlab Statistics and Machine Learning Toolbox', ...
