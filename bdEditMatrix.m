@@ -9,7 +9,7 @@ function outdata = bdEditMatrix(data,name)
     %then the returned data is identical to the initial data. 
     % 
     %AUTHORS
-    %  Stewart Heitmann (2016a)
+    %  Stewart Heitmann (2016a,2017c)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -67,7 +67,7 @@ function outdata = bdEditMatrix(data,name)
         'Data',data, ...
         'ColumnWidth',{50}, ...
         'ColumnEditable',true, ...
-        'CellSelectionCallback', @(src,~) CellSelectionCallback(src,img));
+        'CellEditCallback', @(src,~) CellEditCallback(src,img));
     
     % 'Cancel' button
     uicontrol('Style','pushbutton', ...
@@ -100,8 +100,8 @@ function outdata = bdEditMatrix(data,name)
     end
     
     % Callback for uitable
-    function CellSelectionCallback(tbl,img)
-        %disp('CellSelectionCallback');
+    function CellEditCallback(tbl,img)
+        %disp('CellEditCallback');
         data = get(tbl,'data');                 % Retrieve the new data from uitable
         set(img,'CData',data);                  % Update the image data
         %set(dcm, 'DisplayStyle','datatip');     % Hack to force the datatip to update (doesnt help)

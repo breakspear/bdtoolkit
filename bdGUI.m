@@ -125,6 +125,10 @@ classdef bdGUI < handle
             % construct the control panel
             this.control = bdControl(this.uipanel2,sys);
 
+            % register a callback with the uipanel2 to notify all figures spawned by the control panel
+            % to close themselves when the control panel itself is deleted.
+            this.uipanel2.DeleteFcn = @(~,~) notify(this.control,'closefig'); 
+            
             % resize the panels (putting them in their exact position)
             this.SizeChanged();
 

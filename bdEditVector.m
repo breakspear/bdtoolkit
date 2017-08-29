@@ -84,7 +84,7 @@ function outdata = bdEditVector(data,name,columnName)
         'ColumnName',{columnName}, ...
 ...        'ColumnWidth',{75}, ...
         'ColumnEditable',true, ...
-        'CellSelectionCallback', @(src,~) CellSelectionCallback(src,barg,hist));
+        'CellEditCallback', @(src,~) CellEditCallback(src,barg,hist));
     
     % 'Cancel' button
     uicontrol('Style','pushbutton', ...
@@ -109,8 +109,8 @@ function outdata = bdEditVector(data,name,columnName)
     % wait for close button to delete the figure
     uiwait(fig);
     
-    function CellSelectionCallback(tbl,barg,hist)
-        %disp('CellSelectionCallback');
+    function CellEditCallback(tbl,barg,hist)
+        %disp('CellEditCallback');
         data = get(tbl,'data');
         % update bar graph
         barg.YData = data;
@@ -125,21 +125,21 @@ function outdata = bdEditVector(data,name,columnName)
         delete(fig);                        % close the dialog box
     end
 
-    % Callback for edit box
-    function EditCallback(hObj,~)
-        % get the incoming value
-        val = str2double(hObj.String);
-        if isnan(val)
-            dlg = errordlg(['''', hObj.String, ''' is not a valid number'],'Invalid Number','modal');
-            val = hObj.Value;           % restore the previous value                
-            uiwait(dlg);                % wait for dialog box to close
-        else
-            hObj.Value = val;           % remember the new value
-        end            
-
-        % update the edit box string
-        hObj.String = num2str(val,'%g');
-    end
+%     % Callback for edit box
+%     function EditCallback(hObj,~)
+%         % get the incoming value
+%         val = str2double(hObj.String);
+%         if isnan(val)
+%             dlg = errordlg(['''', hObj.String, ''' is not a valid number'],'Invalid Number','modal');
+%             val = hObj.Value;           % restore the previous value                
+%             uiwait(dlg);                % wait for dialog box to close
+%         else
+%             hObj.Value = val;           % remember the new value
+%         end            
+% 
+%         % update the edit box string
+%         hObj.String = num2str(val,'%g');
+%     end
 
 end
         

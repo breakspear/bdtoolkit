@@ -3,7 +3,7 @@ classdef bdControl < handle
     %  Internal toolbox object not intended to be called by end-users.
     % 
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a,2017b)
+    %  Stewart Heitmann (2016a,2017a-c)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -39,12 +39,13 @@ classdef bdControl < handle
         sox = []    % auxiliary variables (computed by sys.auxfun)
         solvermap   % maps the solver functions to name and type strings
         solveridx   % index of the active solver
+        halt = 0    % state of the HALT button
     end
     
     properties (Access=private)
         fig         % handle of parent figure
         hld         % handle to HOLD button
-        hlt         % handle to HALT button
+        %hlt         % handle to HALT button
         cpustart    % cpu start time
         cpu         % handle to cpu clock
         pro         % handle to progress counter
@@ -54,7 +55,8 @@ classdef bdControl < handle
     events
         recompute   % signals that sol must be recomputed
         redraw      % signals that sol must be replotted
-        refresh     % signals the widgets to refresh their values 
+        refresh     % signals the widgets to refresh their values
+        closefig    % tell all child figures to close
     end
     
     methods
@@ -166,7 +168,7 @@ classdef bdControl < handle
                             'Units','pixels', ...
                             'Position',[0 panelh-yoffset boxw boxh]);
                         barobj = bar(ax,parval, ...
-                            'ButtonDownFcn', @(hObj,~) this.VectorParameter(hObj,parstr,parindx) );
+                            'ButtonDownFcn', @(~,~) bdControlVector(this,'pardef',parstr,['Parameters: ',parstr]) );
                         xlim([0.5 numel(parval)+0.5]);
                         set(ax,'Tag','bdControlWidget', 'UserData',yoffset);
                         axis 'off';
@@ -194,7 +196,7 @@ classdef bdControl < handle
                             'Units','pixels', ...
                             'Position',[0 panelh-yoffset boxw boxw]);
                         imObj = imagesc(parval(:,:,1), 'Parent',ax, ...
-                            'ButtonDownFcn', @(hObj,~) this.MatrixParameter(hObj,parstr,parindx) );
+                            'ButtonDownFcn', @(~,~) bdControlMatrix(this,'pardef',parstr,['Parameters: ',parstr]) );
                         axis off;
                         set(ax,'Tag','bdControlWidget', 'UserData',yoffset); 
 
@@ -246,7 +248,7 @@ classdef bdControl < handle
                     'Parent', panel, ...
                     'UserData', yoffset, ...
                     'Tag', 'bdControlWidget', ...
-                    'ToolTipString', 'Hold the random samples in the Wiener process', ...
+                    'ToolTipString', 'Hold the random samples fixed', ...
                     'Callback', @(~,~) this.HoldCallback(), ...
                     'Position',[0 panelh-yoffset 2*boxw+5 boxh]);  
             end
@@ -315,7 +317,7 @@ classdef bdControl < handle
                                 'Units','pixels', ...
                                 'Position',[0 panelh-yoffset boxw boxh]);
                             barobj = bar(ax,lagval, ...
-                                'ButtonDownFcn', @(hObj,~) this.VectorLag(hObj,lagstr,lagindx) );
+                                'ButtonDownFcn', @(~,~) bdControlVector(this,'lagdef',lagstr,['Time Lags: ',lagstr]) );
                             xlim([0.5 numel(lagval)+0.5]);
                             set(ax,'Tag','bdControlWidget', 'UserData',yoffset);
                             axis 'off';
@@ -343,7 +345,8 @@ classdef bdControl < handle
                                 'Units','pixels', ...
                                 'Position',[0 panelh-yoffset boxw boxw]);
                             imObj = imagesc(lagval, 'Parent',ax, ...
-                                'ButtonDownFcn', @(hObj,~) this.MatrixLag(hObj,lagstr,lagindx) );
+                                'ButtonDownFcn', @(~,~) bdControlMatrix(this,'lagdef',lagstr,['Time Lags: ',lagstr]) );
+                            
                             axis off;
                             set(ax,'Tag','bdControlWidget', 'UserData',yoffset); 
 
@@ -426,7 +429,7 @@ classdef bdControl < handle
                             'Units','pixels', ... 
                             'Position',[0 panelh-yoffset boxw boxh]);
                         barobj = bar(ax,varval, ...
-                            'ButtonDownFcn', @(hObj,~) this.VectorVariable(hObj,varstr,varindx) );
+                            'ButtonDownFcn', @(~,~) bdControlVector(this,'vardef',varstr,['Initial Conditions: ',varstr]) );
                         xlim([0.5 numel(varval)+0.5]);
                         set(ax,'Tag','bdControlWidget', 'UserData',yoffset);
                         axis 'off';
@@ -454,7 +457,7 @@ classdef bdControl < handle
                             'Units','pixels', ...
                             'Position',[0 panelh-yoffset+2.5 boxw boxw]);
                         imObj = imagesc(varval, 'Parent',ax, ...
-                            'ButtonDownFcn', @(hObj,~) this.MatrixVariable(hObj,varstr,varindx) );
+                            'ButtonDownFcn', @(~,~) bdControlMatrix(this,'vardef',varstr,['Initial Conditions: ',varstr]) );
                         axis off;
                         set(ax,'Tag','bdControlWidget', 'UserData',yoffset);                         
                         
@@ -534,6 +537,9 @@ classdef bdControl < handle
                 'Tag', 'bdControlWidget', ...
                 'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
 
+            % listen to the control panel for widget refresh events
+            addlistener(this,'refresh',@(~,~) this.CPUrefresh());    
+
             % next row
             yoffset = yoffset + boxh;                        
 
@@ -568,8 +574,10 @@ classdef bdControl < handle
             yoffset = yoffset + 1.25*boxh;                        
 
             % HALT button
-            this.hlt = uicontrol('Style','radio', ...
+            %this.hlt = uicontrol('Style','radio', ...
+            haltbutton = uicontrol('Style','radio', ...
                 'String','HALT', ...
+                'Value',this.halt, ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -579,9 +587,12 @@ classdef bdControl < handle
                 'UserData', yoffset, ...
                 'Tag', 'bdControlWidget', ...
                 'ToolTipString', 'Halt the solver', ...
-                'Callback', @(~,~) this.HaltCallback(), ...
+                'Callback', @(src,~) this.HaltCallback(src), ...
                 'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
-           
+            
+            % listen to the control panel for widget refresh events
+            addlistener(this,'refresh',@(~,~) this.HALTrefresh(haltbutton));    
+            
             % register a callback for resizing the panel
             set(panel,'SizeChangedFcn', @(~,~) SizeChanged(this,panel));
             
@@ -681,24 +692,10 @@ classdef bdControl < handle
             hObj.String = num2str(val,'%0.4g');
         end
         
-        % Callback for parameter vector widget
-        function VectorParameter(this,barObj,name,parindx)
-            this.VectorCallback(barObj,name);
-            this.sys.pardef(parindx).value = reshape(barObj.YData, size(this.sys.pardef(parindx).value));
-            notify(this,'recompute');
-        end
-
         % Refresh listener for vector parameter widget
         function VectorParameterRefresh(this,parindx,barObj)
             parval = this.sys.pardef(parindx).value;
             barObj.YData = parval;
-        end
-        
-        % Callback for DDE lag vector widget
-        function VectorLag(this,barObj,name,lagindx)
-            this.VectorCallback(barObj,name);
-            this.sys.lagdef(lagindx).value = reshape(barObj.YData, size(this.sys.lagdef(lagindx).value));
-            notify(this,'recompute');
         end
         
         % Refresh listener for DDE lag widget
@@ -707,45 +704,20 @@ classdef bdControl < handle
             barObj.YData = lagval;
         end
 
-        % Callback for ODE variable vector widget
-        function VectorVariable(this,barObj,name,varindx)
-            this.VectorCallback(barObj,name);
-            this.sys.vardef(varindx).value = reshape(barObj.YData, size(this.sys.vardef(varindx).value));
-            notify(this,'recompute');
-        end
-        
         % Refresh listener for vector variable widget
         function VectorVariableRefresh(this,varindx,barObj)
             varval = this.sys.vardef(varindx).value;
             barObj.YData = varval;
         end
         
-        % Callback for generic vector widget
-        function VectorCallback(this,barObj,name)
-            % ensure hObj is still valid
-            if ~isvalid(barObj)
-                % The object no longer exists. User must have closed the parent window.
-                return
-            end
-            
-            % retrive the current data from the bar graph
-            data = barObj.YData;
-            
-            % open the vector editor            
-            data = bdEditVector(data,['Vector ',name], name);
-            
-            % update the bar graph data
-            set(barObj,'Ydata',data);
-        end
-        
-        % Callback for parameter matrix widget
-        function MatrixParameter(this,imObj,name,parindx)
-            % open dialog box for editing a matrix
-            this.sys.pardef(parindx).value = bdEditMatrix(this.sys.pardef(parindx).value,name);
-            % update the image data in the control panel
-            set(imObj,'CData',this.sys.pardef(parindx).value);
-            notify(this,'recompute');
-        end
+%         % Callback for parameter matrix widget
+%         function MatrixParameter(this,imObj,name,parindx)
+%             % open dialog box for editing a matrix
+%             this.sys.pardef(parindx).value = bdEditMatrix(this.sys.pardef(parindx).value,name);
+%             % update the image data in the control panel
+%             set(imObj,'CData',this.sys.pardef(parindx).value);
+%             notify(this,'recompute');
+%         end
 
         % Refresh listener for matrix parameter widget
         function MatrixParameterRefresh(this,parindx,imObj)
@@ -753,14 +725,14 @@ classdef bdControl < handle
             imObj.CData = parval;
         end
 
-        % Callback for DDE lag matrix widget
-        function MatrixLag(this,imObj,name,lagindx)
-            % open dialog box for editing a matrix
-            this.sys.lagdef(lagindx).value = bdEditMatrix(this.sys.lagdef(lagindx).value,name);
-            % update the image data in the control panel
-            set(imObj,'CData',this.sys.lagdef(lagindx).value);
-            notify(this,'recompute');
-        end
+%         % Callback for DDE lag matrix widget
+%         function MatrixLag(this,imObj,name,lagindx)
+%             % open dialog box for editing a matrix
+%             this.sys.lagdef(lagindx).value = bdEditMatrix(this.sys.lagdef(lagindx).value,name);
+%             % update the image data in the control panel
+%             set(imObj,'CData',this.sys.lagdef(lagindx).value);
+%             notify(this,'recompute');
+%         end
 
         % Refresh listener for DDE lag matrix widget
         function MatrixLagRefresh(this,lagindx,imObj)
@@ -768,14 +740,14 @@ classdef bdControl < handle
             imObj.CData = lagval;
         end
         
-        % Callback for ODE variable matrix widget
-        function MatrixVariable(this,imObj,name,varindx)
-            % open dialog box for editing a matrix
-            this.sys.vardef(varindx).value = bdEditMatrix(this.sys.vardef(varindx).value,name);
-            % update the image data in the control panel
-            set(imObj,'CData',this.sys.vardef(varindx).value);
-            notify(this,'recompute');
-        end
+%         % Callback for ODE variable matrix widget
+%         function MatrixVariable(this,imObj,name,varindx)
+%             % open dialog box for editing a matrix
+%             this.sys.vardef(varindx).value = bdEditMatrix(this.sys.vardef(varindx).value,name);
+%             % update the image data in the control panel
+%             set(imObj,'CData',this.sys.vardef(varindx).value);
+%             notify(this,'recompute');
+%         end
         
         % Refresh listener for variable matrix widget
         function MatrixVariableRefresh(this,varindx,imObj)
@@ -786,7 +758,7 @@ classdef bdControl < handle
         % Listener for the compute flag
         function RecomputeListener(this)
             % Do nothing if the HALT button is active
-            if this.hlt.Value
+            if this.halt
                 return
             end
             
@@ -843,7 +815,7 @@ classdef bdControl < handle
                     this.pro.String = num2str(100*tspan(1)/this.sys.tspan(2),'%3.0f%%');
                     drawnow;
                 case 'done'
-                   if this.hlt.Value~=1
+                   if this.halt~=1
                         cpu = cputime - this.cpustart;
                         this.cpu.String = num2str(cpu,'%5.2fs');
                         this.pro.String = '100%';
@@ -851,7 +823,7 @@ classdef bdControl < handle
                    end
             end   
             % return the state of the HALT button
-            status = this.hlt.Value;
+            status = this.halt;
         end
 
         % HOLD button callback
@@ -864,13 +836,31 @@ classdef bdControl < handle
             end
         end
         
-        % HALT button callback
-        function HaltCallback(this)
-            if this.hlt.Value==1
+        % Refresh listener for CPU button
+        function CPUrefresh(this)
+            if this.halt
                 this.cpu.ForegroundColor = [0.5 0.5 0.5];
             else
                 this.cpu.ForegroundColor = [0 0 0];
-                notify(this,'recompute');  
+            end
+        end
+
+        % Refresh listener for HALT button
+        function HALTrefresh(this,haltbutton)
+            %disp('HALTrefresh');
+            haltbutton.Value = this.halt;
+        end
+
+        % HALT button callback
+        function HaltCallback(this,haltbutton)
+            this.halt = haltbutton.Value;
+            if this.halt
+                this.cpu.ForegroundColor = [0.5 0.5 0.5];
+                notify(this,'refresh');             % notify widgets to refresh themselves
+            else
+                this.cpu.ForegroundColor = [0 0 0];
+                notify(this,'refresh');             % notify widgets to refresh themselves
+                notify(this,'recompute');           % recompute the new solution
             end
         end
     end               
