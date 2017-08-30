@@ -78,22 +78,13 @@ classdef bdGUI < handle
             % process the input arguments
             switch nargin
                 case 0
-                    % prompt user to select a system file to load
-                    [filename,pathname] = uigetfile({'*.mat','MATLAB data file'},'Load system file');
-                    if filename==0
-                        % user cancelled the operation
-                        this = [];
-                        return;
+                    sys = loadsys();
+                    if ~isempty(sys)
+                        sys = checksys(sys);
+                        if ~isempty(sys)
+                            this = bdGUI(sys);
+                        end
                     end
-                    % load the mat file
-                    fullname = fullfile(pathname,filename);
-                    fdata = load(fullname);
-                    if ~isfield(fdata,'sys')
-                        % the mat file does not contain a sys struct
-                        error('No system data in %s',filename);
-                    end
-                    % open the bdGUI using the sys data we just loaded
-                    this = bdGUI(fdata.sys);
                     return
                     
                 case 1
@@ -105,7 +96,10 @@ classdef bdGUI < handle
             end
 
             % Incoming sys parameter
-            sys = varargin{1};
+            sys = checksys(varargin{1});
+            if isempty(sys)
+                return;   % abort
+            end
 
             % construct figure
             this.fig = figure('Units','pixels', ...
@@ -455,16 +449,15 @@ classdef bdGUI < handle
 
             % Callback for System-Load menu
             function gui = SystemLoad()
-                [fname, pname] = uigetfile({'*.mat','MATLAB data file'},'Load system file');
-                if fname~=0
-                    fdata = load(fullfile(pname,fname),'sys');
-                    if isfield(fdata,'sys')
-                        gui = bdGUI(fdata.sys);
-                    else
-                        uiwait( warndlg({'Missing ''sys'' structure.','Load aborted.'},'Load failed') );
+                sys = loadsys();
+                if ~isempty(sys)
+                    sys = checksys(sys);
+                    if ~isempty(sys)
+                        gui = bdGUI(sys);
                     end
                 end
-            end            
+            end
+            
         end
         
         % Construct the System-Save Dialog
@@ -1011,6 +1004,67 @@ classdef bdGUI < handle
         
     end
     
+ 
 end
 
+    % prompt the user to load a sys struct from a matlab file
+    function sys = loadsys()
+        % init the return value
+        sys = [];
+        
+        % prompt the user to select a mat file
+        [fname, pname] = uigetfile({'*.mat','MATLAB data file'},'Load system file');
+        if fname==0
+            return      % user cancelled the operation
+        end
+        
+        % load the mat file that the user selected
+        fdata = load(fullfile(pname,fname),'sys');
+        if ~isfield(fdata,'sys')
+            msg = {'The load operation has failed because the selected mat file does not contain a ''sys'' structure.'
+                   ''
+                   'Explanation: Every model is defined by a special data structure that is named ''sys'' by convention. The System-Load menu has failed to find a data structure of that name in the selected mat file.'
+                   ''
+                   'To succeed, select a mat file that you know contains a ''sys'' structure. Example models are provided in the ''bdtoolkit'' installation directory. See Chapter 1 of the Handbook for the Brain Dynamics Toolbox for a list.'
+                   ''
+                   };
+            uiwait( warndlg(msg,'Load failed') );
+        else
+            sys = fdata.sys;
+        end
+    end
+    
+
+    % check the sys struct and display a dialog box if errors are found
+    function sys = checksys(sys)
+        try
+            % check the validity of the sys structure
+            sys = bd.syscheck(sys);                        
+        catch ME
+            switch ME.identifier
+                case {'bdtoolkit:syscheck:odefun'
+                      'bdtoolkit:syscheck:ddefun'
+                      'bdtoolkit:syscheck:sdeF'
+                      'bdtoolkit:syscheck:sdeG'
+                      'bdtoolkit:syscheck:auxfun'
+                      'bdtoolkit:syscheck:self'}
+                    msg = {ME.message
+                           ''
+                           'Explanation: The model could not be loaded because its ''sys'' structure contains a handle to a function that is not in the matlab search path.'
+                           ''
+                           'To succeed, ensure that all functions belonging to the model are accessible to matlab via the search path. See ''Getting Started'' in the Handbook for the Brain Dynamics Toolbox.'
+                           ''
+                           };
+                    uiwait( warndlg(msg,'Missing Function') );
+                otherwise
+                    msg = {ME.message,
+                           '',
+                           'Explanation: The model could not be loaded because its ''sys'' structure is invalid. Use the ''bdSysCheck'' command-line tool to diagnose the exact problem. Refer to the Handbook for the Brain Dynamics Toolbox for a comprehensive description of the format of the ''sys'' structure.'
+                           ''
+                           };
+                    uiwait( warndlg(msg,'Invalid sys structure') );
+            end
+            sys = [];
+        end
+    end
 

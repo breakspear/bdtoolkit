@@ -465,9 +465,14 @@ classdef bd
          
             % case of ODE
             if isfield(sys,'odefun')
-                % check sys.odefun
+                % check sys.odefun is a function handle
                 if ~isa(sys.odefun,'function_handle')
                     throw(MException('bdtoolkit:syscheck:odefun','sys.odefun must be a function handle'));
+                end
+                
+                % check sys.odefun is in the search path
+                if strcmp(func2str(sys.odefun),'UNKNOWN Function')
+                    throw(MException('bdtoolkit:syscheck:odefun','sys.odefun contains a handle to a missing function.'));
                 end
                 
                 % check sys.odesolver
@@ -481,9 +486,14 @@ classdef bd
                     throw(MException('bdtoolkit:syscheck:odesolver','sys.odesolver cell array must be one dimensional'));
                 end                    
                 for indx=1:numel(sys.odesolver)
-                   if ~isa(sys.odesolver{indx},'function_handle')
-                       throw(MException('bdtoolkit:syscheck:odesolver','sys.odesolver{%d} must be a function handle',indx));
-                   end
+                    % check that each sys.odesolver is a function handle
+                    if ~isa(sys.odesolver{indx},'function_handle')
+                        throw(MException('bdtoolkit:syscheck:odesolver','sys.odesolver{%d} must be a function handle',indx));
+                    end
+                    % check that each sys.odesolver is in the search path
+                    if strcmp(func2str(sys.odesolver{indx}),'UNKNOWN Function')
+                        throw(MException('bdtoolkit:syscheck:odesolver','sys.odesolver{%d} contains a handle to a missing function.',indx));
+                    end
                 end
 
                 % check sys.odeoption
@@ -502,6 +512,11 @@ classdef bd
                     throw(MException('bdtoolkit:syscheck:ddefun','sys.ddefun must be a function handle'));
                 end
                 
+                % check sys.ddefun is in the search path
+                if strcmp(func2str(sys.ddefun),'UNKNOWN Function')
+                    throw(MException('bdtoolkit:syscheck:ddefun','sys.ddefun contains a handle to a missing function.'));
+                end
+                
                 % check sys.ddesolver
                 if ~isfield(sys,'ddesolver')
                     sys.ddesolver = {@dde23};
@@ -513,9 +528,14 @@ classdef bd
                     throw(MException('bdtoolkit:syscheck:ddesolver','sys.ddesolver cell array must be one dimensional'));
                 end                    
                 for indx=1:numel(sys.ddesolver)
-                   if ~isa(sys.ddesolver{indx},'function_handle')
-                       throw(MException('bdtoolkit:syscheck:ddesolver','sys.ddesolver{%d} must be a function handle',indx));
-                   end
+                    % check that each sys.ddesolver is a function handle
+                    if ~isa(sys.ddesolver{indx},'function_handle')
+                        throw(MException('bdtoolkit:syscheck:ddesolver','sys.ddesolver{%d} must be a function handle',indx));
+                    end
+                    % check that each sys.ddesolver is in the search path
+                    if strcmp(func2str(sys.ddesolver{indx}),'UNKNOWN Function')
+                        throw(MException('bdtoolkit:syscheck:ddesolver','sys.ddesolver{%d} contains a handle to a missing function.',indx));
+                    end
                 end
 
                 % check sys.ddeoption
@@ -552,14 +572,24 @@ classdef bd
             
             % case of SDE
             if isfield(sys,'sdeF')
-                % check sys.sdeF
+                % check that sys.sdeF is a function handle
                 if ~isa(sys.sdeF,'function_handle')
                     throw(MException('bdtoolkit:syscheck:sdeF','sys.sdeF must be a function handle'));
                 end
                 
-                % check sys.sdeG
+                % check that sys.sdeF is in the search path
+                if strcmp(func2str(sys.sdeF),'UNKNOWN Function')
+                    throw(MException('bdtoolkit:syscheck:sdeF','sys.sdeF contains a handle to a missing function.'));
+                end
+                
+                % check that sys.sdeG is a function handle
                 if ~isa(sys.sdeG,'function_handle')
                     throw(MException('bdtoolkit:syscheck:sdeG','sys.sdeG must be a function handle'));
+                end
+                
+                % check that sys.sdeG is in the search path
+                if strcmp(func2str(sys.sdeG),'UNKNOWN Function')
+                    throw(MException('bdtoolkit:syscheck:sdeG','sys.sdeG contains a handle to a missing function.'));
                 end
                 
                 % check sys.sdesolver
@@ -573,9 +603,14 @@ classdef bd
                     throw(MException('bdtoolkit:syscheck:sdesolver','sys.sdesolver cell array must be one dimensional'));
                 end                    
                 for indx=1:numel(sys.sdesolver)
-                   if ~isa(sys.sdesolver{indx},'function_handle')
-                       throw(MException('bdtoolkit:syscheck:sdesolver','sys.sdesolver{%d} must be a function handle',indx));
-                   end
+                    % check that each sys.sdesolver is a function handle
+                    if ~isa(sys.sdesolver{indx},'function_handle')
+                        throw(MException('bdtoolkit:syscheck:sdesolver','sys.sdesolver{%d} must be a function handle',indx));
+                    end
+                    % check that each sys.sdesolver is in the search path
+                    if strcmp(func2str(sys.sdesolver{indx}),'UNKNOWN Function')
+                        throw(MException('bdtoolkit:syscheck:sdesolver','sys.sdesolver{%d} contains a handle to a missing function.',indx));
+                    end
                 end
 
                 % check sys.sdeoption
@@ -621,8 +656,13 @@ classdef bd
             
             % check sys.auxfun (optional function handle)
             if isfield(sys,'auxfun')
+                % check that sys.auxfun is a function handle
                 if ~isa(sys.auxfun,'function_handle')
                     throw(MException('bdtoolkit:syscheck:auxfun','sys.auxfun must be a function handle'));
+                end
+                % check that sys.auxfun is in the search path
+                if strcmp(func2str(sys.auxfun),'UNKNOWN Function')
+                    throw(MException('bdtoolkit:syscheck:auxfun','sys.auxfun contains a handle to a mising function.'));
                 end
             end
             
@@ -636,8 +676,13 @@ classdef bd
             
             % check sys.self (optional function handle)
             if isfield(sys,'self')
+                % check that sys.self is a function handle
                 if ~isa(sys.self,'function_handle')
                     throw(MException('bdtoolkit:syscheck:self','sys.self must be a function handle'));
+                end
+                % check that sys.self is in the search path
+                if strcmp(func2str(sys.self),'UNKNOWN Function')
+                    throw(MException('bdtoolkit:syscheck:self','sys.self contains a handle to a missing function.'));
                 end
             end
             
