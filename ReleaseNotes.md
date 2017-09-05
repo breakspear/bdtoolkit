@@ -1,6 +1,28 @@
 # Release Notes
 # Brain Dynamics Toolbox
 
+## Version 2017c
+Currently in pre-release. 
+Formal release anticpated late Sep 2017.
+
+The formal release will coincide with the publication of the Handbook of the Brain Dynamics Toolbox. The handbook will be published in paperback and ebook formats by Amazon booksellers. The first chapter of the handbook will be made available for free on the [Brain Dynamics Toolbox](http://bdtoolbox.blogspot.com.au) website.
+
+Major new features in the toolbox include:
+(i) Improved dialog boxes for editing vector and matrix parameters.
+(ii) Saved solutions (sol) can now be loaded into the GUI at startup.
+(iii) Improved error handling for loading system definitions with missing functions.
+(iv) New neural-mass model DFCL2009 (Dafilis, Frascoli Cadusch & Liley, 2009).
+
+Minor changes include:
+(i)  Improved license checks in Hilbert and Correlation panels.
+(iI) Improved scrolling in the System-Save dialog box.
+(iii) Tweaks to the polar plot in the Hilbert panel. 
+(iv) Replaced the BTF2003ODE model with BTF2003.
+(v) Bug fixes to the existing BTF2003SDE and BTF2003DDE models.
+(vi) Renamed the dde23hack solver to dde23a.
+
+Requires Matlab 2014b or newer.
+
 ## Version 2017b
 Released 21 June 2017. 
 
