@@ -1,14 +1,47 @@
 classdef bdGUI < handle
-    %bdGUI - The Brain Dynamics Toolbox Graphic User Interface.
-    %   Opens a dynamical system model (sys) with the Brain Dynamics
-    %   Toolbox graphical user interface.
-    %   
+    %bdGUI - The graphical user interface for the Brain Dynamics Toolbox.
+    %The bdGUI application loads and runs a user-defined dynamical model
+    %in interactive mode. See the 'Getting Started' section of the
+    %Handbook for the Brain Dynamics Toolbox for an introduction.
+    %
+    %A dynamical model is defined by a system structure (sys) according to
+    %the conventions of the toolbox. It can be passed to bdGUI as an input
+    %parameter or loaded from a mat file. If bdGUI is invoked with no
+    %parameters then it prompts the user to load it from a mat file. The
+    %sys struct is assumed to be named 'sys' in that case. The bdGUI
+    %application will automatically compute the solution of the model
+    %unless a previously computed solution structure (sol) is provided.
+    %That solution structure can be provided as either as an input
+    %parameter or it can be included in the mat file as a struct named
+    %'sol'. The easiest way to save a model (and its solution) to a mat
+    %file is to use the System-Save menu of the bdGUI application itself.
+    %
+    %USAGE
+    %   gui = bdGUI();
+    %   gui = bdGUI(sys);
+    %   gui = bdGUI(sys,'sol',sol);
+    %
+    %The returned object (gui) is a class handle that references the
+    %internal states of the bdGUI application. The public properties of
+    %that object allow the model to be manipulated directly from the
+    %workspace. 
+    %
+    %   gui.par    contains the model parameters (read/write)
+    %   gui.var0   contains the initial conditions (read/write)
+    %   gui.var    contains the forward solution (read-only)
+    %   gui.t      contains the time steps of the solution (read-only)
+    %   gui.sys    contains the system structure for the model (read-only).
+    %   gui.sol    contains the output of the solver (read-only).
+    %   gui.panels contains the outputs of the active display panels.
+    %
     %EXAMPLE
+    %   cd bdtoolkit
+    %   addpath models
     %   sys = LinearODE();
     %   gui = bdGUI(sys);
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a,2017b,2017c)
+    %  Stewart Heitmann (2016a-2017c)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -39,18 +72,18 @@ classdef bdGUI < handle
     % POSSIBILITY OF SUCH DAMAGE.
 
     properties (Constant=true)
-        version = '2017c';
+        version = '2017c';      % version number of the toolbox
     end
     
     properties
-        fig             % handle to the application figure
+        fig             % graphics handle for the application figure
     end
         
     properties (Dependent)
         par             % system parameters (read/write)
         var0            % initial conditions (read/write)
         var             % solution varables (read only)
-        t               % solution time steps
+        t               % solution time steps (read only)
         lag             % DDE time lags (read/write)
         sys             % system definition structure (read only)
         sol             % current output of the solver (read only)
@@ -67,101 +100,63 @@ classdef bdGUI < handle
     end
     
     methods
-        % bdGUI(sys) or bdGUI()
         function this = bdGUI(varargin)
+            % Constructor
+            %
+            % gui = bdGUI();
+            % gui = bdGUI(sys);
+            % gui = bdGUI(sys,'sol',sol);
+            
             % add the bdtoolkit/solvers directory to the path
             addpath(fullfile(fileparts(mfilename('fullpath')),'solvers'));
 
             % add the bdtoolkit/panels directory to the path
             addpath(fullfile(fileparts(mfilename('fullpath')),'panels'));
-            
-            % process the input arguments
+          
+            % variable input parameters
             switch nargin
-                case 0
-                    sys = loadsys();
-                    if ~isempty(sys)
-                        sys = checksys(sys);
-                        if ~isempty(sys)
-                            this = bdGUI(sys);
+                case 0      % case of bdGUI()
+                    try
+                        % load the sys (and sol) struct from mat file 
+                        [sys,sol] = loadsys();
+                        if isempty(sys)
+                            % user cancelled the load operation
+                            this = bdGUI.empty();
+                            return
                         end
+                    catch ME
+                        ME.throwAsCaller;
                     end
-                    return
-                    
-                case 1
-                    % User has supplied a sys parameter. 
-                    % Proceed as normal.
-                    
-                otherwise
-                    error('Too many input arguments');
-            end
+                        
+                otherwise   % case of bdGUI(sys,'sol',sol)
+                    try
+                        % define a syntax for the input parser
+                        syntax = inputParser;
+                        syntax.CaseSensitive = false;
+                        syntax.FunctionName = 'bdGUI(sys,''sol'',sol)';
+                        syntax.KeepUnmatched = false;
+                        syntax.PartialMatching = false;
+                        syntax.StructExpand = false;
+                        addRequired(syntax,'sys',@(sys) ~isempty(bd.syscheck(sys)));
+                        addParameter(syntax,'sol',[], @(sol) solcheck(sol));
 
-            % Incoming sys parameter
-            sys = checksys(varargin{1});
-            if isempty(sys)
-                return;   % abort
-            end
+                        % call the input parser
+                        parse(syntax,varargin{:});
+                        sys = syntax.Results.sys;
+                        sol = syntax.Results.sol;
 
-            % construct figure
-            this.fig = figure('Units','pixels', ...
-                'Position',[randi(100,1,1) randi(100,1,1) 900 600], ...
-                'name', 'Brain Dynamics Toolbox', ...
-                'NumberTitle','off', ...
-                'MenuBar','none', ...
-                'Toolbar','figure');
-            
-            % construct the LHS panel (using an approximate position)
-            this.uipanel1 = uipanel(this.fig,'Units','pixels','Position',[5 5 600 600],'BorderType','none');
-            this.tabgroup = uitabgroup(this.uipanel1);
-            
-            % construct the RHS panel (using an approximate position)
-            this.uipanel2 = uipanel(this.fig,'Units','pixels','Position',[5 5 300 600],'BorderType','none');
-
-            % construct the control panel
-            this.control = bdControl(this.uipanel2,sys);
-
-            % register a callback with the uipanel2 to notify all figures spawned by the control panel
-            % to close themselves when the control panel itself is deleted.
-            this.uipanel2.DeleteFcn = @(~,~) notify(this.control,'closefig'); 
-            
-            % resize the panels (putting them in their exact position)
-            this.SizeChanged();
-
-            % Construct the System menu
-            this.SystemMenu(sys);
-
-            % Construct the Panels menu
-            this.PanelsMenu(sys);
-
-            % Construct the Solver menu
-            this.SolverMenu(this.control);
-
-            % load each gui panel listed in sys.panels
-            if isfield(sys,'panels')
-                panelnames = fieldnames(sys.panels);
-                for indx = 1:numel(panelnames)
-                    classname = panelnames{indx};
-                    if exist(classname,'class')
-                        % construct the panel, keep a handle to it.
-                        classhndl = feval(classname,this.tabgroup,this.control);
-                        if ~isfield(this.panelmgr,classname)
-                            this.panelmgr.(classname) = classhndl;
-                        else
-                            this.panelmgr.(classname)(end+1) = classhndl;
-                        end
-                    else
-                        dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
-                        uiwait(dlg);
+                        % check that the sol and sys are compatabile
+                        solsyscheck(sol,sys);
+                        
+                    catch ME
+                        ME.throwAsCaller;
                     end
-                end
-            end
-            
-            % register a callback for resizing the figure
-            set(this.fig,'SizeChangedFcn', @(~,~) this.SizeChanged());
-
-            % force a recompute
-            notify(this.control,'recompute');            
-        end       
-        
+            end     
+                                    
+           % initialize the GUI
+           this.init(sys,sol);                        
+        end
+       
         % Get par property
         function par = get.par(this)
             % return a struct with paramater values stored by name
@@ -411,6 +406,76 @@ classdef bdGUI < handle
     
     methods (Access=private)
         
+        % Initialise the bdGUI class object
+        function init(this,sys,sol)
+            % construct figure
+            this.fig = figure('Units','pixels', ...
+                'Position',[randi(100,1,1) randi(100,1,1) 900 600], ...
+                'name', 'Brain Dynamics Toolbox', ...
+                'NumberTitle','off', ...
+                'MenuBar','none', ...
+                'Toolbar','figure');
+            
+            % construct the LHS panel (using an approximate position)
+            this.uipanel1 = uipanel(this.fig,'Units','pixels','Position',[5 5 600 600],'BorderType','none');
+            this.tabgroup = uitabgroup(this.uipanel1);
+            
+            % construct the RHS panel (using an approximate position)
+            this.uipanel2 = uipanel(this.fig,'Units','pixels','Position',[5 5 300 600],'BorderType','none');
+
+            % construct the control panel
+            this.control = bdControl(this.uipanel2,sys);
+
+            % register a callback with the uipanel2 to notify all figures spawned by the control panel
+            % to close themselves when the control panel itself is deleted.
+            this.uipanel2.DeleteFcn = @(~,~) notify(this.control,'closefig'); 
+            
+            % resize the panels (putting them in their exact position)
+            this.SizeChanged();
+
+            % Construct the System menu
+            this.SystemMenu(sys);
+
+            % Construct the Panels menu
+            this.PanelsMenu(sys);
+
+            % Construct the Solver menu
+            this.SolverMenu(this.control);
+
+            % load each gui panel listed in sys.panels
+            if isfield(sys,'panels')
+                panelnames = fieldnames(sys.panels);
+                for indx = 1:numel(panelnames)
+                    classname = panelnames{indx};
+                    if exist(classname,'class')
+                        % construct the panel, keep a handle to it.
+                        classhndl = feval(classname,this.tabgroup,this.control);
+                        if ~isfield(this.panelmgr,classname)
+                            this.panelmgr.(classname) = classhndl;
+                        else
+                            this.panelmgr.(classname)(end+1) = classhndl;
+                        end
+                    else
+                        dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
+                        uiwait(dlg);
+                    end
+                end
+            end
+            
+            % register a callback for resizing the figure
+            set(this.fig,'SizeChangedFcn', @(~,~) this.SizeChanged());
+
+            if isempty(sol)
+                % force a recompute
+                notify(this.control,'recompute');
+            else
+                % use the given sol and trigger a redraw event
+                this.control.sol = sol;
+                this.control.sox = bd.computesox(sys,sol);
+                notify(this.control,'redraw');
+            end
+        end       
+        
         % Construct the System menu
         function menuobj = SystemMenu(this,sys)
             % construct System menu
@@ -428,7 +493,7 @@ classdef bdGUI < handle
             end
             uimenu('Parent',menuobj, ...
                    'Label','Load', ...
-                   'Callback', @(~,~) SystemLoad() );
+                   'Callback', @(~,~) bdGUI() );
             uimenu('Parent',menuobj, ...
                    'Label','Save', ...
                    'Callback', @(~,~) this.SystemSaveDialog() );
@@ -447,17 +512,6 @@ classdef bdGUI < handle
                 end
             end
 
-            % Callback for System-Load menu
-            function gui = SystemLoad()
-                sys = loadsys();
-                if ~isempty(sys)
-                    sys = checksys(sys);
-                    if ~isempty(sys)
-                        gui = bdGUI(sys);
-                    end
-                end
-            end
-            
         end
         
         % Construct the System-Save Dialog
@@ -837,14 +891,15 @@ classdef bdGUI < handle
                 end
             end
             
+            % Close the dialog box
+            delete(dlg);
+
             % Save data to mat file
             [fname,pname] = uiputfile('*.mat','Save system file');
             if fname~=0
                 save(fullfile(pname,fname),'-struct','data');
             end
             
-            % Close the dialog box
-            delete(dlg);
         end
         
         % Construct the Panel menu
@@ -1007,64 +1062,127 @@ classdef bdGUI < handle
  
 end
 
-    % prompt the user to load a sys struct from a matlab file
-    function sys = loadsys()
-        % init the return value
-        sys = [];
-        
-        % prompt the user to select a mat file
-        [fname, pname] = uigetfile({'*.mat','MATLAB data file'},'Load system file');
-        if fname==0
-            return      % user cancelled the operation
-        end
-        
-        % load the mat file that the user selected
-        fdata = load(fullfile(pname,fname),'sys');
-        if ~isfield(fdata,'sys')
-            msg = {'The load operation has failed because the selected mat file does not contain a ''sys'' structure.'
-                   ''
-                   'Explanation: Every model is defined by a special data structure that is named ''sys'' by convention. The System-Load menu has failed to find a data structure of that name in the selected mat file.'
-                   ''
-                   'To succeed, select a mat file that you know contains a ''sys'' structure. Example models are provided in the ''bdtoolkit'' installation directory. See Chapter 1 of the Handbook for the Brain Dynamics Toolbox for a list.'
-                   ''
-                   };
-            uiwait( warndlg(msg,'Load failed') );
-        else
-            sys = fdata.sys;
-        end
+
+% Performs a basic check of the format of the sol structure.
+% Throws an exception if any problem is detected.
+function solcheck(sol)
+    if ~isstruct(sol)
+        throw(MException('bdGUI:badsol','The sol variable must be a struct'));
     end
+    if ~isfield(sol,'solver')
+        throw(MException('bdGUI:badsol','The sol.solver field is missing'));
+    end
+    if ~isfield(sol,'x')
+        throw(MException('bdGUI:badsol','The sol.x field is missing'));
+    end
+    if ~isfield(sol,'y')
+        throw(MException('bdGUI:badsol','The sol.y field is missing'));
+    end
+    if ~isfield(sol,'stats')
+        throw(MException('bdGUI:badsol','The sol.stats field is missing'));
+    end
+    if ~isstruct(sol.stats)
+        throw(MException('bdGUI:badsol','The sol.stats field must be a struct'));
+    end
+    if ~isfield(sol.stats,'nsteps')
+        throw(MException('bdGUI:badsol','The sol.stats.nsteps field is missing'));
+    end
+    if ~isfield(sol.stats,'nfailed')
+        throw(MException('bdGUI:badsol','The sol.stats.nfailed field is missing'));
+    end
+    if ~isfield(sol.stats,'nfevals')
+        throw(MException('bdGUI:badsol','The sol.stats.nfevals field is missing'));
+    end    
+end
+
+% Cross-checks the format of the sol struct against the sys struct.
+function solsyscheck(sol,sys)
+    if isempty(sol)
+        return
+    end
+    if numel(bdGetValues(sys.vardef)) ~= size(sol.y,1)
+        throw(MException('bdGUI:badsol','The sol and sys structs are incompatible'));
+    end
+end
+
+% Prompt the user to load a sys struct (and optionally a sol struct) from a matlab file. 
+function [sys,sol] = loadsys()
+    % init the return values
+    sys = [];
+    sol = [];
+
+    % prompt the user to select a mat file
+    [fname, pname] = uigetfile({'*.mat','MATLAB data file'},'Load system file');
+    if fname==0
+        return      % user cancelled the operation
+    end
+
+    % load the mat file that the user selected
+    warning('off','MATLAB:load:variableNotFound');
+    fdata = load(fullfile(pname,fname),'sys','sol');
+    warning('on','MATLAB:load:variableNotFound');
     
+    % extract the sys structure 
+    if isfield(fdata,'sys')
+        sys = fdata.sys;
+    else
+        msg = {'The load operation has failed because the selected mat file does not contain a ''sys'' structure.'
+               ''
+               'Explanation: Every model is defined by a special data structure that is named ''sys'' by convention. The System-Load menu has failed to find a data structure of that name in the selected mat file.'
+               ''
+               'To succeed, select a mat file that you know contains a ''sys'' structure. Example models are provided in the ''bdtoolkit'' installation directory. See Chapter 1 of the Handbook for the Brain Dynamics Toolbox for a list.'
+               ''
+               };
+        uiwait( warndlg(msg,'Load failed') );
+        throw(MException('bdGUI:badsys','Missing sys structure'));
+    end
 
     % check the sys struct and display a dialog box if errors are found
-    function sys = checksys(sys)
+    try
+        % check the validity of the sys structure
+        sys = bd.syscheck(sys);                        
+    catch ME
+        switch ME.identifier
+            case {'bdtoolkit:syscheck:odefun'
+                  'bdtoolkit:syscheck:ddefun'
+                  'bdtoolkit:syscheck:sdeF'
+                  'bdtoolkit:syscheck:sdeG'
+                  'bdtoolkit:syscheck:auxfun'
+                  'bdtoolkit:syscheck:self'}
+                msg = {ME.message
+                       ''
+                       'Explanation: The model could not be loaded because its ''sys'' structure contains a handle to a function that is not in the matlab search path.'
+                       ''
+                       'To succeed, ensure that all functions belonging to the model are accessible to matlab via the search path. See ''Getting Started'' in the Handbook for the Brain Dynamics Toolbox.'
+                       ''
+                       };
+                uiwait( warndlg(msg,'Missing Function') );
+            otherwise
+                msg = {ME.message,
+                       '',
+                       'Explanation: The model could not be loaded because its ''sys'' structure is invalid. Use the ''bdSysCheck'' command-line tool to diagnose the exact problem. Refer to the Handbook for the Brain Dynamics Toolbox for a comprehensive description of the format of the ''sys'' structure.'
+                       ''
+                       };
+                uiwait( warndlg(msg,'Invalid sys structure') );
+        end
+        throw(MException('bdGUI:badsys','Invalid sys structure'));
+    end
+        
+    % extract the sol structure (if it exists) 
+    if isfield(fdata,'sol')
+        sol = fdata.sol;
         try
-            % check the validity of the sys structure
-            sys = bd.syscheck(sys);                        
+            % check that the sol struct matches the sys struct.
+            solsyscheck(sol,sys);
         catch ME
-            switch ME.identifier
-                case {'bdtoolkit:syscheck:odefun'
-                      'bdtoolkit:syscheck:ddefun'
-                      'bdtoolkit:syscheck:sdeF'
-                      'bdtoolkit:syscheck:sdeG'
-                      'bdtoolkit:syscheck:auxfun'
-                      'bdtoolkit:syscheck:self'}
-                    msg = {ME.message
-                           ''
-                           'Explanation: The model could not be loaded because its ''sys'' structure contains a handle to a function that is not in the matlab search path.'
-                           ''
-                           'To succeed, ensure that all functions belonging to the model are accessible to matlab via the search path. See ''Getting Started'' in the Handbook for the Brain Dynamics Toolbox.'
-                           ''
-                           };
-                    uiwait( warndlg(msg,'Missing Function') );
-                otherwise
-                    msg = {ME.message,
-                           '',
-                           'Explanation: The model could not be loaded because its ''sys'' structure is invalid. Use the ''bdSysCheck'' command-line tool to diagnose the exact problem. Refer to the Handbook for the Brain Dynamics Toolbox for a comprehensive description of the format of the ''sys'' structure.'
-                           ''
-                           };
-                    uiwait( warndlg(msg,'Invalid sys structure') );
-            end
-            sys = [];
+            msg = {ME.message
+                   ''
+                   'Explanation: The solution (sol) found in the mat file is not compatible with this model (sys). The solution data is ignored.'
+                   ''
+                   };
+            uiwait( warndlg(msg,'Solution not loaded') );
+            sol = [];
         end
     end
+end
 

@@ -344,7 +344,20 @@ classdef bd
                     throw(MException('bdtoolkit:solve:solvertype','Invalid solvertype ''%s''',solvertype));
                 end        
         end
-   
+
+        % Compute the auxillary solution (sox) from the given sol
+        function sox = computesox(sys,sol)
+            if isfield(sys,'auxfun')
+                par = {sys.pardef.value};
+                sox.solver = 'auxfun';
+                sox.x = sol.x;
+                sox.y = sys.auxfun(sol,par{:});
+            else
+                sox = [];
+            end
+        end
+
+        
         % Checks the contents of sys and throws an exception if a problem is found.
         % If no problem is found then returns a 'safe' copy of sys in which missing
         % fields are filled with default values.
@@ -354,71 +367,71 @@ classdef bd
             
             % check that sys is a struct
             if ~isstruct(sys)
-               throw(MException('bdtoolkit:syscheck:badsys','sys must be a struct'));
+               throw(MException('bdtoolkit:syscheck:badsys','The sys variable must be a struct'));
             end
     
             % check for obsolete fields (from version 2016a)
             if isfield(sys,'pardef') && iscell(sys.pardef)
-                throw(MException('bdtoolkit:syscheck:obsolete','sys.pardef changed from a cell array in 2016a to an array of structs in 2017a'));
+                throw(MException('bdtoolkit:syscheck:obsolete','The sys.pardef field changed from a cell array in 2016a to an array of structs in 2017a'));
             end
             if isfield(sys,'sdefun')
-                throw(MException('bdtoolkit:syscheck:obsolete','sys.odefun and sys.sdefun are obsolete for SDEs. They were replaced by sys.sdeF and sys.sdeG in 2017a'));
+                throw(MException('bdtoolkit:syscheck:obsolete','The sys.odefun and sys.sdefun fields are obsolete for SDEs. They were replaced by sys.sdeF and sys.sdeG in 2017a'));
             end
             if isfield(sys,'gui')
-                throw(MException('bdtoolkit:syscheck:obsolete','sys.gui is obsolete. It was renamed sys.panels in 2017a'));        
+                throw(MException('bdtoolkit:syscheck:obsolete','The sys.gui field is obsolete. It was renamed sys.panels in 2017a'));        
             end
             if isfield(sys,'panels')
                 if isfield(sys.panels,'bdCorrelationPanel')
-                    throw(MException('bdtoolkit:syscheck:obsolete', 'bdCorrelationPanel was renamed bdCorrPanel in 2017a'));        
+                    throw(MException('bdtoolkit:syscheck:obsolete', 'The bdCorrelationPanel was renamed bdCorrPanel in 2017a'));        
                 end
                 if isfield(sys.panels,'bdSpaceTimePortrait')
-                    throw(MException('bdtoolkit:syscheck:obsolete', 'bdSpaceTimePortrait was renamed bdSpaceTime in 2017a'));        
+                    throw(MException('bdtoolkit:syscheck:obsolete', 'The bdSpaceTimePortrait was renamed bdSpaceTime in 2017a'));        
                 end
             end
 
             % check sys.pardef
             if ~isfield(sys,'pardef')
-               throw(MException('bdtoolkit:syscheck:pardef','sys.pardef is undefined'));
+               throw(MException('bdtoolkit:syscheck:pardef','The sys.pardef field is undefined'));
             end
             if ~isstruct(sys.pardef)
-               throw(MException('bdtoolkit:syscheck:pardef','sys.pardef must be a struct'));
+               throw(MException('bdtoolkit:syscheck:pardef','The sys.pardef field must be a struct'));
             end
             if ~isfield(sys.pardef,'name')
-               throw(MException('bdtoolkit:syscheck:pardef','sys.pardef.name is undefined'));
+               throw(MException('bdtoolkit:syscheck:pardef','The sys.pardef.name field is undefined'));
             end
             if ~isfield(sys.pardef,'value')
-               throw(MException('bdtoolkit:syscheck:pardef','sys.pardef.value is undefined'));
+               throw(MException('bdtoolkit:syscheck:pardef','The sys.pardef.value field is undefined'));
             end
             % check each array entry
             for indx=1:numel(sys.pardef)
                 if ~ischar(sys.pardef(indx).name)
-                   throw(MException('bdtoolkit:syscheck:pardef','sys.pardef(%d).name must be a string',indx));
+                   throw(MException('bdtoolkit:syscheck:pardef','The sys.pardef(%d).name field must be a string',indx));
                 end
                 if isempty(sys.pardef(indx).value) || ~isnumeric(sys.pardef(indx).value)
-                   throw(MException('bdtoolkit:syscheck:pardef','sys.pardef(%d).value must be numeric',indx));
+                   throw(MException('bdtoolkit:syscheck:pardef','The sys.pardef(%d).value field must be numeric',indx));
                 end
             end
             
             % check sys.vardef
             if ~isfield(sys,'vardef')
-               throw(MException('bdtoolkit:syscheck:vardef','sys.vardef is undefined'));
+               throw(MException('bdtoolkit:syscheck:vardef','The sys.vardef field is undefined'));
             end
             if ~isstruct(sys.vardef)
-               throw(MException('bdtoolkit:syscheck:vardef','sys.vardef must be a struct'));
+               throw(MException('bdtoolkit:syscheck:vardef','The sys.vardef field must be a struct'));
             end
             if ~isfield(sys.vardef,'name')
-               throw(MException('bdtoolkit:syscheck:vardef','sys.vardef.name is undefined'));
+               throw(MException('bdtoolkit:syscheck:vardef','The sys.vardef.name field is undefined'));
             end
             if ~isfield(sys.vardef,'value')
-               throw(MException('bdtoolkit:syscheck:vardef','sys.vardef.value is undefined'));
+               throw(MException('bdtoolkit:syscheck:vardef','The sys.vardef.value field is undefined'));
             end
             % check each array entry
             for indx=1:numel(sys.vardef)
                 if ~ischar(sys.vardef(indx).name)
-                   throw(MException('bdtoolkit:syscheck:vardef','sys.vardef(%d).name must be a string',indx));
+                   throw(MException('bdtoolkit:syscheck:vardef','The sys.vardef(%d).name field must be a string',indx));
                 end
                 if isempty(sys.vardef(indx).value) || ~isnumeric(sys.vardef(indx).value) 
-                   throw(MException('bdtoolkit:syscheck:vardef','sys.vardef(%d).value must be numeric',indx));
+                   throw(MException('bdtoolkit:syscheck:vardef','The sys.vardef(%d).value field must be numeric',indx));
                 end
             end
             
@@ -427,10 +440,10 @@ classdef bd
                 sys.tspan = [0 1];      
             end
             if ~isnumeric(sys.tspan)
-                throw(MException('bdtoolkit:syscheck:tspan','sys.tspan must be numeric'));
+                throw(MException('bdtoolkit:syscheck:tspan','The sys.tspan field must be numeric'));
             end
             if size(sys.tspan,1)~=1 || size(sys.tspan,2)~=2
-                throw(MException('bdtoolkit:syscheck:tspan','sys.tspan must be 1x2 vector'));
+                throw(MException('bdtoolkit:syscheck:tspan','The sys.tspan field must be size 1x2'));
             end
            
             % Must have sys.odefun or sys.ddefun or (sys.sdeF and sdeG)
@@ -467,12 +480,12 @@ classdef bd
             if isfield(sys,'odefun')
                 % check sys.odefun is a function handle
                 if ~isa(sys.odefun,'function_handle')
-                    throw(MException('bdtoolkit:syscheck:odefun','sys.odefun must be a function handle'));
+                    throw(MException('bdtoolkit:syscheck:odefun','The sys.odefun field must be a function handle'));
                 end
                 
                 % check sys.odefun is in the search path
                 if strcmp(func2str(sys.odefun),'UNKNOWN Function')
-                    throw(MException('bdtoolkit:syscheck:odefun','sys.odefun contains a handle to a missing function.'));
+                    throw(MException('bdtoolkit:syscheck:odefun','The sys.odefun field contains a handle to a missing function.'));
                 end
                 
                 % check sys.odesolver
@@ -480,19 +493,19 @@ classdef bd
                     sys.odesolver = {@ode45,@ode23,@ode113,@ode15s,@ode23s,@ode23t,@ode23tb,@odeEul};
                 end
                 if ~iscell(sys.odesolver)
-                    throw(MException('bdtoolkit:syscheck:odesolver','sys.odesolver must be a cell array'));
+                    throw(MException('bdtoolkit:syscheck:odesolver','The sys.odesolver field must be a cell array'));
                 end
                 if size(sys.odesolver,1)~=1 && size(sys.odesolver,2)~=1
-                    throw(MException('bdtoolkit:syscheck:odesolver','sys.odesolver cell array must be one dimensional'));
+                    throw(MException('bdtoolkit:syscheck:odesolver','The sys.odesolver cell array must be one dimensional'));
                 end                    
                 for indx=1:numel(sys.odesolver)
                     % check that each sys.odesolver is a function handle
                     if ~isa(sys.odesolver{indx},'function_handle')
-                        throw(MException('bdtoolkit:syscheck:odesolver','sys.odesolver{%d} must be a function handle',indx));
+                        throw(MException('bdtoolkit:syscheck:odesolver','The sys.odesolver{%d} cell must be a function handle',indx));
                     end
                     % check that each sys.odesolver is in the search path
                     if strcmp(func2str(sys.odesolver{indx}),'UNKNOWN Function')
-                        throw(MException('bdtoolkit:syscheck:odesolver','sys.odesolver{%d} contains a handle to a missing function.',indx));
+                        throw(MException('bdtoolkit:syscheck:odesolver','The sys.odesolver{%d} cell contains a handle to a missing function.',indx));
                     end
                 end
 
@@ -501,7 +514,7 @@ classdef bd
                     sys.odeoption = odeset();
                 end
                 if ~isstruct(sys.odeoption)
-                    throw(MException('bdtoolkit:syscheck:odeoption','sys.odeoption must be a struct (see odeset)'));
+                    throw(MException('bdtoolkit:syscheck:odeoption','The sys.odeoption field must be a struct (see odeset)'));
                 end
             end
             
@@ -509,12 +522,12 @@ classdef bd
             if isfield(sys,'ddefun')
                 % check sys.ddefun
                 if ~isa(sys.ddefun,'function_handle')
-                    throw(MException('bdtoolkit:syscheck:ddefun','sys.ddefun must be a function handle'));
+                    throw(MException('bdtoolkit:syscheck:ddefun','The sys.ddefun field must be a function handle'));
                 end
                 
                 % check sys.ddefun is in the search path
                 if strcmp(func2str(sys.ddefun),'UNKNOWN Function')
-                    throw(MException('bdtoolkit:syscheck:ddefun','sys.ddefun contains a handle to a missing function.'));
+                    throw(MException('bdtoolkit:syscheck:ddefun','The sys.ddefun field contains a handle to a missing function.'));
                 end
                 
                 % check sys.ddesolver
@@ -522,19 +535,19 @@ classdef bd
                     sys.ddesolver = {@dde23};
                 end
                 if ~iscell(sys.ddesolver)
-                    throw(MException('bdtoolkit:syscheck:ddesolver','sys.ddesolver must be a cell array'));
+                    throw(MException('bdtoolkit:syscheck:ddesolver','The sys.ddesolver field must be a cell array'));
                 end
                 if size(sys.ddesolver,1)~=1 && size(sys.ddesolver,2)~=1
-                    throw(MException('bdtoolkit:syscheck:ddesolver','sys.ddesolver cell array must be one dimensional'));
+                    throw(MException('bdtoolkit:syscheck:ddesolver','The sys.ddesolver cell array must be one dimensional'));
                 end                    
                 for indx=1:numel(sys.ddesolver)
                     % check that each sys.ddesolver is a function handle
                     if ~isa(sys.ddesolver{indx},'function_handle')
-                        throw(MException('bdtoolkit:syscheck:ddesolver','sys.ddesolver{%d} must be a function handle',indx));
+                        throw(MException('bdtoolkit:syscheck:ddesolver','The sys.ddesolver{%d} cell must be a function handle',indx));
                     end
                     % check that each sys.ddesolver is in the search path
                     if strcmp(func2str(sys.ddesolver{indx}),'UNKNOWN Function')
-                        throw(MException('bdtoolkit:syscheck:ddesolver','sys.ddesolver{%d} contains a handle to a missing function.',indx));
+                        throw(MException('bdtoolkit:syscheck:ddesolver','The sys.ddesolver{%d} cell contains a handle to a missing function.',indx));
                     end
                 end
 
@@ -543,29 +556,29 @@ classdef bd
                     sys.ddeoption = ddeset();
                 end
                 if ~isstruct(sys.ddeoption)
-                    throw(MException('bdtoolkit:syscheck:ddeoption','sys.ddeoption must be a struct (see ddeset)'));
+                    throw(MException('bdtoolkit:syscheck:ddeoption','The sys.ddeoption field must be a struct (see ddeset)'));
                 end
                 
                 % check sys.lagdef
                 if ~isfield(sys,'lagdef')
-                    throw(MException('bdtoolkit:syscheck:lagdef','sys.lagdef is undefined'));
+                    throw(MException('bdtoolkit:syscheck:lagdef','The sys.lagdef field is undefined'));
                 end
                 if ~isstruct(sys.lagdef)
-                    throw(MException('bdtoolkit:syscheck:lagdef','sys.lagdef must be a struct'));
+                    throw(MException('bdtoolkit:syscheck:lagdef','The sys.lagdef field must be a struct'));
                 end
                 if ~isfield(sys.lagdef,'name')
-                    throw(MException('bdtoolkit:syscheck:lagdef','sys.lagdef.name is undefined'));
+                    throw(MException('bdtoolkit:syscheck:lagdef','The sys.lagdef.name field is undefined'));
                 end
                 if ~isfield(sys.lagdef,'value')
-                    throw(MException('bdtoolkit:syscheck:lagdef','sys.lagdef.value is undefined'));
+                    throw(MException('bdtoolkit:syscheck:lagdef','The sys.lagdef.value field is undefined'));
                 end
                 % check each array entry
                 for indx=1:numel(sys.lagdef)
                     if ~ischar(sys.lagdef(indx).name)
-                        throw(MException('bdtoolkit:syscheck:lagdef','sys.lagdef(%d).name must be a string',indx));
+                        throw(MException('bdtoolkit:syscheck:lagdef','The sys.lagdef(%d).name field must be a string',indx));
                     end
                     if isempty(sys.lagdef(indx).value) || ~isnumeric(sys.lagdef(indx).value)
-                        throw(MException('bdtoolkit:syscheck:lagdef','sys.lagdef(%d).value must be numeric',indx));
+                        throw(MException('bdtoolkit:syscheck:lagdef','The sys.lagdef(%d).value field must be numeric',indx));
                     end
                 end
             end
@@ -574,82 +587,82 @@ classdef bd
             if isfield(sys,'sdeF')
                 % check that sys.sdeF is a function handle
                 if ~isa(sys.sdeF,'function_handle')
-                    throw(MException('bdtoolkit:syscheck:sdeF','sys.sdeF must be a function handle'));
+                    throw(MException('bdtoolkit:syscheck:sdeF','The sys.sdeF field must be a function handle'));
                 end
                 
                 % check that sys.sdeF is in the search path
                 if strcmp(func2str(sys.sdeF),'UNKNOWN Function')
-                    throw(MException('bdtoolkit:syscheck:sdeF','sys.sdeF contains a handle to a missing function.'));
+                    throw(MException('bdtoolkit:syscheck:sdeF','The sys.sdeF field contains a handle to a missing function.'));
                 end
                 
                 % check that sys.sdeG is a function handle
                 if ~isa(sys.sdeG,'function_handle')
-                    throw(MException('bdtoolkit:syscheck:sdeG','sys.sdeG must be a function handle'));
+                    throw(MException('bdtoolkit:syscheck:sdeG','The sys.sdeG field must be a function handle'));
                 end
                 
                 % check that sys.sdeG is in the search path
                 if strcmp(func2str(sys.sdeG),'UNKNOWN Function')
-                    throw(MException('bdtoolkit:syscheck:sdeG','sys.sdeG contains a handle to a missing function.'));
+                    throw(MException('bdtoolkit:syscheck:sdeG','The sys.sdeG field contains a handle to a missing function.'));
                 end
                 
                 % check sys.sdesolver
                 if ~isfield(sys,'sdesolver')
-                    throw(MException('bdtoolkit:syscheck:sdesolver','sys.sdesolver must be defined for SDEs'));
+                    throw(MException('bdtoolkit:syscheck:sdesolver','The sys.sdesolver field must be defined for SDEs'));
                 end
                 if ~iscell(sys.sdesolver)
-                    throw(MException('bdtoolkit:syscheck:sdesolver','sys.sdesolver must be a cell array'));
+                    throw(MException('bdtoolkit:syscheck:sdesolver','The sys.sdesolver field must be a cell array'));
                 end
                 if size(sys.sdesolver,1)~=1 && size(sys.sdesolver,2)~=1
-                    throw(MException('bdtoolkit:syscheck:sdesolver','sys.sdesolver cell array must be one dimensional'));
+                    throw(MException('bdtoolkit:syscheck:sdesolver','The sys.sdesolver cell array must be one dimensional'));
                 end                    
                 for indx=1:numel(sys.sdesolver)
                     % check that each sys.sdesolver is a function handle
                     if ~isa(sys.sdesolver{indx},'function_handle')
-                        throw(MException('bdtoolkit:syscheck:sdesolver','sys.sdesolver{%d} must be a function handle',indx));
+                        throw(MException('bdtoolkit:syscheck:sdesolver','The sys.sdesolver{%d} cell must be a function handle',indx));
                     end
                     % check that each sys.sdesolver is in the search path
                     if strcmp(func2str(sys.sdesolver{indx}),'UNKNOWN Function')
-                        throw(MException('bdtoolkit:syscheck:sdesolver','sys.sdesolver{%d} contains a handle to a missing function.',indx));
+                        throw(MException('bdtoolkit:syscheck:sdesolver','The sys.sdesolver{%d} cell contains a handle to a missing function.',indx));
                     end
                 end
 
                 % check sys.sdeoption
                 if ~isfield(sys,'sdeoption')
-                    throw(MException('bdtoolkit:syscheck:sdeoption','sys.sdeoption is undefined'));
+                    throw(MException('bdtoolkit:syscheck:sdeoption','The sys.sdeoption field is undefined'));
                 end
                 if ~isstruct(sys.sdeoption)
-                    throw(MException('bdtoolkit:syscheck:sdeoption','sys.odeoption must be a struct'));
+                    throw(MException('bdtoolkit:syscheck:sdeoption','The sys.odeoption field must be a struct'));
                 end
                 
                 % check sys.sdeoption.InitialStep
                 if ~isfield(sys.sdeoption,'InitialStep')
-                    throw(MException('bdtoolkit:syscheck:sdeoption','sys.sdeoption.InitialStep is undefined'));
+                    throw(MException('bdtoolkit:syscheck:sdeoption','The sys.sdeoption.InitialStep field is undefined'));
                 end
                 if ~isnumeric(sys.sdeoption.InitialStep) && ~isempty(sys.sdeoption.InitialStep)
-                    throw(MException('bdtoolkit:syscheck:sdeoption','sys.odeoption.InitialStep must be numeric'));
+                    throw(MException('bdtoolkit:syscheck:sdeoption','The sys.odeoption.InitialStep field must be numeric'));
                 end
                 
                 % check sys.sdeoption.NoiseSources
                 if ~isfield(sys.sdeoption,'NoiseSources')
-                    throw(MException('bdtoolkit:syscheck:sdeoption','sys.sdeoption.NoiseSources is undefined'));
+                    throw(MException('bdtoolkit:syscheck:sdeoption','The sys.sdeoption.NoiseSources field is undefined'));
                 end
                 if ~isnumeric(sys.sdeoption.NoiseSources)
-                    throw(MException('bdtoolkit:syscheck:sdeoption','sys.odeoption.NoiseSources must be numeric'));
+                    throw(MException('bdtoolkit:syscheck:sdeoption','The sys.odeoption.NoiseSources field must be numeric'));
                 end
                 if numel(sys.sdeoption.NoiseSources)~=1
-                    throw(MException('bdtoolkit:syscheck:sdeoption','sys.odeoption.NoiseSources must be a scalar value'));
+                    throw(MException('bdtoolkit:syscheck:sdeoption','The sys.odeoption.NoiseSources field must be a scalar value'));
                 end
                 if mod(sys.sdeoption.NoiseSources,1)~=0
-                    throw(MException('bdtoolkit:syscheck:sdeoption','sys.sdeoption.NoiseSources must be an integer value'));
+                    throw(MException('bdtoolkit:syscheck:sdeoption','The sys.sdeoption.NoiseSources field must be an integer value'));
                 end
                 
                 % check sys.sdeoption.randn (an optional parameter)
                 if isfield(sys.sdeoption,'randn')
                     if ~isnumeric(sys.sdeoption.randn)
-                        throw(MException('bdtoolkit:syscheck:sdeoption','sys.odeoption.randn must be numeric'));
+                        throw(MException('bdtoolkit:syscheck:sdeoption','The sys.odeoption.randn field must be numeric'));
                     end
                     if size(sys.sdeoption.randn,1) ~= sys.sdeoption.NoiseSources
-                        throw(MException('bdtoolkit:syscheck:sdeoption','Number of rows in sys.sdeoption.randn must equal sys.sdeoption.NoiseSources')); 
+                        throw(MException('bdtoolkit:syscheck:sdeoption','The number of rows in sys.sdeoption.randn must equal sys.sdeoption.NoiseSources')); 
                     end
                 end
             end            
@@ -658,31 +671,31 @@ classdef bd
             if isfield(sys,'auxfun')
                 % check that sys.auxfun is a function handle
                 if ~isa(sys.auxfun,'function_handle')
-                    throw(MException('bdtoolkit:syscheck:auxfun','sys.auxfun must be a function handle'));
+                    throw(MException('bdtoolkit:syscheck:auxfun','The sys.auxfun field must be a function handle'));
                 end
                 % check that sys.auxfun is in the search path
                 if strcmp(func2str(sys.auxfun),'UNKNOWN Function')
-                    throw(MException('bdtoolkit:syscheck:auxfun','sys.auxfun contains a handle to a mising function.'));
+                    throw(MException('bdtoolkit:syscheck:auxfun','The sys.auxfun field contains a handle to a mising function.'));
                 end
             end
             
             % check sys.panels 
             if ~isfield(sys,'panels')
-                throw(MException('bdtoolkit:syscheck:panels','sys.panels is undefined'));
+                throw(MException('bdtoolkit:syscheck:panels','The sys.panels field is undefined'));
             end
             if ~isstruct(sys.panels)
-                throw(MException('bdtoolkit:syscheck:panels','sys.panels must be a struct'));
+                throw(MException('bdtoolkit:syscheck:panels','The sys.panels field must be a struct'));
             end
             
             % check sys.self (optional function handle)
             if isfield(sys,'self')
                 % check that sys.self is a function handle
                 if ~isa(sys.self,'function_handle')
-                    throw(MException('bdtoolkit:syscheck:self','sys.self must be a function handle'));
+                    throw(MException('bdtoolkit:syscheck:self','The sys.self field must be a function handle'));
                 end
                 % check that sys.self is in the search path
                 if strcmp(func2str(sys.self),'UNKNOWN Function')
-                    throw(MException('bdtoolkit:syscheck:self','sys.self contains a handle to a missing function.'));
+                    throw(MException('bdtoolkit:syscheck:self','The sys.self field contains a handle to a missing function.'));
                 end
             end
             
