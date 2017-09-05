@@ -482,6 +482,9 @@ classdef bdGUI < handle
             menuobj = uimenu('Parent',this.fig, 'Label','System');
 
             % construct menu items
+            uimenu('Parent',menuobj, ...
+                   'Label','About', ...
+                   'Callback',@(~,~) SystemAbout() );
             if isfield(sys,'self')
                 uimenu('Parent',menuobj, ...
                        'Label','Reconfigure', ...
@@ -502,6 +505,14 @@ classdef bdGUI < handle
                    'Separator','on', ...
                    'Callback', @(~,~) delete(this.fig));
 
+            % Callback for System-About menu
+            function SystemAbout()
+                msg = {['Brain Dynamics Toolbox Version ' this.version]
+                       'http://bdtoolbox.blogspot.com.au'
+                       };
+                uiwait(msgbox(msg,'About','FontSize',24,'CreateMode','modal'));
+            end
+            
             % Callback for System-New menu
             function SystemNew()
                 if isfield(this.control.sys,'self')
