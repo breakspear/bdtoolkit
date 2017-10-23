@@ -86,8 +86,8 @@ sys = LinearODE();
 bdSysCheck(sys);
 disp '===';
 
-disp 'TESTING MultiplicativeNoise';
-sys = MultiplicativeNoise();
+disp 'TESTING KloedenPlaten446';
+sys = KloedenPlaten();
 bdSysCheck(sys);
 disp '===';
 

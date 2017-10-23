@@ -1,14 +1,15 @@
-% MultiplicativeNoise Ito SDE with multiplicative noise processes
-%   Ito stochastic differential system with multiplicative noise.
+% KloedenPlaten446 SDE equation (4.46) from Kloeden and Platen (1999)
+%   An explicitly solvable Ito SDE from Kloeden and Platen (1999)  
 %     dy = -(a + y*b^2)*(1-y^2)*dt + b(1-y^2)*dW
 %
 % Example:
-%   sys = MultiplicativeNoise();    % construct the system struct
+%   sys = KloedenPlaten446();       % construct the system struct
 %   gui = bdGUI(sys);               % open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2016a,2017a)
+%   Stewart Heitmann (2016a,2017a,2017c)
 %   Matthew Aburn (2016a)
+%   This model was called "MultiplicativeNoise" prior to version 2017c.
  
 % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -37,10 +38,10 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = MultiplicativeNoise()
+function sys = KloedenPlaten446()
     % Handles to our SDE functions
-    sys.sdeF = @sdeF;               % deterministic coefficients
-    sys.sdeG = @sdeG;               % stochastic coefficients
+    sys.sdeF = @sdeF;               % deterministic part
+    sys.sdeG = @sdeG;               % stochastic part
     
     % Our SDE parameters
     sys.pardef = [ struct('name','a', 'value',1.0);
@@ -59,14 +60,25 @@ function sys = MultiplicativeNoise()
 
     % Include the Latex (Equations) panel in the GUI
     sys.panels.bdLatexPanel.title = 'Equations'; 
-    sys.panels.bdLatexPanel.latex = {'\textbf{Multiplicative Noise}';
+    sys.panels.bdLatexPanel.latex = {'\textbf{KloedenPlaten446}';
         '';
-        'An Ito stochastic differential equation';
+        'Ito Stochastic Differential Equation (4.46) from Kloeden and Platen (1999)';
         '\qquad $dy = -(a + y\,b^2)(1-y^2)\,dt + b(1-y^2)\,dW_t$';
         'where';
         '\qquad $y(t)$ is the dynamic variable,';
-        '\qquad $a$ and $b$ are scalar constants.'};
-    
+        '\qquad $a$ and $b$ are scalar constants.';
+        '';
+        'It has the explicit solution';
+        '\qquad $y = A/B$';
+        'where';
+        '\qquad $A = (1+y_0) \exp(-2at + 2b W_t) + y_0 - 1$';
+        '\qquad $B = (1+y_0) \exp(-2at + 2b W_t) + 1 - y_0$';
+        '';
+        '';
+        '\textbf{Reference}';
+        'Kloeden and Platen (1999) Numerical Solution of Stochastic Diffrential Equations'; 
+        ''};
+        
     % Include the Time Portrait panel in the GUI
     sys.panels.bdTimePortrait = [];
 
@@ -77,12 +89,12 @@ function sys = MultiplicativeNoise()
     sys.self = str2func(mfilename);
 end
 
-% The deterministic coefficient function
+% The deterministic part of the equation
 function f = sdeF(~,y,a,b)  
     f = -(a + y.*b^2).*(1 - y^2);
 end
 
-% The noise coefficient function.
+% The stochastic part of the equation
 function G = sdeG(~,y,~,b)  
     G = b.*(1 - y^2);
 end
