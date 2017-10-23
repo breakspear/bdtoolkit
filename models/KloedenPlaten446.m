@@ -1,5 +1,5 @@
-% KloedenPlaten446 SDE equation (4.46) from Kloeden and Platen (1999)
-%   An explicitly solvable Ito SDE from Kloeden and Platen (1999)  
+% KloedenPlaten446 SDE equation (4.46) from Kloeden and Platen (1992)
+%   An explicitly solvable Ito SDE from Kloeden and Platen (1992)  
 %     dy = -(a + y*b^2)*(1-y^2)*dt + b(1-y^2)*dW
 %
 % Example:
@@ -62,7 +62,7 @@ function sys = KloedenPlaten446()
     sys.panels.bdLatexPanel.title = 'Equations'; 
     sys.panels.bdLatexPanel.latex = {'\textbf{KloedenPlaten446}';
         '';
-        'Ito Stochastic Differential Equation (4.46) from Kloeden and Platen (1999)';
+        'Ito Stochastic Differential Equation (4.46) from Kloeden and Platen (1992)';
         '\qquad $dy = -(a + y\,b^2)(1-y^2)\,dt + b(1-y^2)\,dW_t$';
         'where';
         '\qquad $y(t)$ is the dynamic variable,';
@@ -72,11 +72,11 @@ function sys = KloedenPlaten446()
         '\qquad $y = A/B$';
         'where';
         '\qquad $A = (1+y_0) \exp(-2at + 2b W_t) + y_0 - 1$';
-        '\qquad $B = (1+y_0) \exp(-2at + 2b W_t) + 1 - y_0$';
+        '\qquad $B = (1+y_0) \exp(-2at + 2b W_t) - y_0 + 1$';
         '';
         '';
         '\textbf{Reference}';
-        'Kloeden and Platen (1999) Numerical Solution of Stochastic Diffrential Equations'; 
+        'Kloeden and Platen (1992) Numerical Solution of Stochastic Diffrential Equations'; 
         ''};
         
     % Include the Time Portrait panel in the GUI
