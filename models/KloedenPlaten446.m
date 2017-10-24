@@ -54,7 +54,7 @@ function sys = KloedenPlaten446()
     sys.tspan = [0 5];
     
     % Specify SDE solvers and default options
-    sys.sdesolver = {@sdeEM};           % Pertinent SDE solvers
+    sys.sdesolver = {@sdeEM,@sdeSH};    % Relevant SDE solvers
     sys.sdeoption.InitialStep = 0.005;  % SDE solver step size (optional)
     sys.sdeoption.NoiseSources = 1;     % Number of Wiener noise processes
 
