@@ -607,7 +607,7 @@ classdef bd
                 
                 % check sys.sdesolver
                 if ~isfield(sys,'sdesolver')
-                    throw(MException('bdtoolkit:syscheck:sdesolver','The sys.sdesolver field must be defined for SDEs'));
+                    sys.sdesolver = {@sdeEM,@sdeSH};
                 end
                 if ~iscell(sys.sdesolver)
                     throw(MException('bdtoolkit:syscheck:sdesolver','The sys.sdesolver field must be a cell array'));

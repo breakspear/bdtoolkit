@@ -87,7 +87,7 @@ bdSysCheck(sys);
 disp '===';
 
 disp 'TESTING KloedenPlaten446';
-sys = KloedenPlaten();
+sys = KloedenPlaten446();
 bdSysCheck(sys);
 disp '===';
 
