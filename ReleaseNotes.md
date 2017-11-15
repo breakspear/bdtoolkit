@@ -1,21 +1,20 @@
 # Release Notes
 # Brain Dynamics Toolbox
 
-## Version 2017c (pre-release)
-Version 2017c is currently in pre-release stage. 
-The formal release is anticipated for late Sep 2017.
+## Version 2017c
+Released 16 Nov 2017.
 
-The formal release will coincide with the publication of the Handbook of the Brain Dynamics Toolbox which can be purchased from Amazon booksellers. The first chapter of the handbook will also be made available for free on the [Brain Dynamics Toolbox](http://bdtoolbox.blogspot.com.au) website.
-
-Major new features of the toolbox include:
+This release coincides with the first edition of the Handbook of the Brain Dynamics Toolbox.
+New features of the toolbox include:
 (i) Improved dialog boxes for editing vector and matrix parameters.
 (ii) The ability to load previously computed solutions into the GUI at startup.
 (iii) Improved error handling for systems with missing functions.
-(iv) The inclusion of the neural-mass model DFCL2009 (Dafilis, Frascoli Cadusch & Liley, 2009).
+(iv) The inclusion of the Liley neural-mass model (DFCL2009) from Dafilis, Frascoli Cadusch & Liley (2009).
 (v)  Improved license checking in the Hilbert and Correlation panels.
 (vi) Improved scrolling in the System-Save dialog box.
 (vii) Replacement of the BTF2003ODE model (Breakspear, Terry & Friston, 2003) with BTF2003.
 (viii) Bug fixes to the existing BTF2003SDE and BTF2003DDE models.
+(iix) Renaming of the MultiplicativeNoise model to KloedenPlaten446.
 
 Requires Matlab 2014b or newer.
 

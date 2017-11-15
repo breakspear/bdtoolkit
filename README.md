@@ -1,14 +1,14 @@
 # Brain Dynamics Toolbox
 
-##Version 2017c (pre-release)
+##Version 2017c
 
-The [Brain Dynamics Toolbox](http://bdtoolbox.blogspot.com) provides a convenient graphical user interface for exploring dynamical systems in MATLAB.  Users implement their own dynamical equations (as matlab scripts) and use the toolbox graphical interface to view phase portraits and other plots in real-time. The same models can also be run as MATLAB scripts without the graphics interface. The toolbox includes solvers for Ordinary Differential Equations (ODE), Delay Differential Equations (DDE) and Stochastic Differential Equations (SDE). The plotting tools are modular so that users can create custom plots according to their needs. Custom solver routines can also be used. The user interface is designed for dynamical systems with large numbers of variables and parameters, as is often the case in dynamical models of the brain. Hence the name, *Brain Dynamics Toolbox*.
+The [Brain Dynamics Toolbox](http://bdtoolbox.blogspot.com) provides a convenient graphical user interface for exploring dynamical systems in MATLAB.  Users implement their own dynamical equations (as matlab scripts) and use the toolbox graphical interface to view phase portraits and other plots in real-time. The same models can also be run as MATLAB scripts without the graphics interface. The toolbox includes solvers for Ordinary Differential Equations (ODE), Delay Differential Equations (DDE) and Stochastic Differential Equations (SDE). The plotting tools are modular so that users can create custom plots according to their needs. Custom solver routines can also be included. The user interface is designed for dynamical systems with large numbers of variables and parameters, as is often the case in dynamical models of the brain. Hence the name, *Brain Dynamics Toolbox*.
 
 ## Download
-Dowload the latest release from the [bdtoolkit](https://github.com/breakspear/bdtoolkit/releases) repository on GitHub
+Dowload the [bdtoolkit-2017c.zip](https://github.com/breakspear/bdtoolkit/releases/download/2017c/bdtoolkit-2017c.zip) file from the *bdtoolkit* repository on GitHub
 
 ## Getting Started
-The toolbox requires MATLAB 2014b or newer. Unzip the toolbox files into a directory of your choosing. The main toolbox scripts are located in the *bdtoolkit* directory which must be in your matlab PATH variable. The *bdtoolkit/models* directory contains example scripts that are also advisable to have in your PATH.
+The toolbox requires MATLAB 2014b or newer. Unzip the toolbox files into a directory of your choosing. The main toolbox scripts are located in the *bdtoolkit* directory which must be in your matlab PATH variable. The *bdtoolkit/models* directory contains example scripts that are advisable to have in your PATH too.
 
 ```matlab
     $ unzip bdtoolkit-2017c.zip
@@ -16,11 +16,12 @@ The toolbox requires MATLAB 2014b or newer. Unzip the toolbox files into a direc
     >> addpath bdtoolkit-2017c
     >> addpath bdtoolkit-2017c/models
 ```
-Refer to the *Getting Started* section of the *Handbook for the Brain Dynamics Toolbox* for more. It can be purchased in paperback or ebook formats from Amazon booksellers.
-Chapter 1 of the handbook is available for free on the [Brain Dynamics Toolbox](http://bdtoolbox.blogspot.com.au) website. 
+Refer to the *Getting Started* section in the *Handbook for the Brain Dynamics Toolbox* for details.
+
+## Documentation
+Heitmann & Breakspear (2017) *Handbook for the Brain Dynamics Toolbox: Version 2017c.* QIMR Berghofer Medical Research Institute. ISBN 9781549720703.
 
 ![Handbook Cover Art](CoverArt.png)
-Heitmann S & Breakspear M (2017) Handbook for the Brain Dynamics Toolbox, Version 2017c. *QIMR Berghofer Medical Research Institute.*
 
 ##Example Models
 * *BrownianMotion* : Geometric Brownian motion.
@@ -30,9 +31,9 @@ Heitmann S & Breakspear M (2017) Handbook for the Brain Dynamics Toolbox, Versio
 * *DFCL2009* : Neural mass model with chaos (Dafilis, Frascoli, Cadusch, Liley, 2009)
 * *HindmarshRose* : Network of Hindmarsh-Rose neurons.
 * *HopfieldNet* : Generalised Hopfield Associative Memory Network.
+* *KloedenPlaten446* : Ito Stochastic Differential Equation (4.46) from Kloeden and Platen (1992).
 * *KuramotoNet* : Network of Kuramoto phase oscillators.
 * *LinearODE* : Example of a simple Ordinary Differential Equation.
-* *MultiplicativeNoise* : Example of a simple Stochastic Differential Equation.
 * *Ornstein Uhlenbeck* : Independent Ornstein-Uhlenbeck stochastic processes.
 * *RFB2017* : Neural mass with multiplicative noise (Roberts, Friston,  Breakspear, 2017).
 * *SwiftHohenberg1D* : Swift-Hohenberg PDE in one spatial dimension.
