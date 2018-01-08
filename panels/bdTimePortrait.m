@@ -1,393 +1,422 @@
-classdef bdTimePortrait < handle
-    %bdTimePortrait  Brain Dynamics Toolbox panel for time plots.
-    %   This class implements time plots for the graphical user interface
-    %   of the Brain Dynamics Toolbox (bdGUI). Users never call this class
-    %   directly. They instead instruct the bdGUI application to load the
-    %   panel by specifying options in their model's sys struct. 
-    %   
-    %SYS OPTIONS
-    %   sys.panels.bdTimePortrait.title = 'Time Portrait'
-    %   sys.panels.bdTimePortrait.grid = false
-    %   sys.panels.bdTimePortrait.hold = false
-    %   sys.panels.bdTimePortrait.autolim = true
-    %
-    %AUTHORS
-    %  Stewart Heitmann (2016a,2017a,2017b)
-
-    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
-    % All rights reserved.
-    %
-    % Redistribution and use in source and binary forms, with or without
-    % modification, are permitted provided that the following conditions
-    % are met:
-    %
-    % 1. Redistributions of source code must retain the above copyright
-    %    notice, this list of conditions and the following disclaimer.
-    % 
-    % 2. Redistributions in binary form must reproduce the above copyright
-    %    notice, this list of conditions and the following disclaimer in
-    %    the documentation and/or other materials provided with the
-    %    distribution.
-    %
-    % THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-    % "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-    % LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-    % FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-    % COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-    % INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-    % BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-    % LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-    % CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-    % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-    % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-    % POSSIBILITY OF SUCH DAMAGE.
-    properties (Access=public)
-        t               % time domain
+classdef bdTimePortrait < bdPanel
+    %bdTimePortrait Display panel for plotting time series data in bdGUI.
+    %   Detailed explanation goes here
+    
+    properties
+        ax1             % handle to the upper plot axes
+        ax2             % handle to the lower plot axes
+        t               % time domain (1 x t)
         y1              % values for the upper plot (n1 x t)
         y2              % values for the lower plot (n2 x t)
-        y1row           % index of the highlighted row in y1 
-        y2row           % index of the highlighted row in y2 
     end
     
-    properties (Access=private) 
-        fig             % handle to parent figure
-        tab             % handle to uitab object
-        ax1             % handle to plot 1 axes
-        ax2             % handle to plot 2 axes
-        popup1          % handle to popup selector 1
-        popup2          % handle to popup selector 2
-        varMap          % maps entries in vardef to rows in sol.y
-        auxMap          % maps entries in auxdef to rows in sal
-        solMap          % maps rows in sol.y to entries in vardef
-        soxMap          % maps rows in sox.y to entries in auxdef
-        listener        % handle to listener
-        gridflag        % grid menu flag
-        holdflag        % hold menu flag
-        autolimflag     % auto limits menu flag        
+    properties (Access=private)
+        tranmenu        % handle to TRANSIENTS menu item
+        markmenu        % handle to MARKERS menu item
+        pointmenu       % handle to POINTS menu item
+        gridmenu        % handle to GRID menu item
+        holdmenu        % handle to HOLD menu item
+        submenu1        % handle to subpanel1 (upper plot) selector menu item
+        submenu2        % handle to subpanel2 (lower plot) selector menu item
+        listener        % handle to our listener object
     end
     
     methods
+        
         function this = bdTimePortrait(tabgroup,control)
-            % Construct a new tab panel in the parent tabgroup.
-            % Usage:
-            %    bdTimePortrait(tabgroup,control)
-            % where 
-            %    tabgroup is a handle to the parent uitabgroup object.
-            %    control is a handle to the GUI control panel.
-
-            % apply default settings to sys.panels.bdTimePortrait
+            % initialise the base class (specifically this.menu and this.tab)
+            this@bdPanel(tabgroup);
+            
+            % assign default values to missing options in sys.panels.bdTimePortrait
             control.sys.panels.bdTimePortrait = bdTimePortrait.syscheck(control.sys);
-            
-            % get handle to parent figure
-            this.fig = ancestor(tabgroup,'figure');
-            
-            % map vardef entries to rows in sol
-            this.varMap = bd.varMap(control.sys.vardef);
-            this.solMap = bd.solMap(control.sys.vardef);
-            if isfield(control.sys,'auxdef')
-                % map auxdef entries to rows in sal
-                this.auxMap = bd.varMap(control.sys.auxdef);
-                this.soxMap = bd.solMap(control.sys.auxdef);
-            else
-                % construct empty maps
-                this.auxMap = bd.varMap([]);
-                this.soxMap = bd.solMap([]);
-            end
-            
-            % number of entries in vardef
-            nvardef = numel(control.sys.vardef);
-                        
-            % construct the uitab
-            this.tab = uitab(tabgroup, ...
-                'title',control.sys.panels.bdTimePortrait.title, ...
-                'Tag','bdTimePortraitTab', ...
-                'Units','pixels', ...
-                'TooltipString','Right click for menu');
-            
-            % get tab geometry
-            parentw = this.tab.Position(3);
-            parenth = this.tab.Position(4);
 
-            % plot axes 1
-            posw = parentw-65;
-            posh = (parenth-120)/2;
-            posx = 50;
-            posy = 100 + posh;
-            this.ax1 = axes('Parent',this.tab, 'Units','pixels', 'Position',[posx posy posw posh]);           
-            hold(this.ax1,'on');
-      
-            % plot axes 2
-            posw = parentw-65;
-            posh = (parenth-120)/2;
-            posx = 50;
-            posy = 80;
-            this.ax2 = axes('Parent',this.tab, 'Units','pixels', 'Position',[posx posy posw posh]);           
-            hold(this.ax2,'on');
-            
-            % plot 1 popup selector
-            posx = 10;
-            posy = 10;
-            posw = 100;
-            posh = 20;
-            popupval = 1;  
-            popuplist = {this.solMap.name, this.soxMap.name};
-            this.popup1 = uicontrol('Style','popup', ...
-                'String', popuplist, ...
-                'Value', popupval, ...
-                'Callback', @(~,~) this.selectorCallback(control), ...
-                'HorizontalAlignment','left', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'Parent', this.tab, ...
-                'Position',[posx posy posw posh]);
+            % configure the pull-down menu
+            this.menu.Text = control.sys.panels.bdTimePortrait.title;
+            this.InitCalibrateMenu(control);
+            this.InitTransientsMenu(control);
+            this.InitMarkerMenu(control);
+            this.InitPointsMenu(control);
+            this.InitGridMenu(control);
+            this.InitHoldMenu(control);
+            this.InitExportMenu(control);
+            this.InitCloseMenu(control);
 
-            % plot 2 var selector
-            posx = 110;
-            posy = 10;
-            posw = 100;
-            posh = 20;
-            if nvardef>=2
-                popupval = numel(control.sys.vardef(1).value) + 1;
-            end            
-            this.popup2 = uicontrol('Style','popup', ...
-                'String', popuplist, ...
-                'Value', popupval, ...
-                'Callback', @(~,~) this.selectorCallback(control), ...
-                'HorizontalAlignment','left', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'Parent', this.tab, ...
-                'Position',[posx posy posw posh]);
-            
-            % construct the tab context menu
-            this.contextMenu(control);
-            
-            % register a callback for resizing the panel
-            set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
+            % configure the panel graphics
+            this.tab.Title = control.sys.panels.bdTimePortrait.title;
+            this.InitSubpanel1(control);
+            this.InitSubpanel2(control);
             
             % listen to the control panel for redraw events
-            this.listener = addlistener(control,'redraw',@(~,~) this.render(control));    
-        end
-        
-        % Destructor
-        function delete(this)
-            delete(this.listener);
-            delete(this.tab);          
-        end
-        
-        function render(this,control)
-            %disp('bdTimePortrait.render()')
-
-            % retrieve the menu appdata
-            %appdata = getappdata(this.fig,'bdTimePortrait');
-
-            % render the upper and lower axes 
-            [this.t,this.y1,this.y1row] = renderax(this.ax1, this.popup1.Value);
-            [~,this.y2,this.y2row] = renderax(this.ax2, this.popup2.Value);            
-            xlabel(this.ax2,'time', 'FontSize',14);
-
-            % Yindx is the global index of the selected variable
-            function [t,y,yrow] = renderax(ax,popindx)
-                % find the non-negative time entries in sol.x
-                tindx = find(control.sol.x>=0);
-                t = control.sol.x(tindx);
-
-                % number of entries in sol
-                nvardef = numel(this.solMap);
-                
-                % if the user selected a variable from vardef then ...
-                if popindx <= nvardef
-                    % the popup index corresponds to the row index of sol
-                    solindx = popindx; 
-
-                    % get detail of the selected variable
-                    name    = this.solMap(solindx).name;        % name string
-                    varindx = this.solMap(solindx).varindx;     % index in vardef{}
-                
-                    % find all rows of sol.y that are related to this vardef entry
-                    solrows = this.varMap(varindx).solindx;
-                    
-                    % extract the values for plotting
-                    y = control.sol.y(solrows,tindx);
-
-                    % index of the variable of interest
-                    yrow = solindx - solrows(1) + 1;
-                else
-                    % the popup index refers to an entry of sox
-                    solindx = popindx - nvardef;
-                    
-                    % get detail of the selected variable
-                    name    = this.soxMap(solindx).name;        % name string
-                    auxindx = this.soxMap(solindx).varindx;     % auxdef index
-
-                    % find all rows of aux that are related to this auxdef entry
-                    solrows = this.auxMap(auxindx).solindx;
-
-                    % extract the values for plotting
-                    y = control.sox.y(solrows,tindx);
-
-                    % index of the variable of interest
-                    yrow = solindx - solrows(1) + 1;
-                end
-                
-                % if 'hold' menu is checked then ...
-                if this.holdflag
-                    % Change existing plots to thin lines 
-                    objs = findobj(ax);
-                    set(objs,'LineWidth',0.5);               
-                else
-                    % Clear the plot axis
-                    cla(ax);
-                end
-                
-                % plot the background traces in grey
-                plot(ax, t, y', 'color',[0.75 0.75 0.75], 'HitTest','off');
-                
-                % (re)plot the variable of interest in black
-                plot(ax, t, y(yrow,:), 'color','k', 'Linewidth',1.5);
-                ylabel(ax,name, 'FontSize',16,'FontWeight','normal');
-
-                % show gridlines (or not)
-                if this.gridflag
-                    grid(ax,'on');
-                else
-                    grid(ax,'off')
-                end
-
-                % adjust the y limits (or not)
-                if this.autolimflag
-                    ylim(ax,'auto')
-                else
-                    ylim(ax,'manual');
-                end
-                
-                % adjust the x limits
-                xlim(ax,[0 t(end)+1e-10]);      % we add a tiny amount to t(end) in case it is zero
-            end
+            this.listener = listener(control,'redraw',@(~,~) this.redraw(control));    
         end
         
     end
     
-    
     methods (Access=private)
-
-        function contextMenu(this,control)            
-            % init the menu flags from the sys.panels options     
-            this.gridflag = control.sys.panels.bdTimePortrait.grid;
-            this.holdflag = control.sys.panels.bdTimePortrait.hold;
-            this.autolimflag = control.sys.panels.bdTimePortrait.autolim;            
+        
+        % Initialise the CALIBRATE menu item
+        function InitCalibrateMenu(this,control)
+            % construct the menu item
+            uimenu(this.menu, ...
+               'Text','Calibrate Axes', ...
+                'Callback', @CalibrateMenuCallback );
             
-            % grid menu check string
-            if this.gridflag
+            % Menu callback function
+            function CalibrateMenuCallback(~,~)
+                % adjust the limits to the data (upper plot)
+                lo = min(this.y1(:));
+                hi = max(this.y1(:));
+                varindx1 = this.submenu1.UserData.xxxindx;
+                control.sys.vardef(varindx1).lim = bdPanel.RoundLim(lo,hi);
+
+                % adjust the limits to the data (lower plot)
+                lo = min(this.y2(:));
+                hi = max(this.y2(:));
+                varindx2 = this.submenu2.UserData.xxxindx;
+                control.sys.vardef(varindx2).lim = bdPanel.RoundLim(lo,hi);
+                
+                % refresh the control widgets
+                notify(control,'refresh');
+                
+                % redraw all panels (because the new limits apply to all panels)
+                notify(control,'redraw');
+            end
+
+        end
+        
+        % Initiliase the TRANISENTS menu item
+        function InitTransientsMenu(this,control)
+            % get the default transient menu setting from sys.panels
+            if control.sys.panels.bdTimePortrait.transients
+                checkflag = 'on';
+            else
+                checkflag = 'off';
+            end
+
+            % construct the menu item
+            this.tranmenu = uimenu(this.menu, ...
+                'Text','Transients', ...
+                'Checked',checkflag, ...
+                'Callback', @TranMenuCallback);
+
+            % Menu callback function
+            function TranMenuCallback(menuitem,~)
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                    case 'off'
+                        menuitem.Checked='on';
+                end
+                % redraw this panel only
+                this.redraw(control);
+            end
+        end
+        
+        % Initiliase the MARKERS menu item
+        function InitMarkerMenu(this,control)
+            % get the marker menu setting from sys.panels
+            if control.sys.panels.bdTimePortrait.markers
+                checkflag = 'on';
+            else
+                checkflag = 'off';
+            end
+
+            % construct the menu item
+            this.markmenu = uimenu(this.menu, ...
+                'Text','Markers', ...
+                'Checked',checkflag, ...
+                'Callback', @MarkMenuCallback);
+
+            % Menu callback function
+            function MarkMenuCallback(menuitem,~)
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                    case 'off'
+                        menuitem.Checked='on';
+                end
+                % redraw this panel only
+                this.redraw(control);
+            end
+        end
+        
+        % Initiliase the DISCRETE POINTS menu item
+        function InitPointsMenu(this,control)
+            % get the points menu setting from sys.panels
+            if control.sys.panels.bdTimePortrait.points
+                checkflag = 'on';
+            else
+                checkflag = 'off';
+            end
+
+            % construct the menu item
+            this.pointmenu = uimenu(this.menu, ...
+                'Text','Discrete Points', ...
+                'Checked',checkflag, ...
+                'Callback', @PointsMenuCallback);
+
+            % Menu callback function
+            function PointsMenuCallback(menuitem,~)
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                    case 'off'
+                        menuitem.Checked='on';
+                end
+                % redraw this panel only
+                this.redraw(control);
+            end
+        end
+        
+        % Initiliase the GRID menu item
+        function InitGridMenu(this,control)
+            % get the default grid menu setting from sys.panels
+            if control.sys.panels.bdTimePortrait.grid
                 gridcheck = 'on';
             else
                 gridcheck = 'off';
             end
-            
-            % hold menu check string
-            if this.holdflag
+
+            % construct the menu item
+            this.gridmenu = uimenu(this.menu, ...
+                'Text','Grid', ...
+                'Checked',gridcheck, ...
+                'Callback', @GridMenuCallback);
+
+            % Menu callback function
+            function GridMenuCallback(menuitem,~)
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                        grid(this.ax1,'off');
+                        grid(this.ax2,'off');
+                    case 'off'
+                        menuitem.Checked='on';
+                        grid(this.ax1,'on');
+                        grid(this.ax2,'on');
+                end
+                grid(this.ax1, menuitem.Checked);
+                grid(this.ax2, menuitem.Checked);
+            end
+        end
+        
+        % Initialise the HOLD menu item
+        function InitHoldMenu(this,control)
+             % get the hold menu setting from sys.panels options
+            if control.sys.panels.bdTimePortrait.hold
                 holdcheck = 'on';
             else
                 holdcheck = 'off';
             end
             
-            % autolim menu check string
-            if this.autolimflag
-                autolimcheck = 'on';
-            else
-                autolimcheck = 'off';
-            end
-           
-            % construct the tab context menu
-            this.tab.UIContextMenu = uicontextmenu;
+            % construct the menu item
+            this.holdmenu = uimenu(this.menu, ...
+                'Text','Hold', ...
+                'Checked',holdcheck, ...
+                'Callback', @HoldMenuCallback );
 
-            % construct menu items
-            uimenu(this.tab.UIContextMenu, ...
-                   'Label','Grid', ...
-                   'Checked',gridcheck, ...
-                   'Callback', @(menuitem,~) ContextCallback(menuitem) );
-            uimenu(this.tab.UIContextMenu, ...
-                   'Label','Hold', ...
-                   'Checked',holdcheck, ...
-                   'Callback', @(menuitem,~) ContextCallback(menuitem) );
-            uimenu(this.tab.UIContextMenu, ...
-                   'Label','Auto Limits', ...
-                   'Checked',autolimcheck, ...
-                   'Callback', @(menuitem,~) ContextCallback(menuitem) );
-            uimenu(this.tab.UIContextMenu, ...
-                   'Label','Close', ...
-                   'Callback',@(~,~) this.delete());
-        
-            % Context Menu Item Callback
-            function ContextCallback(menuitem)
-                switch menuitem.Label
-                    case 'Grid'
-                        switch menuitem.Checked
-                            case 'on'
-                                this.gridflag = false;
-                                menuitem.Checked='off';
-                            case 'off'
-                                this.gridflag = true;
-                                menuitem.Checked='on';
-                        end
-                    case 'Hold'
-                        switch menuitem.Checked
-                            case 'on'
-                                this.holdflag = false;
-                                menuitem.Checked='off';
-                            case 'off'
-                                this.holdflag = true;
-                                menuitem.Checked='on';
-                        end
-                    case 'Auto Limits'
-                        switch menuitem.Checked
-                            case 'on'
-                                this.autolimflag = false;
-                                menuitem.Checked='off';
-                            case 'off'
-                                this.autolimflag = true;
-                                menuitem.Checked='on';
-                        end
-                end 
+            % Menu callback function
+            function HoldMenuCallback(menuitem,~)
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                    case 'off'
+                        menuitem.Checked='on';
+                end
                 % redraw this panel
-                this.render(control);
+                this.redraw(control);
             end
         end
         
-        % Callback for panel resizing. 
-        function SizeChanged(this,parent)
-            % get new parent geometry
-            parentw = parent.Position(3);
-            parenth = parent.Position(4);
-            
-            % new width, height of each axis
-            w = parentw - 65;
-            h = (parenth - 120)/2;
-            
-            % adjust position of ax1
-            this.ax1.Position = [50, 110+h, w, h];
+        % Initialise the EXPORT menu item
+        function InitExportMenu(this,~)
+            % construct the menu item
+            uimenu(this.menu, ...
+               'Text','Export Figure', ...
+               'Callback',@callback);
+           
+            function callback(~,~)
+                % Construct a new figure
+                fig = figure();    
+                
+                % Change mouse cursor to hourglass
+                set(fig,'Pointer','watch');
+                drawnow;
+                
+                % Copy the plot data to the new figure
+                ax1new = copyobj(this.ax1,fig);
+                ax1new.OuterPosition = [0 0.525 1 0.45];
+                ax2new = copyobj(this.ax2,fig);
+                ax2new.OuterPosition = [0 0.025 1 0.45];
+                
+                % Change mouse cursor to arrow
+                set(fig,'Pointer','arrow');
+                drawnow;
+            end
+        end
 
-            % adjust position of ax2
-            this.ax2.Position = [50, 80, w, h];
+        % Initialise the CLOSE menu item
+        function InitCloseMenu(this,~)
+            % construct the menu item
+            uimenu(this.menu, ...
+                   'Text','Close', ...
+                   'Callback',@(~,~) this.close());
         end
         
-        % Callback for the plot variable selectors
-        function selectorCallback(this,control)
-            this.render(control);
+        % Initialise the upper panel
+        function InitSubpanel1(this,control)
+            % construct the subpanel
+            [this.ax1,cmenu] = bdPanel.Subpanel(this.tab,[0 0.5 1 0.5],[0 0.05 1 0.9]);
+            xlabel(this.ax1,'time');
+            
+            % construct a selector menu comprising items from sys.vardef
+            this.submenu1 = bdPanel.SelectorMenuFull(cmenu, ...
+                control.sys.vardef, ...
+                @callback1, ...
+                'off', 'mb1',1,1);
+            
+            % Callback function for the subpanel selector menu
+            function callback1(menuitem,~)
+                % check 'on' the selected menu item and check 'off' all others
+                bdPanel.SelectorCheckItem(menuitem);
+                % update our handle to the selected menu item
+                this.submenu1 = menuitem;
+                % redraw the panel
+                this.redraw(control);
+            end
         end
         
+        % Initialise the lower panel
+        function InitSubpanel2(this,control)
+            % construct the subpanel
+            [this.ax2,cmenu] = bdPanel.Subpanel(this.tab,[0 0.0 1 0.5],[0 0.05 1 0.9]);
+            xlabel(this.ax2,'time');
+            
+            % construct a selector menu comprising items from sys.vardef
+            this.submenu2 = bdPanel.SelectorMenuFull(cmenu, ...
+                control.sys.vardef, ...
+                @callback2, ...
+                'off', 'mb2',min(2,numel(control.sys.vardef)),1);
+
+            % Callback function for the subpanel selector menu
+            function callback2(menuitem,~)
+                % check 'on' the selected menu item and check 'off' all others
+                bdPanel.SelectorCheckItem(menuitem);
+                % update our handle to the selected menu item
+                this.submenu2 = menuitem;
+                % redraw the panel
+                this.redraw(control);
+            end
+        end
+   
+        % Redraw the data plots
+        function redraw(this,control)
+            %disp('bdTimePortrait.redraw()')
+            
+            % get the details of the variable currently selected in the upper panel menu
+            varname1  = this.submenu1.UserData.xxxname;          % generic name of variable
+            varlabel1 = this.submenu1.UserData.label;            % plot label for selected variable
+            varindx1  = this.submenu1.UserData.xxxindx;          % index of selected variable in sys.vardef
+            valindx1  = this.submenu1.UserData.valindx;          % indices of selected entries in sys.vardef.value
+            solindx1  = control.sys.vardef(varindx1).solindx;    % indices of selected entries in sol
+            ylim1     = control.sys.vardef(varindx1).lim;        % axis limits of the selected variable
+            
+            % get the details of the variable currently selected in the lower panel menu
+            varname2  = this.submenu2.UserData.xxxname;          % generic name of variable
+            varlabel2 = this.submenu2.UserData.label;            % plot label for selected variable
+            varindx2  = this.submenu2.UserData.xxxindx;          % index of selected variable in sys.vardef
+            valindx2  = this.submenu2.UserData.valindx;          % indices of selected entries in sys.vardef.value
+            solindx2  = control.sys.vardef(varindx2).solindx;    % indices of selected entries in sol
+            ylim2     = control.sys.vardef(varindx2).lim;        % axis limits of the selected variable
+
+            % get the indices of the non-transient data
+            solxindx = control.solxindx;
+
+            % get the solution data (including the transient part)
+            this.t = control.sol.x;
+            this.y1 = control.sol.y(solindx1,:);
+            this.y2 = control.sol.y(solindx2,:);
+
+            % set the y-axes limits
+            this.ax1.YLim = ylim1 + [-1e-6 +1e-6];
+            this.ax2.YLim = ylim2 + [-1e-6 +1e-6];
+            
+            % if the TRANSIENT menu is enabled then  ...
+            switch this.tranmenu.Checked
+                case 'on'
+                    % set the x-axes limits to the full time span
+                    this.ax1.XLim = control.sys.tspan + [-1e-6 0];
+                    this.ax2.XLim = control.sys.tspan + [-1e-6 0];
+                case 'off'
+                    % limit the x-axes to the non-transient part of the time domain
+                    this.ax1.XLim = [control.sys.tval control.sys.tspan(2)] + [-1e-6 0];
+                    this.ax2.XLim = [control.sys.tval control.sys.tspan(2)] + [-1e-6 0];
+            end
+            
+            % if the POINTS menu is checked then ...
+            switch this.pointmenu.Checked
+                case 'on'
+                    % set our plot style to discrete points
+                    markerstyle = '.';
+                    linestyle = 'none';
+                case 'off'
+                    % set our plot style to continuous lines
+                    markerstyle = 'none';
+                    linestyle = '-';
+            end
+            
+            % if 'hold' menu is checked then ...
+            switch this.holdmenu.Checked
+                case 'on'
+                    % Change existing plots to thin grey lines 
+                    set( findobj(this.ax1,'Type','Line'), 'LineWidth',0.5, 'Color',[0.75 0.75 0.75]);               
+                    set( findobj(this.ax2,'Type','Line'), 'LineWidth',0.5, 'Color',[0.75 0.75 0.75]);               
+                case 'off'
+                    % Clear the plot axis
+                    cla(this.ax1);
+                    cla(this.ax2);
+            end
+            
+            
+            % plot the background traces as thin grey lines
+            plot(this.ax1, this.t, this.y1', 'color',[0.75 0.75 0.75], 'HitTest','off');
+            plot(this.ax2, this.t, this.y2', 'color',[0.75 0.75 0.75], 'HitTest','off');
+                
+            
+            % (re)plot the non-transient part of the variable of interest in black
+            plot(this.ax1, this.t(solxindx), this.y1(valindx1,solxindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
+            plot(this.ax2, this.t(solxindx), this.y2(valindx2,solxindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
+            
+            % if the MARKERS menu is checked then ...
+            switch this.markmenu.Checked
+                case 'on'
+                    % mark the initial conditions with a pentagram
+                    plot(this.ax1, this.t(1), this.y1(valindx1,1), 'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10);
+                    plot(this.ax2, this.t(1), this.y2(valindx2,1), 'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10);
+            end
+            
+            % update the titles
+            title(this.ax1,varname1);
+            title(this.ax2,varname2);
+            
+            % update the ylabels
+            ylabel(this.ax1, varlabel1);
+            ylabel(this.ax2, varlabel2);
+        end
+
     end
-    
     
     methods (Static)
         
-        % Check the sys.panels struct
+        % Assign default values to missing fields in sys.panels.bdTimePortrait
         function syspanel = syscheck(sys)
             % Default panel settings
             syspanel.title = 'Time Portrait';
+            syspanel.transients = true;
+            syspanel.markers = true;
+            syspanel.points = false;
             syspanel.grid = false;
             syspanel.hold = false;
-            syspanel.autolim = true;
             
             % Nothing more to do if sys.panels.bdTimePortrait is undefined
             if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdTimePortrait')
@@ -397,6 +426,21 @@ classdef bdTimePortrait < handle
             % sys.panels.bdTimePortrait.title
             if isfield(sys.panels.bdTimePortrait,'title')
                 syspanel.title = sys.panels.bdTimePortrait.title;
+            end
+            
+            % sys.panels.bdTimePortrait.transients
+            if isfield(sys.panels.bdTimePortrait,'transients')
+                syspanel.transients = sys.panels.bdTimePortrait.transients;
+            end
+            
+            % sys.panels.bdTimePortrait.markers
+            if isfield(sys.panels.bdTimePortrait,'markers')
+                syspanel.markers = sys.panels.bdTimePortrait.markers;
+            end
+            
+            % sys.panels.bdTimePortrait.points
+            if isfield(sys.panels.bdTimePortrait,'points')
+                syspanel.points = sys.panels.bdTimePortrait.points;
             end
             
             % sys.panels.bdTimePortrait.grid
@@ -409,10 +453,6 @@ classdef bdTimePortrait < handle
                 syspanel.hold = sys.panels.bdTimePortrait.hold;
             end
             
-            % sys.panels.bdTimePortrait.autolim
-            if isfield(sys.panels.bdTimePortrait,'autolim')
-                syspanel.autolim = sys.panels.bdTimePortrait.autolim;
-            end
         end
         
     end
