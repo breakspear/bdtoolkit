@@ -63,15 +63,25 @@ classdef bdTimePortrait < bdPanel
             
             % Menu callback function
             function CalibrateMenuCallback(~,~)
-                % adjust the limits to the data (upper plot)
-                lo = min(this.y1(:));
-                hi = max(this.y1(:));
+                % if the TRANSIENT menu is checked then ...
+                switch this.tranmenu.Checked
+                    case 'on'
+                        % adjust the limits to fit all of the data
+                        tindx = true(size(control.tindx));
+                    case 'off'
+                        % adjust the x-limits to fit the non-transient data only
+                        tindx = control.tindx;
+                end
+
+                % adjust the limits to the visible data (upper plot)
+                lo = min(this.y1(tindx));
+                hi = max(this.y1(tindx));
                 varindx1 = this.submenu1.UserData.xxxindx;
                 control.sys.vardef(varindx1).lim = bdPanel.RoundLim(lo,hi);
 
-                % adjust the limits to the data (lower plot)
-                lo = min(this.y2(:));
-                hi = max(this.y2(:));
+                % adjust the limits to the visible data (lower plot)
+                lo = min(this.y2(tindx));
+                hi = max(this.y2(tindx));
                 varindx2 = this.submenu2.UserData.xxxindx;
                 control.sys.vardef(varindx2).lim = bdPanel.RoundLim(lo,hi);
                 
@@ -248,6 +258,14 @@ classdef bdTimePortrait < bdPanel
                 ax1new.OuterPosition = [0 0.525 1 0.45];
                 ax2new = copyobj(this.ax2,fig);
                 ax2new.OuterPosition = [0 0.025 1 0.45];
+
+                % Allow the user to hit everything in ax1new
+                objs = findobj(ax1new,'-property', 'HitTest');
+                set(objs,'HitTest','on');
+                
+                % Allow the user to hit everything in ax2new
+                objs = findobj(ax2new,'-property', 'HitTest');
+                set(objs,'HitTest','on');
                 
                 % Change mouse cursor to arrow
                 set(fig,'Pointer','arrow');
@@ -330,7 +348,7 @@ classdef bdTimePortrait < bdPanel
             ylim2     = control.sys.vardef(varindx2).lim;        % axis limits of the selected variable
 
             % get the indices of the non-transient data
-            solxindx = control.solxindx;
+            tindx = control.tindx;
 
             % get the solution data (including the transient part)
             this.t = control.sol.x;
@@ -375,17 +393,19 @@ classdef bdTimePortrait < bdPanel
                     % Clear the plot axis
                     cla(this.ax1);
                     cla(this.ax2);
-            end
-            
+            end          
             
             % plot the background traces as thin grey lines
             plot(this.ax1, this.t, this.y1', 'color',[0.75 0.75 0.75], 'HitTest','off');
             plot(this.ax2, this.t, this.y2', 'color',[0.75 0.75 0.75], 'HitTest','off');
-                
-            
-            % (re)plot the non-transient part of the variable of interest in black
-            plot(this.ax1, this.t(solxindx), this.y1(valindx1,solxindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
-            plot(this.ax2, this.t(solxindx), this.y2(valindx2,solxindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
+       
+            % (re)plot the non-transient part of the variable of interest as a heavy black line
+            tt = this.t(tindx);
+            yy1 = this.y1(valindx1,tindx);
+            yy2 = this.y2(valindx2,tindx);
+
+            plot(this.ax1, tt, yy1, 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
+            plot(this.ax2, tt, yy2, 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
             
             % if the MARKERS menu is checked then ...
             switch this.markmenu.Checked
@@ -393,6 +413,10 @@ classdef bdTimePortrait < bdPanel
                     % mark the initial conditions with a pentagram
                     plot(this.ax1, this.t(1), this.y1(valindx1,1), 'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10);
                     plot(this.ax2, this.t(1), this.y2(valindx2,1), 'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10);
+
+                    % mark the start of the non-transient trajectory with an open circle
+                    plot(this.ax1, tt(1), yy1(1), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
+                    plot(this.ax2, tt(1), yy2(1), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
             end
             
             % update the titles
