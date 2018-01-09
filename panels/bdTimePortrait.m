@@ -1,13 +1,45 @@
 classdef bdTimePortrait < bdPanel
     %bdTimePortrait Display panel for plotting time series data in bdGUI.
-    %   Detailed explanation goes here
+    %  The panel includes an upper and lower axes which independently plot
+    %  the time traces of selected variables.
+    %
+    %AUTHORS
+    %  Stewart Heitmann (2016a,2017a-c,2018a)
+
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+    % All rights reserved.
+    %
+    % Redistribution and use in source and binary forms, with or without
+    % modification, are permitted provided that the following conditions
+    % are met:
+    %
+    % 1. Redistributions of source code must retain the above copyright
+    %    notice, this list of conditions and the following disclaimer.
+    % 
+    % 2. Redistributions in binary form must reproduce the above copyright
+    %    notice, this list of conditions and the following disclaimer in
+    %    the documentation and/or other materials provided with the
+    %    distribution.
+    %
+    % THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    % "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    % LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    % FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    % COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    % INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    % BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    % LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    % CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    % POSSIBILITY OF SUCH DAMAGE.
     
     properties
-        ax1             % handle to the upper plot axes
-        ax2             % handle to the lower plot axes
-        t               % time domain (1 x t)
-        y1              % values for the upper plot (n1 x t)
-        y2              % values for the lower plot (n2 x t)
+        ax1             % Handle to the upper plot axes
+        ax2             % Handle to the lower plot axes
+        t               % Time steps of the solution (1 x t)
+        y1              % Trajectories of the upper plot (n1 x t)
+        y2              % Trajectories of the lower plot (n2 x t)
     end
     
     properties (Access=private)
@@ -24,6 +56,8 @@ classdef bdTimePortrait < bdPanel
     methods
         
         function this = bdTimePortrait(tabgroup,control)
+            % Construct a new Time Portrait in the given tabgroup
+
             % initialise the base class (specifically this.menu and this.tab)
             this@bdPanel(tabgroup);
             
@@ -347,14 +381,6 @@ classdef bdTimePortrait < bdPanel
             solindx2  = control.sys.vardef(varindx2).solindx;    % indices of selected entries in sol
             ylim2     = control.sys.vardef(varindx2).lim;        % axis limits of the selected variable
 
-            % get the indices of the non-transient data
-            tindx = control.tindx;
-
-            % get the solution data (including the transient part)
-            this.t = control.sol.x;
-            this.y1 = control.sol.y(solindx1,:);
-            this.y2 = control.sol.y(solindx2,:);
-
             % set the y-axes limits
             this.ax1.YLim = ylim1 + [-1e-6 +1e-6];
             this.ax2.YLim = ylim2 + [-1e-6 +1e-6];
@@ -398,14 +424,19 @@ classdef bdTimePortrait < bdPanel
             % plot the background traces as thin grey lines
             plot(this.ax1, this.t, this.y1', 'color',[0.75 0.75 0.75], 'HitTest','off');
             plot(this.ax2, this.t, this.y2', 'color',[0.75 0.75 0.75], 'HitTest','off');
-       
-            % (re)plot the non-transient part of the variable of interest as a heavy black line
-            tt = this.t(tindx);
-            yy1 = this.y1(valindx1,tindx);
-            yy2 = this.y2(valindx2,tindx);
 
-            plot(this.ax1, tt, yy1, 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
-            plot(this.ax2, tt, yy2, 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
+            % get the indices of the non-transient time steps in this.t
+            tindx = control.tindx;      % logical indices of the non-transient time steps
+            indxt = find(tindx>0,1);    % numerical index of the first non-transient step (may be empty)
+
+            % get the solution data (including the transient part)
+            this.t = control.sol.x;
+            this.y1 = control.sol.y(solindx1,:);
+            this.y2 = control.sol.y(solindx2,:);
+
+            % (re)plot the non-transient part of the variable of interest as a heavy black line
+            plot(this.ax1, this.t(tindx), this.y1(valindx1,tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
+            plot(this.ax2, this.t(tindx), this.y2(valindx2,tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
             
             % if the MARKERS menu is checked then ...
             switch this.markmenu.Checked
@@ -415,8 +446,10 @@ classdef bdTimePortrait < bdPanel
                     plot(this.ax2, this.t(1), this.y2(valindx2,1), 'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10);
 
                     % mark the start of the non-transient trajectory with an open circle
-                    plot(this.ax1, tt(1), yy1(1), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
-                    plot(this.ax2, tt(1), yy2(1), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
+                    if ~isempty(indxt)
+                        plot(this.ax1, this.t(indxt), this.y1(indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
+                        plot(this.ax2, this.t(indxt), this.y2(indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
+                    end
             end
             
             % update the titles
@@ -432,8 +465,9 @@ classdef bdTimePortrait < bdPanel
     
     methods (Static)
         
-        % Assign default values to missing fields in sys.panels.bdTimePortrait
         function syspanel = syscheck(sys)
+            % Assign default values to missing fields in sys.panels.bdTimePortrait
+
             % Default panel settings
             syspanel.title = 'Time Portrait';
             syspanel.transients = true;

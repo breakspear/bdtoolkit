@@ -1,14 +1,48 @@
 classdef bdLatexPanel < bdPanel
-    %UNTITLED Summary of this class goes here
-    %   Detailed explanation goes here
+    %bdLatexPanel Display panel for rendering LaTeX equations in bdGUI.
+    %It renders the LaTeX strings found in the sys.panels.bdLatexPanel.latex
+    %field of the system structure.
+    %
+    %AUTHORS
+    %Stewart Heitmann (2016a,2017a-c,2018a)   
     
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+    % All rights reserved.
+    %
+    % Redistribution and use in source and binary forms, with or without
+    % modification, are permitted provided that the following conditions
+    % are met:
+    %
+    % 1. Redistributions of source code must retain the above copyright
+    %    notice, this list of conditions and the following disclaimer.
+    % 
+    % 2. Redistributions in binary form must reproduce the above copyright
+    %    notice, this list of conditions and the following disclaimer in
+    %    the documentation and/or other materials provided with the
+    %    distribution.
+    %
+    % THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    % "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    % LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    % FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    % COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    % INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    % BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    % LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    % CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    % POSSIBILITY OF SUCH DAMAGE.
+   
     properties
-        latex       % cell array of latex strings
+        latex       % A copy of the latex strings being rendered.
     end
     
     methods
         
         function this = bdLatexPanel(tabgroup,control)
+            % Construct a new LaTeX panel in the given tabgroup
+            
             % initialise the base class (specifically this.tab and this.menu)
             this@bdPanel(tabgroup);
             
@@ -80,16 +114,14 @@ classdef bdLatexPanel < bdPanel
             
         end
         
-        function render(this,control)
-        end
-        
     end
     
     
     methods (Static)
         
-        % Apply default values to missing fields in sys.panels.bdLatexPanel
         function syspanel = syscheck(sys)
+            % Apply default values to missing fields in sys.panels.bdLatexPanel
+
             % Default panel settings
             syspanel.title = 'Equations';
             syspanel.latex = {'\textbf{No latex equations to display}',

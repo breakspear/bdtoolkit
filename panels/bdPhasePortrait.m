@@ -1,9 +1,41 @@
 classdef bdPhasePortrait < bdPanel
-    %bdPhasePortrait Display panel for plotting phase potraits in bdGUI.
-    %   Detailed explanation goes here
+    %bdPhasePortrait Display panel for plotting phase portraits in bdGUI.
+    %  The Phase Portrait shows the temporal relationship between two or
+    %  three dynamic variables of the user's choosing.
+
+    %AUTHORS
+    %Stewart Heitmann (2016a,2017a-c,2018a)   
     
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+    % All rights reserved.
+    %
+    % Redistribution and use in source and binary forms, with or without
+    % modification, are permitted provided that the following conditions
+    % are met:
+    %
+    % 1. Redistributions of source code must retain the above copyright
+    %    notice, this list of conditions and the following disclaimer.
+    % 
+    % 2. Redistributions in binary form must reproduce the above copyright
+    %    notice, this list of conditions and the following disclaimer in
+    %    the documentation and/or other materials provided with the
+    %    distribution.
+    %
+    % THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    % "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    % LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    % FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    % COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    % INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    % BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    % LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    % CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    % POSSIBILITY OF SUCH DAMAGE.
+     
     properties
-        ax              % handle to the plot axes
+        ax              % Handle to the plot axes
         y1              % x-values of the trajectory (1 x t)
         y2              % y-values of the trajectory (1 x t)
         y3              % z-values of the trajectory (1 x t)
@@ -30,6 +62,8 @@ classdef bdPhasePortrait < bdPanel
     methods
         
         function this = bdPhasePortrait(tabgroup,control)
+            % Construct a new Phase Portrait in the given tabgroup
+
             % initialise the base class (specifically this.menu and this.tab)
             this@bdPanel(tabgroup);
             
@@ -485,9 +519,6 @@ classdef bdPhasePortrait < bdPanel
                 vecflag = true;
             end
 
-            % get the indices of the non-transient timesteps
-            tindx = control.tindx;
-
             % get the details of the currently selected x-variable
             varname1  = this.xselector.UserData.xxxname;          % generic name of variable
             varlabel1 = this.xselector.UserData.label;            % plot label for selected variable
@@ -511,9 +542,9 @@ classdef bdPhasePortrait < bdPanel
             this.y2 = control.sol.y(solindx2(valindx2),:);
             this.y3 = [];
 
-            % isolate the non-transient part of the solution
-            yy1 = this.y1(tindx);
-            yy2 = this.y2(tindx);
+            % get the indices of the non-transient time steps in this.t
+            tindx = control.tindx;      % logical indices of the non-transient time steps
+            indxt = find(tindx>0,1);    % numerical index of the first non-transient step (may be empty)
 
             % set the axes limits
             this.ax.XLim = lim1 + [-1e-6 +1e-6];
@@ -535,19 +566,14 @@ classdef bdPhasePortrait < bdPanel
                     % get the solution data (including the transient part)
                     this.y3 = control.sol.y(solindx3(valindx3),:);
 
-                    % isolate the non-transient part of the solution
-                    yy3 = this.y3(tindx);            
-
                     % set the axes limits
                     this.ax.ZLim = lim3 + [-1e-6 +1e-6];
                     
                     % compute the 3D vector field (if required)
                     if vecflag
-                        % we compute the vector field that passed through point Yval at time tval
-                        tval = control.sys.tval;
-                        Yval = bdEval(control.sol,tval);
-    
-                        % compute the 3D vector field
+                        % compute the 3D vector field on the hypercube that passes through the initial conditions
+                        tval = control.sol.x(1);
+                        Yval = control.sol.y(:,1);                        
                         [xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh] = this.VectorField3D(control,tval,Yval,solrow1,solrow2,solrow3,lim1,lim2,lim3);
                     end
                     
@@ -597,12 +623,12 @@ classdef bdPhasePortrait < bdPanel
                     end
 
                     % plot the non-transient part of the trajectory as a heavy black line
-                    plot3(this.ax, yy1, yy2, yy3, 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
+                    plot3(this.ax, this.y1(tindx), this.y2(tindx), this.y3(tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
 
                     % if the MARKERS menu is checked then ...
-                    if strcmp(this.markmenu.Checked,'on')
+                    if strcmp(this.markmenu.Checked,'on') && ~isempty(indxt)
                         % mark the start of the non-transient trajectory with an open circle
-                        plot3(this.ax, yy1(1), yy2(1), yy3(1), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
+                        plot3(this.ax, this.y1(indxt), this.y2(indxt), this.y3(indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
                     end
                 
                     % update the plot title
@@ -617,11 +643,9 @@ classdef bdPhasePortrait < bdPanel
                 case 'off'
                     % compute the 2D vector field (if required)
                     if vecflag
-                        % we compute the vector field that passed through point Yval at time tval
-                        tval = control.sys.tval;
-                        Yval = bdEval(control.sol,tval);
-    
-                        % compute the 2D vector field
+                        % compute the 2D vector field on the hyperplane that passes through the initial conditions
+                        tval = control.sol.x(1);
+                        Yval = control.sol.y(:,1);
                         [xmesh,ymesh,dxmesh,dymesh] = this.VectorField2D(control,tval,Yval,solrow1,solrow2,lim1,lim2);
                     end
 
@@ -653,12 +677,12 @@ classdef bdPhasePortrait < bdPanel
                     end
 
                     % plot the non-transients as a heavy black line
-                    plot(this.ax, yy1, yy2, 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
+                    plot(this.ax, this.y1(tindx), this.y2(tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
 
                     % if the MARKERS menu is checked then ...
-                    if strcmp(this.markmenu.Checked,'on')
+                    if strcmp(this.markmenu.Checked,'on') && ~isempty(indxt)
                         % mark the start of the non-transient with an open circle
-                        plot(this.ax, yy1(1), yy2(1), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
+                        plot(this.ax, this.y1(indxt), this.y2(indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
                     end
                 
                     % update the plot title
@@ -675,9 +699,8 @@ classdef bdPhasePortrait < bdPanel
     
     methods (Static)
         
-        % Evaluate the 2D vector field
         function [xmesh,ymesh,dxmesh,dymesh] = VectorField2D(control,tval,Yval,xsolrow,ysolrow,xlimit,ylimit)
-            %disp('bdPhasePortrait.VectorField@D()');
+            % Evaluate the 2D vector field.
 
             % Only compute vector fields for ODEs 
             if ~strcmp(control.solvertype,'odesolver')
@@ -717,9 +740,8 @@ classdef bdPhasePortrait < bdPanel
             end
         end
         
-        % Evaluate the 3D vector field
         function [xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh] = VectorField3D(control,tval,Yval,xindx,yindx,zindx,xlimit,ylimit,zlimit)
-            %disp('bdPhasePortrait.VectorField3D()');
+            % Evaluate the 3D vector field.
 
             % Only compute vector fields for ODEs 
             if ~strcmp(control.solvertype,'odesolver')
@@ -768,8 +790,9 @@ classdef bdPhasePortrait < bdPanel
             end
         end
         
-        % Assign default values to missing fields in sys.panels.bdPhasePortrait
         function syspanel = syscheck(sys)
+            % Assign default values to missing fields in sys.panels.bdPhasePortrait
+    
             % Default panel settings
             syspanel.title = 'Phase Portrait';
             syspanel.transients = true;

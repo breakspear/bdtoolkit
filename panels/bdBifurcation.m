@@ -1,9 +1,41 @@
 classdef bdBifurcation < bdPanel
-    %bdBifircation Display panel for plotting a bifurcation diagram in bdGUI.
-    %   Detailed explanation goes here
+    %bdBifurcation Display panel for plotting a bifurcation diagram in bdGUI.
+    %  The Bifurcation diagram plots the orbits of two or three dynamic
+    %  variables versus a parameter of the user's choosing.
+    %
+    %AUTHORS
+    %Stewart Heitmann (2018a)   
+    
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+    % All rights reserved.
+    %
+    % Redistribution and use in source and binary forms, with or without
+    % modification, are permitted provided that the following conditions
+    % are met:
+    %
+    % 1. Redistributions of source code must retain the above copyright
+    %    notice, this list of conditions and the following disclaimer.
+    % 
+    % 2. Redistributions in binary form must reproduce the above copyright
+    %    notice, this list of conditions and the following disclaimer in
+    %    the documentation and/or other materials provided with the
+    %    distribution.
+    %
+    % THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    % "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    % LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    % FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    % COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    % INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    % BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    % LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    % CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    % POSSIBILITY OF SUCH DAMAGE.
     
     properties
-        ax              % handle to the plot axes
+        ax              % Handle to the plot axes
     end
     
     properties (Access=private)
@@ -29,6 +61,8 @@ classdef bdBifurcation < bdPanel
     methods
         
         function this = bdBifurcation(tabgroup,control)
+            % Construct a new Bifurcation diagram in the given tabgroup
+
             % initialise the base class (specifically this.menu and this.tab)
             this@bdPanel(tabgroup);
             
@@ -96,7 +130,7 @@ classdef bdBifurcation < bdPanel
                 'Callback', @ClearMenuCallback );
 
             % Menu callback function
-            function ClearMenuCallback(menuitem,~)
+            function ClearMenuCallback(~,~)
                 % clear the axis
                 cla(this.ax);
                 
@@ -391,15 +425,16 @@ classdef bdBifurcation < bdPanel
             solindx3 = control.sys.vardef(varindx3).solindx;  % indices of selected entries in sol
             lim3     = control.sys.vardef(varindx3).lim;      % axis limits of the selected variable
 
-            % get the indices of the non-transient data
-            tindx = control.tindx;
+            % get the indices of the non-transient time steps in the solution
+            tindx = control.tindx;      % logical indices of the non-transient time steps
+            indxt = find(tindx>0,1);    % numerical index of the first non-transient step (may be empty)
 
             % get the solution data (including the transient part)
             y = control.sol.y(solindx2(valindx2),:);
             z = control.sol.y(solindx3(valindx3),:);
             
-            % get the current value of the bifurcation parameter            
-            pp = control.sys.pardef(varindx1).value(valindx1);
+            % get the value of the bifurcation parameter (that was used to compute sol)            
+            pp = control.par.(name1)(valindx1);
             p = pp*ones(size(y));
 
             % remember the lows and highs of the (non-transient) trajectories in x and y.
@@ -514,9 +549,8 @@ classdef bdBifurcation < bdPanel
                     end
 
                     % mark the start of the non-transient trajectory with an open circle (if reuired)
-                    if mark2flag
-                        indx = find(tindx>0,1);
-                        plot3(this.ax, p(indx), y(indx), z(indx), ...
+                    if mark2flag && ~isempty(indxt)
+                        plot3(this.ax, p(indxt), y(indxt), z(indxt), ...
                             'Marker','o', ...
                             'Color','k', ...
                             'Tag','marker', ...
@@ -560,9 +594,8 @@ classdef bdBifurcation < bdPanel
                     end
                     
                     % mark the start of the non-transient trajectory with an open circle (if reuired)
-                    if mark2flag
-                        indx = find(tindx>0,1);
-                        plot(this.ax, p(indx), y(indx), ...
+                    if mark2flag && ~isempty(indxt)
+                        plot(this.ax, p(indxt), y(indxt), ...
                             'Marker','o', ...
                             'Color','k', ...
                             'Tag','marker', ...
@@ -584,8 +617,9 @@ classdef bdBifurcation < bdPanel
     
     methods (Static)
         
-        % Assign default values to missing fields in sys.panels.bdBifurcation
         function syspanel = syscheck(sys)
+            % Assign default values to missing fields in sys.panels.bdBifurcation
+
             % Default panel settings
             syspanel.title = 'Bifurcation';
             syspanel.transients = true;
