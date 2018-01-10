@@ -589,17 +589,17 @@ classdef bdPhasePortrait < bdPanel
                         % delete existing nullclines (FIX ME)
                         delete(this.nullplot(:));
                         
-                        px = patch(isosurface(xmesh,ymesh,zmesh,dxmesh,0), 'FaceAlpha',0.2);
+                        px = patch(this.ax,isosurface(xmesh,ymesh,zmesh,dxmesh,0), 'FaceAlpha',0.2);
                         isonormals(xmesh,ymesh,zmesh,dxmesh,px);
                         px.FaceColor = 'g';
                         px.EdgeColor = 'none';
 
-                        py = patch(isosurface(xmesh,ymesh,zmesh,dymesh,0), 'FaceAlpha',0.2);
+                        py = patch(this.ax,isosurface(xmesh,ymesh,zmesh,dymesh,0), 'FaceAlpha',0.2);
                         isonormals(xmesh,ymesh,zmesh,dymesh,py);
                         py.FaceColor = 'y';
                         py.EdgeColor = 'none';
 
-                        pz = patch(isosurface(xmesh,ymesh,zmesh,dzmesh,0), 'FaceAlpha',0.2);
+                        pz = patch(this.ax,isosurface(xmesh,ymesh,zmesh,dzmesh,0), 'FaceAlpha',0.2);
                         isonormals(xmesh,ymesh,zmesh,dymesh,pz);
                         pz.FaceColor = 'r';
                         pz.EdgeColor = 'none';
@@ -614,12 +614,6 @@ classdef bdPhasePortrait < bdPanel
                     if strcmp(this.tranmenu.Checked,'on')
                         % plot the transients (actually the whole trajectory) as a thin grey line
                         plot3(this.ax, this.y1, this.y2,  this.y3, 'color',[0.75 0.75 0.75], 'HitTest','off');
-
-                        % if the MARKERS menu is also checked then ...
-                        if strcmp(this.markmenu.Checked,'on')
-                            % mark the initial conditions with a pentagram
-                            plot3(this.ax, this.y1(1), this.y2(1), this.y3(1), 'Marker','p', 'Color',[0.75 0.75 0.75], 'MarkerFaceColor','y', 'MarkerSize',10);
-                        end
                     end
 
                     % plot the non-transient part of the trajectory as a heavy black line
@@ -627,6 +621,12 @@ classdef bdPhasePortrait < bdPanel
 
                     % if the MARKERS menu is checked then ...
                     if strcmp(this.markmenu.Checked,'on') && ~isempty(indxt)
+                        % if the TRANSIENT menu is also checked then ...
+                        if strcmp(this.tranmenu.Checked,'on')
+                            % mark the initial conditions with a pentagram
+                            plot3(this.ax, this.y1(1), this.y2(1), this.y3(1), 'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10);
+                        end
+                        
                         % mark the start of the non-transient trajectory with an open circle
                         plot3(this.ax, this.y1(indxt), this.y2(indxt), this.y3(indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
                     end
@@ -668,12 +668,6 @@ classdef bdPhasePortrait < bdPanel
                     if strcmp(this.tranmenu.Checked,'on')
                         % plot the transients (actually the whole trajectory) as a thin grey line
                         plot(this.ax, this.y1, this.y2, 'color',[0.75 0.75 0.75], 'HitTest','off');
-
-                        % if the MARKERS menu is also checked then ...
-                        if strcmp(this.markmenu.Checked,'on')
-                            % mark the initial conditions with a pentagram
-                            plot(this.ax, this.y1(1), this.y2(1), 'Marker','p', 'Color',[0.75 0.75 0.75], 'MarkerFaceColor','y', 'MarkerSize',10);
-                        end
                     end
 
                     % plot the non-transients as a heavy black line
@@ -681,6 +675,11 @@ classdef bdPhasePortrait < bdPanel
 
                     % if the MARKERS menu is checked then ...
                     if strcmp(this.markmenu.Checked,'on') && ~isempty(indxt)
+                        % if the TRANSIENT menu is also checked then ...
+                        if strcmp(this.tranmenu.Checked,'on')
+                            % mark the initial conditions with a pentagram
+                            plot(this.ax, this.y1(1), this.y2(1), 'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10);
+                        end
                         % mark the start of the non-transient with an open circle
                         plot(this.ax, this.y1(indxt), this.y2(indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
                     end

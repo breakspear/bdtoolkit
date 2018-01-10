@@ -420,7 +420,12 @@ classdef bdTimePortrait < bdPanel
                     cla(this.ax1);
                     cla(this.ax2);
             end          
-            
+           
+            % get the solution data (including the transient part)
+            this.t = control.sol.x;
+            this.y1 = control.sol.y(solindx1,:);
+            this.y2 = control.sol.y(solindx2,:);
+
             % plot the background traces as thin grey lines
             plot(this.ax1, this.t, this.y1', 'color',[0.75 0.75 0.75], 'HitTest','off');
             plot(this.ax2, this.t, this.y2', 'color',[0.75 0.75 0.75], 'HitTest','off');
@@ -428,11 +433,6 @@ classdef bdTimePortrait < bdPanel
             % get the indices of the non-transient time steps in this.t
             tindx = control.tindx;      % logical indices of the non-transient time steps
             indxt = find(tindx>0,1);    % numerical index of the first non-transient step (may be empty)
-
-            % get the solution data (including the transient part)
-            this.t = control.sol.x;
-            this.y1 = control.sol.y(solindx1,:);
-            this.y2 = control.sol.y(solindx2,:);
 
             % (re)plot the non-transient part of the variable of interest as a heavy black line
             plot(this.ax1, this.t(tindx), this.y1(valindx1,tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
@@ -447,8 +447,8 @@ classdef bdTimePortrait < bdPanel
 
                     % mark the start of the non-transient trajectory with an open circle
                     if ~isempty(indxt)
-                        plot(this.ax1, this.t(indxt), this.y1(indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
-                        plot(this.ax2, this.t(indxt), this.y2(indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
+                        plot(this.ax1, this.t(indxt), this.y1(valindx1,indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
+                        plot(this.ax2, this.t(indxt), this.y2(valindx2,indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
                     end
             end
             
