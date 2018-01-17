@@ -33,7 +33,11 @@ classdef bdBifurcation < bdPanel
     % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
-    
+
+    properties (Constant)
+        title = 'Bifurcation';
+    end    
+
     properties
         ax              % Handle to the plot axes
     end
@@ -621,7 +625,7 @@ classdef bdBifurcation < bdPanel
             % Assign default values to missing fields in sys.panels.bdBifurcation
 
             % Default panel settings
-            syspanel.title = 'Bifurcation';
+            syspanel.title = bdBifurcation.title;
             syspanel.transients = true;
             syspanel.markers = true;
             syspanel.points = false;

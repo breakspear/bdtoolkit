@@ -4,9 +4,9 @@
 %   for i=1..n.
 %
 % Example 1: Using the Brain Dynamics GUI
-%   n = 20;                 % number of processes
-%   sys = OrnsteinUhlenbeck(n);      % construct the system struct
-%   gui = bdGUI(sys);       % open the Brain Dynamics GUI
+%   n = 20;                         % number of processes
+%   sys = OrnsteinUhlenbeck(n);     % construct the system struct
+%   gui = bdGUI(sys);               % open the Brain Dynamics GUI
 % 
 % Example 2: Using the Brain Dynamics command-line solver
 %   n = 20;                                            % num of processes
@@ -24,7 +24,7 @@
 %   subplot(1,2,2);
 %   histfit(dW(:)); xlabel('dW'); ylabel('count');     % noise histogram
 %
-% Example 3: Using pre-generated (fixed) random values
+% Example 3: Using pre-generated random values
 %   n = 20;                                       % number of processes
 %   sys = OrnsteinUhlenbeck(n);                   % construct system struct
 %   sys.sdeoption.randn = randn(n,101);           % standard normal values
@@ -68,8 +68,8 @@
 % POSSIBILITY OF SUCH DAMAGE.
 function sys = OrnsteinUhlenbeck(n)
     % Handle to our SDE functions
-    sys.sdeF = @sdeF;       % deterministic coefficients
-    sys.sdeG = @sdeG;       % stochastic coefficients
+    sys.sdeF = @sdeF;       % deterministic part 
+    sys.sdeG = @sdeG;       % stochastic part
  
     % SDE parameters
     sys.pardef = [ struct('name','theta', 'value',1.0);
@@ -117,12 +117,12 @@ function sys = OrnsteinUhlenbeck(n)
     sys.self = @self;    
 end
 
-% The deterministic coefficient function.
+% The deterministic part of the equation.
 function F = sdeF(t,Y,theta,mu,sigma)  
     F = theta .* (mu - Y);
 end
 
-% The noise coefficient function.
+% The stochastic part of the equation.
 function G = sdeG(t,Y,theta,mu,sigma)
     G = sigma .* eye(numel(Y));
 end

@@ -33,6 +33,10 @@ classdef bdPhasePortrait < bdPanel
     % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
+
+    properties (Constant)
+        title = 'Phase Portrait';
+    end    
      
     properties
         ax              % Handle to the plot axes
@@ -43,6 +47,7 @@ classdef bdPhasePortrait < bdPanel
     
     properties (Access=private)
         nvar            % the number of system variables (elements in vardef)
+        modmenu         % handle to MODULO AXES menu item
         viewmenu        % handle to 3D VIEW menu item
         tranmenu        % handle to TRANSIENTS menu item
         markmenu        % handle to MARKERS menu item
@@ -76,6 +81,7 @@ classdef bdPhasePortrait < bdPanel
             % configure the pull-down menu
             this.menu.Text = control.sys.panels.bdPhasePortrait.title;
             this.InitCalibrateMenu(control);
+            this.InitModuloMenu(control);
             this.InitViewMenu(control);
             this.InitTransientsMenu(control);
             this.InitMarkerMenu(control);
@@ -114,30 +120,57 @@ classdef bdPhasePortrait < bdPanel
                         % adjust the limits to fit all of the data
                         tindx = true(size(control.tindx));
                     case 'off'
-                        % adjust the x-limits to fit the non-transient data only
+                        % adjust the limits to fit the non-transient data only
                         tindx = control.tindx;
                 end
                 
-                % adjust the x-limits to fit the visible data
-                lo = min(this.y1(tindx));
-                hi = max(this.y1(tindx));
-                varindx = this.xselector.UserData.xxxindx;
-                control.sys.vardef(varindx).lim = bdPanel.RoundLim(lo,hi);
+                % find the limits of the x- and y- data
+                lo1 = min(this.y1(tindx));
+                lo2 = min(this.y2(tindx));
+                hi1 = max(this.y1(tindx));
+                hi2 = max(this.y2(tindx));
+                
+                % get the indices of the x- and y-variables in sys.vardef
+                varindx1 = this.xselector.UserData.xxxindx;
+                varindx2 = this.yselector.UserData.xxxindx;
 
-                % adjust the y-limits to fit the visible data
-                lo = min(this.y2(tindx));
-                hi = max(this.y2(tindx));
-                varindx = this.yselector.UserData.xxxindx;
-                control.sys.vardef(varindx).lim = bdPanel.RoundLim(lo,hi);
+                % special case: we may be plotting different elements
+                % of the same vector-valued variable in x and y.
+                if varindx1==varindx2
+                    lo1 = min(lo1,lo2);  lo2 = lo1;
+                    hi1 = max(hi1,hi2);  hi2 = hi1;
+                end
                 
                 if strcmp(this.viewmenu.Checked,'on')
-                    % adjust the z-limits to fit the visible data
-                    lo = min(this.y3(tindx));
-                    hi = max(this.y3(tindx));
-                    varindx = this.zselector.UserData.xxxindx;
-                    control.sys.vardef(varindx).lim = bdPanel.RoundLim(lo,hi);
+                    % find the limits of the z- data
+                    lo3 = min(this.y3(tindx));
+                    hi3 = max(this.y3(tindx));
+                    
+                    % get the index of the z-variable in sys.vardef
+                    varindx3 = this.zselector.UserData.xxxindx;
+
+                    % special case: we may be plotting different elements
+                    % of the same vector-valued variable in x and z.
+                    if varindx1==varindx3
+                        lo1 = min(lo1,lo3);  lo3 = lo1;
+                        hi1 = max(hi1,hi3);  hi3 = hi1;
+                    end
+                    
+                    % special case: we may be plotting different elements
+                    % of the same vector-valued variable in y and z.
+                    if varindx2==varindx3
+                        lo2 = min(lo2,lo3);  lo3 = lo2;
+                        hi2 = max(hi2,hi3);  hi3 = hi2;
+                    end
+                    
+                    % adjust the limits of the z variables
+                    control.sys.vardef(varindx3).lim = bdPanel.RoundLim(lo3,hi3);
                 end
 
+                % adjust the limits of the x and y variables
+                control.sys.vardef(varindx1).lim = bdPanel.RoundLim(lo1,hi1);
+                control.sys.vardef(varindx2).lim = bdPanel.RoundLim(lo2,hi2);
+                
                 % refresh the control widgets (becasue their limits have changed)
                 notify(control,'refresh');
                  
@@ -146,6 +179,35 @@ classdef bdPhasePortrait < bdPanel
             end
 
         end
+    
+        % Initiliase the MODULO AXES menu item
+        function InitModuloMenu(this,control)
+            % get the mod menu setting from sys.panels
+            if control.sys.panels.bdPhasePortrait.mod
+                checkflag = 'on';
+            else
+                checkflag = 'off';
+            end
+
+            % construct the menu item
+            this.modmenu = uimenu(this.menu, ...
+                'Text','Modulo Axes', ...
+                'Checked',checkflag, ...
+                'Callback', @ModuloMenuCallback);
+
+            % Menu callback function
+            function ModuloMenuCallback(menuitem,~)
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                    case 'off'
+                        menuitem.Checked='on';
+                end
+                % redraw this panel only
+                this.redraw(control);
+            end
+        end
+        
         
         % Initialise the 3D VIEW menu item
         function InitViewMenu(this,control)
@@ -502,10 +564,10 @@ classdef bdPhasePortrait < bdPanel
             % if 'hold' menu is checked then ...
             switch this.holdmenu.Checked
                 case 'on'
-                    % Change existing plots to thin grey lines 
-                    set( findobj(this.ax,'Type','Line'), 'LineWidth',0.5, 'Color',[0.75 0.75 0.75]);               
+                    % Remove the foreground lines and markers only
+                    delete( findobj(this.ax,'Tag','fgnd') );
                 case 'off'
-                    % Clear the plot axis
+                    % Clear everything from the axis
                     cla(this.ax);
             end
 
@@ -547,8 +609,8 @@ classdef bdPhasePortrait < bdPanel
             indxt = find(tindx>0,1);    % numerical index of the first non-transient step (may be empty)
 
             % set the axes limits
-            this.ax.XLim = lim1 + [-1e-6 +1e-6];
-            this.ax.YLim = lim2 + [-1e-6 +1e-6];
+            this.ax.XLim = lim1 + [-1e-4 +1e-4];
+            this.ax.YLim = lim2 + [-1e-4 +1e-4];
 
             % if the 3D VIEW menu is checked then plot 3D view else plot 2D view
             switch this.viewmenu.Checked
@@ -567,7 +629,7 @@ classdef bdPhasePortrait < bdPanel
                     this.y3 = control.sol.y(solindx3(valindx3),:);
 
                     % set the axes limits
-                    this.ax.ZLim = lim3 + [-1e-6 +1e-6];
+                    this.ax.ZLim = lim3 + [-1e-4 +1e-4];
                     
                     % compute the 3D vector field (if required)
                     if vecflag
@@ -610,30 +672,105 @@ classdef bdPhasePortrait < bdPanel
                         lighting gouraud
                     end
 
-                    % if the TRANSIENT menu is enabled then  ...
-                    if strcmp(this.tranmenu.Checked,'on')
-                        % plot the transients (actually the whole trajectory) as a thin grey line
-                        plot3(this.ax, this.y1, this.y2,  this.y3, 'color',[0.75 0.75 0.75], 'HitTest','off');
-                    end
+                    % if the MODULO AXES menu is checked then ...
+                    switch this.modmenu.Checked
+                        case 'on'
+                            % if the TRANSIENT menu is enabled then  ...
+                            if strcmp(this.tranmenu.Checked,'on')
+                                % plot the background traces as a thin grey line
+                                modplot3(this.ax, ...
+                                    this.y1, this.y2, this.y3, ...
+                                    lim1, lim2, lim3, ...
+                                    'color',[0.75 0.75 0.75], ...
+                                    'HitTest','off');
+                            end
+                            
+                            % plot the non-transient part of the trajectory as a heavy black line
+                            modplot3(this.ax, ...
+                                this.y1(tindx), this.y2(tindx), this.y3(tindx), ...
+                                lim1, lim2, lim3, ...
+                                'color','k', ...
+                                'Marker',markerstyle, ...
+                                'LineStyle',linestyle, ...
+                                'Linewidth',1.5, ...
+                                'Tag','fgnd');
 
-                    % plot the non-transient part of the trajectory as a heavy black line
-                    plot3(this.ax, this.y1(tindx), this.y2(tindx), this.y3(tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
+                            % if the TRANSIENT menu is enabled then  ...
+                            if strcmp(this.tranmenu.Checked,'on')                            
+                                % plot the pentagram marker
+                                modplot3(this.ax, ...
+                                    this.y1(1), this.y2(1), this.y3(1), ...
+                                    lim1, lim2, lim3, ...
+                                    'Marker','p', ...
+                                    'Color','k', ...
+                                    'MarkerFaceColor','y', ...
+                                    'MarkerSize',10 , ...
+                                    'Visible',this.markmenu.Checked, ...
+                                    'Tag','fgnd');
+                            end
+                            
+                            if ~isempty(indxt)
+                                % plot the circle marker
+                                modplot3(this.ax, ...
+                                    this.y1(indxt), this.y2(indxt), this.y3(indxt), ...
+                                    lim1, lim2, lim3, ...
+                                    'Marker','o', ...
+                                    'Color','k', ...
+                                    'MarkerFaceColor','y', ...
+                                    'MarkerSize',6, ...
+                                    'Visible',this.markmenu.Checked, ...
+                                    'Tag','fgnd');
+                            end
 
-                    % if the MARKERS menu is checked then ...
-                    if strcmp(this.markmenu.Checked,'on') && ~isempty(indxt)
-                        % if the TRANSIENT menu is also checked then ...
-                        if strcmp(this.tranmenu.Checked,'on')
-                            % mark the initial conditions with a pentagram
-                            plot3(this.ax, this.y1(1), this.y2(1), this.y3(1), 'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10);
-                        end
-                        
-                        % mark the start of the non-transient trajectory with an open circle
-                        plot3(this.ax, this.y1(indxt), this.y2(indxt), this.y3(indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
+                        case 'off'
+                            % if the TRANSIENT menu is enabled then  ...
+                            if strcmp(this.tranmenu.Checked,'on')
+                                % plot the transients (actually the whole trajectory) as a thin grey line
+                                plot3(this.ax, ...
+                                    this.y1, this.y2, this.y3, ...
+                                    'color',[0.75 0.75 0.75], ...
+                                    'HitTest','off');
+                            end
+
+                            % plot the non-transient part of the trajectory as a heavy black line
+                            plot3(this.ax, ...
+                                this.y1(tindx), this.y2(tindx), this.y3(tindx), ...
+                                'color','k', ...
+                                'LineStyle',linestyle, ...
+                                'Linewidth',1.5, ...
+                                'Marker',markerstyle, ...
+                                'Tag','fgnd');
+
+                            % if the TRANSIENT menu is enabled then  ...
+                            if strcmp(this.tranmenu.Checked,'on')                            
+                                % plot the pentagram marker
+                                plot3(this.ax, ...
+                                    this.y1(1), this.y2(1), this.y3(1), ...
+                                    'Marker','p', ...
+                                    'Color','k', ...
+                                    'MarkerFaceColor','y', ...
+                                    'MarkerSize',10 , ...
+                                    'Visible',this.markmenu.Checked, ...
+                                    'Tag','fgnd');
+                            end                            
+                            
+                            if ~isempty(indxt)
+                                % plot the circle marker
+                                plot3(this.ax, ...
+                                    this.y1(indxt), this.y2(indxt), this.y3(indxt), ...
+                                    'Marker','o', ...
+                                    'Color','k', ...
+                                    'MarkerFaceColor','y', ...
+                                    'MarkerSize',6, ...
+                                    'Visible',this.markmenu.Checked, ...
+                                    'Tag','fgnd');
+                            end
                     end
-                
+                    
                     % update the plot title
-                    title(this.ax,[varname1 ' versus ' varname2 ' versus ' varname3]);
-            
+                    %title(this.ax,[varname1 ' versus ' varname2 ' versus ' varname3]);
+                    title(this.ax,'Phase Portrait (3D)');
+
                     % update the plot labels
                     xlabel(this.ax, varlabel1);
                     ylabel(this.ax, varlabel2);
@@ -662,30 +799,94 @@ classdef bdPhasePortrait < bdPanel
                         contour(this.ax,xmesh,ymesh,dxmesh, [0 0], 'color', [0 1 0], 'HitTest','off', 'LineStyle','-', 'LineWidth',1);
                         % plot the y-nullcline
                         contour(this.ax,xmesh,ymesh,dymesh, [0 0], 'color', [0 1 0], 'HitTest','off', 'LineStyle','-', 'LineWidth',1);
+                    end                    
+                    
+                    % if the MODULO AXES menu is checked then ...
+                    switch this.modmenu.Checked
+                        case 'on'
+                            % if the TRANSIENT menu is enabled then  ...
+                            if strcmp(this.tranmenu.Checked,'on')                            
+                                % plot the background trace as a thin grey line
+                                modplot(this.ax, this.y1, this.y2, lim1, lim2, ...
+                                    'color',[0.75 0.75 0.75], ...
+                                    'HitTest','off');
+                            end
+
+                            % plot the non-transient trace as a heavy black line
+                            modplot(this.ax, this.y1(tindx), this.y2(tindx), lim1, lim2, ...
+                                'color',[0 0 0], ...
+                                'LineStyle',linestyle, ...
+                                'LineWidth',1.5, ...
+                                'Marker',markerstyle, ...
+                                'Tag','fgnd');
+                            
+                            % if the TRANSIENT menu is enabled then  ...
+                            if strcmp(this.tranmenu.Checked,'on')                            
+                                % plot the pentagram marker
+                                modplot(this.ax, this.y1(1), this.y2(1), lim1, lim2, ...
+                                    'Marker','p', ...
+                                    'Color','k', ...
+                                    'MarkerFaceColor','y', ...
+                                    'MarkerSize',10 , ...
+                                    'Visible',this.markmenu.Checked, ...
+                                    'Tag','fgnd');
+                            end
+                            
+                            if ~isempty(indxt)
+                                % plot the circle marker
+                                modplot(this.ax, this.y1(indxt), this.y2(indxt), lim1, lim2, ...
+                                    'Marker','o', ...
+                                    'Color','k', ...
+                                    'MarkerFaceColor','y', ...
+                                    'MarkerSize',6, ...
+                                    'Visible',this.markmenu.Checked, ...
+                                    'Tag','fgnd');
+                            end
+                            
+                        case 'off'
+                            % if the TRANSIENT menu is enabled then  ...
+                            if strcmp(this.tranmenu.Checked,'on')                            
+                                % plot the background trace as a thin grey line
+                                plot(this.ax, this.y1, this.y2, ...
+                                    'color',[0.75 0.75 0.75], ...
+                                    'HitTest','off');
+                            end
+
+                            % plot the non-transients as a heavy black line
+                            plot(this.ax, this.y1(tindx), this.y2(tindx), ...
+                                'color','k', ...
+                                'Marker',markerstyle, ...
+                                'LineStyle',linestyle, ...
+                                'Linewidth',1.5, ...
+                                'Tag','fgnd');
+
+                            % if the TRANSIENT menu is enabled then  ...
+                            if strcmp(this.tranmenu.Checked,'on')                            
+                                % plot the pentagram marker
+                                plot(this.ax, this.y1(1), this.y2(1), ...
+                                    'Marker','p', ...
+                                    'Color','k', ...
+                                    'MarkerFaceColor','y', ...
+                                    'MarkerSize',10 , ...
+                                    'Visible',this.markmenu.Checked, ...
+                                    'Tag','fgnd');
+                            end
+                            
+                            if ~isempty(indxt)
+                                % plot the circle marker
+                                plot(this.ax, this.y1(indxt), this.y2(indxt), ...
+                                    'Marker','o', ...
+                                    'Color','k', ...
+                                    'MarkerFaceColor','y', ...
+                                    'MarkerSize',6, ...
+                                    'Visible',this.markmenu.Checked, ...
+                                    'Tag','fgnd');
+                            end
                     end
                     
-                    % if the TRANSIENT menu is enabled then  ...
-                    if strcmp(this.tranmenu.Checked,'on')
-                        % plot the transients (actually the whole trajectory) as a thin grey line
-                        plot(this.ax, this.y1, this.y2, 'color',[0.75 0.75 0.75], 'HitTest','off');
-                    end
-
-                    % plot the non-transients as a heavy black line
-                    plot(this.ax, this.y1(tindx), this.y2(tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
-
-                    % if the MARKERS menu is checked then ...
-                    if strcmp(this.markmenu.Checked,'on') && ~isempty(indxt)
-                        % if the TRANSIENT menu is also checked then ...
-                        if strcmp(this.tranmenu.Checked,'on')
-                            % mark the initial conditions with a pentagram
-                            plot(this.ax, this.y1(1), this.y2(1), 'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10);
-                        end
-                        % mark the start of the non-transient with an open circle
-                        plot(this.ax, this.y1(indxt), this.y2(indxt), 'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6);
-                    end
-                
                     % update the plot title
-                    title(this.ax,[varname1 ' versus ' varname2]);
+                    %title(this.ax,[varname1 ' versus ' varname2]);
+                    title(this.ax,'Phase Portrait');
 
                     % update the plot labels
                     xlabel(this.ax, varlabel1);
@@ -793,7 +994,8 @@ classdef bdPhasePortrait < bdPanel
             % Assign default values to missing fields in sys.panels.bdPhasePortrait
     
             % Default panel settings
-            syspanel.title = 'Phase Portrait';
+            syspanel.title = bdPhasePortrait.title;
+            syspanel.mod = false;
             syspanel.transients = true;
             syspanel.markers = true;
             syspanel.points = false;
@@ -811,6 +1013,12 @@ classdef bdPhasePortrait < bdPanel
             if isfield(sys.panels.bdPhasePortrait,'title')
                 syspanel.title = sys.panels.bdPhasePortrait.title;
             end
+            
+            % sys.panels.bdPhasePortrait.mod
+            if isfield(sys.panels.bdPhasePortrait,'mod')
+                syspanel.mod = sys.panels.bdPhasePortrait.mod;
+            end
+            
 
             % sys.panels.bdPhasePortrait.transients
             if isfield(sys.panels.bdPhasePortrait,'transients')
@@ -851,3 +1059,71 @@ classdef bdPhasePortrait < bdPanel
     end
     
 end
+
+function modplot(ax,y1,y2,lim1,lim2,varargin)
+    % compute the spans of each limit
+    span1 = lim1(2) - lim1(1);
+    span2 = lim2(2) - lim2(1);
+
+    % modulo both trajectories
+    y1 = mod(y1-lim1(1), span1) + lim1(1);
+    y2 = mod(y2-lim2(1), span2) + lim2(1);
+    
+    % find the discontinuities in each
+    d1 = 2*abs(diff(y1)) > span1;
+    d2 = 2*abs(diff(y2)) > span2;
+
+    % indexes of discontinuities combined
+    di = find([d1 1]|[d2 1]);
+
+    % plot each segment separately
+    i1 = 1;
+    for i2 = di
+        plot(ax, y1(i1:i2), y2(i1:i2), varargin{:});
+        i1=i2+1;
+    end
+
+end
+
+function modplot3(ax,y1,y2,y3,lim1,lim2,lim3,varargin)
+    % compute the spans of each limit
+    span1 = lim1(2) - lim1(1);
+    span2 = lim2(2) - lim2(1);
+    span3 = lim3(2) - lim3(1);
+
+    % modulo all trajectories
+    y1 = mod(y1-lim1(1), span1) + lim1(1);
+    y2 = mod(y2-lim2(1), span2) + lim2(1);
+    y3 = mod(y3-lim3(1), span3) + lim3(1);
+    
+    % find the discontinuities in each
+    d1 = 2*abs(diff(y1)) > span1;
+    d2 = 2*abs(diff(y2)) > span2;
+    d3 = 2*abs(diff(y3)) > span3;
+
+    % indexes of discontinuities combined
+    di = find([d1 1]|[d2 1]|[d3 1]);
+
+    % plot each segment separately
+    i1 = 1;
+    for i2 = di
+        plot3(ax, y1(i1:i2), y2(i1:i2), y3(i1:i2), varargin{:});
+        i1=i2+1;
+    end
+end
+
+
+% function yband = mod1band(y,ylim)
+%     yband = mod(y-ylim(1), ylim(2)-ylim(1)) + ylim(1);
+% end
+% 
+% function [yband1,yband2] = mod2band(y,ylim)
+%     ylo = ylim(1);
+%     yhi = ylim(2);
+%     yspan = yhi - ylo;
+%     yband1 =  mod(y-ylo, 2*yspan) + ylo;
+%     yband2 = yband1 - yspan;
+%     yband1(yband1<ylo | yband1>yhi) = NaN;
+%     yband2(yband2<ylo | yband2>yhi) = NaN;
+% end
+

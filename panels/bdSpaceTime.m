@@ -33,7 +33,11 @@ classdef bdSpaceTime < bdPanel
     % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
-    
+
+    properties (Constant)
+        title = 'Space-Time';
+    end    
+
     properties
         ax              % Handle to the plot axes
         t               % Time steps of the solution (1 x t)
@@ -398,7 +402,7 @@ classdef bdSpaceTime < bdPanel
             % Assign default values to missing fields in sys.panels.bdSpaceTime
 
             % Default panel settings
-            syspanel.title = 'Space-Time';
+            syspanel.title = bdSpaceTime.title;
             syspanel.transients = true;
             syspanel.markers = true;
             syspanel.blend = false;

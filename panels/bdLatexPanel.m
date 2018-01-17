@@ -34,12 +34,15 @@ classdef bdLatexPanel < bdPanel
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
    
+    properties (Constant)
+        title = 'Equations';
+    end    
+
     properties
         latex       % A copy of the latex strings being rendered.
     end
     
-    methods
-        
+    methods        
         function this = bdLatexPanel(tabgroup,control)
             % Construct a new LaTeX panel in the given tabgroup
             
@@ -123,9 +126,9 @@ classdef bdLatexPanel < bdPanel
             % Apply default values to missing fields in sys.panels.bdLatexPanel
 
             % Default panel settings
-            syspanel.title = 'Equations';
-            syspanel.latex = {'\textbf{No latex equations to display}',
-                              '\textsl{sys.panels.bdLatexPanel.latex} = \{`latex string 1'', `latex string 2'', ... \}',
+            syspanel.title = bdLatexPanel.title;
+            syspanel.latex = {'\textbf{No latex equations to display}', ...
+                              '\textsl{sys.panels.bdLatexPanel.latex} = \{`latex string 1'', `latex string 2'', ... \}', ...
                               'is undefined for this model'};
             
             % Nothing more to do if sys.panels.bdLatexPanel is undefined

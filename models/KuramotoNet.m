@@ -13,9 +13,9 @@
 %   gui = bdGUI(sys);          % open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2016a,2017a)
+%   Stewart Heitmann (2016a,2017a,2018a)
 
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -46,9 +46,8 @@ function sys = KuramotoNet(Kij)
     % Determine the number of nodes from the size of the coupling matrix
     n = size(Kij,1);
     
-    % Handles to our ODE and auxiliary functions
+    % Handle to our ODE function
     sys.odefun = @odefun;
-    sys.auxfun = @auxfun;
     
     % ODE parameters
     sys.pardef = [ struct('name','Kij',   'value',Kij);
@@ -56,12 +55,8 @@ function sys = KuramotoNet(Kij)
                    struct('name','omega', 'value',randn(n,1)) ];
                
     % ODE state variables
-    sys.vardef = struct('name','theta', 'value',2*pi*rand(n,1));
+    sys.vardef = struct('name','theta', 'value',2*pi*rand(n,1), 'lim',[-pi pi]);
     
-    % Auxiliary variables
-    sys.auxdef = [ struct('name','phi', 'value',zeros(n,1));
-                   struct('name','R',   'value',0) ];
-               
     % Time span
     sys.tspan = [0 100];
 
@@ -100,16 +95,15 @@ function sys = KuramotoNet(Kij)
     
     % Time Portrait panel
     sys.panels.bdTimePortrait.title = 'Time Portrait';
+    sys.panels.bdTimePortrait.mod = true;
  
     % Phase Portrait panel
     sys.panels.bdPhasePortrait.title = 'Phase Portrait';
 
-    % Space-Time panel
-    sys.panels.bdSpaceTime.title = 'Space-Time';
-
-    % Correlation panel
-    sys.panels.bdCorrPanel.title = 'Correlation';
-
+    % Auxiliary panel
+    sys.panels.bdAuxiliary.title = 'Auxiliary';
+    sys.panels.bdAuxiliary.auxfun = {@centroid1,@centroid2,@KuramotoR};
+    
     % Solver panel
     sys.panels.bdSolverPanel.title = 'Solver';                
 end
@@ -127,18 +121,75 @@ function dtheta = odefun(t,theta,Kij,k,omega)
     dtheta = omega + k/n.*sum(Kij.*sin(theta_ij),1)';   % Kuramoto Equation in vector form.
 end
 
-% The toolbox applies this auxillary function to the solution returned by
-% the solver. The ODE parameters are the same as odefun. Its output is
-% a two dimensional array where each row containes one auxiliary variable
-% whose values are computed t all time samples in vector t.
-% In this case, the auxillary variables are
-%    phi(j) = sin(theta(j) - theta(1))
-% and the Kuramoto order parameter
-%    R = 1/n * sum(exp(1i*theta)).
-function aux = auxfun(sol,Kij,k,omega)
-    theta = sol.y;                                % (nxt) matrix
-    n = size(theta,1);
-    phi = sin(theta - ones(n,1)*theta(1,:));      % (nxt) matrix
-    R = abs(sum(exp(1i*theta),1))./n;             % (1xt) vector
-    aux = [phi; R];
+% Auxiliary function that plots the centroid of the oscillators
+function centroid1(ax,t,sol,Kij,k,omega)
+    % Get the phases of the oscillators at time t
+    theta = bdEval(sol,t);
+    
+    % Project the phases into the complex plane.
+    ztheta = exp(1i.*theta);
+    
+    % Plot the centroid.
+    centroidplot(ax,ztheta);
+    title('centroid of oscillators'); 
+end
+
+% Auxiliary function that plots the centroid of the oscillators
+% in a rotating frame where the first oscillator is pinned at
+% zero phase.
+function centroid2(ax,t,sol,Kij,k,omega)
+    % Get the phases of the oscillators at time t
+    theta = bdEval(sol,t);
+    
+    % Project the phases into the complex plane and
+    % rotate the frame to pin the first oscillator at zero phase.
+    ztheta = exp(1i.*theta) .* exp(-1i*theta(1));
+    
+    % Plot the centroid.
+    centroidplot(ax,ztheta);
+    title('centroid of oscillators (rotating frame)'); 
+end
+
+% Utility function for plotting the centroid
+function centroidplot(ax,ztheta)
+    % compute the phase centroid
+    centroid = mean(ztheta);
+    
+    % plot the unit circle
+    plot(ax,exp(1i.*linspace(-pi,pi,100)), 'color',[0.75 0.75 0.75]);
+    
+    % plot the oscillator phases on the unit circle
+    plot(ax,ztheta,'o','color','k');
+    
+    % plot the centroid (yellow paddle)
+    plot(ax,[0 centroid], 'color', 'k');
+    plot(ax,centroid,'o','color','k', 'Marker','o', 'MarkerFaceColor','y', 'MarkerSize',10);
+    
+    % axis limits etc
+    axis(ax,'equal');
+    xlim(ax,[-1.1 1.1]);
+    ylim(ax,[-1.1 1.1]);
+end
+
+% Auxiliary function for plotting the time course of the 
+% Kuramoto order parameter (R) whic is defined as the magnitude
+% of the centroid of the oscillators.
+function aux = KuramotoR(ax,t,sol,Kij,k,omega)
+    % Project the phases into the complex plane.
+    ztheta = exp(1i.*sol.y);
+
+    % compute the running phase centroid
+    centroid = mean(ztheta);
+
+    % plot the amplitide of the centroid versus time.
+    plot(ax,sol.x,abs(centroid),'color','k','linewidth',1.5);
+    
+    % axis limits etc
+    t0 = sol.x(1);
+    t1 = sol.x(end);
+    xlim(ax,[t0 t1]);
+    ylim(ax,[-0.1 1.1]);
+    xlabel('time');
+    ylabel('R = abs(centroid)');
+    title('Kuramoto Order Parameter (R)')
 end
