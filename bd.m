@@ -4,9 +4,9 @@ classdef bd
     %  when building custom GUI panels.
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a,2017c)
+    %  Stewart Heitmann (2016a,2017a,2017c,2018a)
 
-    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -156,57 +156,24 @@ classdef bd
         %    map(2).name = 'B'   map(2).solindx = [5 6]
         %    map(3).name = 'C'   map(3).solindx = [7 8 9]
         %    
-        function map = varMap(vardef)
-            % number of entries in vardef
-            n = numel(vardef);
-
-            % preallocate the return map with n entries
-            map = struct('name',cell(n,1),'solindx',[]);
-
-            % for each entry in vardef
-            row = 0;                                  % current row index of sol.y
-            for indx = 1:n
-                len = numel(vardef(indx).value);      % number of ODE variables represented by this vardef
-                map(indx).name = vardef(indx).name;   % name field
-                map(indx).solindx = (1:len) + row;    % row indexes to corresponding sol.y values
-                row = row + len;                      % next row position
-            end
-        end        
+%         function map = varMap(vardef)
+%             % number of entries in vardef
+%             n = numel(vardef);
+% 
+%             % preallocate the return map with n entries
+%             map = struct('name',cell(n,1),'solindx',[]);
+% 
+%             % for each entry in vardef
+%             row = 0;                                  % current row index of sol.y
+%             for indx = 1:n
+%                 len = numel(vardef(indx).value);      % number of ODE variables represented by this vardef
+%                 map(indx).name = vardef(indx).name;   % name field
+%                 map(indx).solindx = (1:len) + row;    % row indexes to corresponding sol.y values
+%                 row = row + len;                      % next row position
+%             end
+%         end        
                 
-        function map = solMap(vardef)
-            % number of entries in vardef
-            n = numel(vardef);
-            
-            % total number of variables (number of rows in sol.y)
-            nsol = 0; 
-            for varindx = 1:n
-                nsol = nsol + numel(vardef(varindx).value);
-            end
-            
-            % preallocate the return map with nsol entries
-            map = struct('name',cell(nsol,1),'varindx',[]);
-
-            solindx = 1;
-            for varindx = 1:n
-                % for each element in the current variable
-                len = numel(vardef(varindx).value);
-                for element = 1:len
-                    % generate a name string for this element
-                    if len==1
-                        name = vardef(varindx).name;        
-                    else
-                        name = num2str(element,[vardef(varindx).name,'_{%d}']);        
-                    end                    
-                    % populate the map entry
-                    map(solindx).name = name;
-                    map(solindx).varindx = varindx;
-                    % next map entry
-                    solindx = solindx + 1;
-                end
-            end            
-        end
         
-
         % Return the type (odesolver,ddesolver,sdesolver) of the given
         % solver function handle. If the solver is not supported by the
         % sys struct then returns 'unsupported'.
@@ -284,7 +251,7 @@ classdef bd
         end
         
         % The functionality of bdSolve but without the error checking on sys
-        function [sol,sox] = solve(sys,tspan,solverfun,solvertype)
+        function sol = solve(sys,tspan,solverfun,solvertype)
             % The type of the solver function determines how we apply it 
             switch solvertype
                 case 'odesolver'
@@ -292,16 +259,6 @@ classdef bd
                     y0 = bdGetValues(sys.vardef);
                     par = {sys.pardef.value};
                     sol = solverfun(sys.odefun, tspan, y0, sys.odeoption, par{:});
-                    % compute the auxilliary variables (if requested)
-                    if nargout==2
-                        if isfield(sys,'auxfun')
-                            sox.solver = 'auxfun';
-                            sox.x = sol.x;
-                            sox.y = sys.auxfun(sol,par{:});
-                        else
-                            sox = [];
-                        end
-                    end
 
                 case 'ddesolver'
                     % case of a DDE solver (eg dde23)
@@ -309,32 +266,12 @@ classdef bd
                     lag = bdGetValues(sys.lagdef); 
                     par = {sys.pardef.value};
                     sol = solverfun(sys.ddefun, lag, y0, tspan, sys.ddeoption, par{:});
-                    % compute the auxilliary variables (if requested)
-                    if nargout==2
-                        if isfield(sys,'auxfun')
-                            sox.solver = 'auxfun';
-                            sox.x = sol.x;
-                            sox.y = sys.auxfun(sol,par{:});
-                        else
-                            sox = [];
-                        end
-                    end
 
                 case 'sdesolver'
                     % case of an SDE solver
                     y0 = bdGetValues(sys.vardef);          
                     par = {sys.pardef.value};
                     sol = solverfun(sys.sdeF, sys.sdeG, tspan, y0, sys.sdeoption, par{:});
-                    % compute the auxilliary variables (if requested)
-                    if nargout==2
-                        if isfield(sys,'auxfun')
-                            sox.solver = 'auxfun';
-                            sox.x = sol.x;
-                            sox.y = sys.auxfun(sol,par{:});
-                        else
-                            sox = [];
-                        end
-                    end
 
                 case 'unsupported'
                     % case of an unsupported solver function
@@ -344,19 +281,6 @@ classdef bd
                     throw(MException('bdtoolkit:solve:solvertype','Invalid solvertype ''%s''',solvertype));
                 end        
         end
-
-        % Compute the auxillary solution (sox) from the given sol
-        function sox = computesox(sys,sol)
-            if isfield(sys,'auxfun')
-                par = {sys.pardef.value};
-                sox.solver = 'auxfun';
-                sox.x = sol.x;
-                sox.y = sys.auxfun(sol,par{:});
-            else
-                sox = [];
-            end
-        end
-
         
         % Checks the contents of sys and throws an exception if a problem is found.
         % If no problem is found then returns a 'safe' copy of sys in which missing
@@ -369,7 +293,18 @@ classdef bd
             if ~isstruct(sys)
                throw(MException('bdtoolkit:syscheck:badsys','The sys variable must be a struct'));
             end
-    
+
+            % silently remove obsolete fields (from version 2017c)
+            if isfield(sys,'auxdef')
+                sys = rmfield(sys,'auxdef');
+            end
+            if isfield(sys,'auxfun')
+                sys = rmfield(sys,'auxfun');
+            end
+            if isfield(sys,'self')
+                sys = rmfield(sys,'self');
+            end
+            
             % check for obsolete fields (from version 2016a)
             if isfield(sys,'pardef') && iscell(sys.pardef)
                 throw(MException('bdtoolkit:syscheck:obsolete','The sys.pardef field changed from a cell array in 2016a to an array of structs in 2017a'));
@@ -378,14 +313,14 @@ classdef bd
                 throw(MException('bdtoolkit:syscheck:obsolete','The sys.odefun and sys.sdefun fields are obsolete for SDEs. They were replaced by sys.sdeF and sys.sdeG in 2017a'));
             end
             if isfield(sys,'gui')
-                throw(MException('bdtoolkit:syscheck:obsolete','The sys.gui field is obsolete. It was renamed sys.panels in 2017a'));        
+                throw(MException('bdtoolkit:syscheck:obsolete','The sys.gui field is obsolete. It was renamed sys.panels after version 2016a'));        
             end
             if isfield(sys,'panels')
                 if isfield(sys.panels,'bdCorrelationPanel')
-                    throw(MException('bdtoolkit:syscheck:obsolete', 'The bdCorrelationPanel was renamed bdCorrPanel in 2017a'));        
+                    throw(MException('bdtoolkit:syscheck:obsolete', 'The bdCorrelationPanel was renamed bdCorrPanel after version 2016a'));        
                 end
                 if isfield(sys.panels,'bdSpaceTimePortrait')
-                    throw(MException('bdtoolkit:syscheck:obsolete', 'The bdSpaceTimePortrait was renamed bdSpaceTime in 2017a'));        
+                    throw(MException('bdtoolkit:syscheck:obsolete', 'The bdSpaceTimePortrait was renamed bdSpaceTime after version 2016a'));        
                 end
             end
 
@@ -404,11 +339,24 @@ classdef bd
             end
             % check each array entry
             for indx=1:numel(sys.pardef)
+                % ensure the pardef.name field is a string
                 if ~ischar(sys.pardef(indx).name)
                    throw(MException('bdtoolkit:syscheck:pardef','The sys.pardef(%d).name field must be a string',indx));
                 end
+                % ensure the pardef.value field is numeric 
                 if isempty(sys.pardef(indx).value) || ~isnumeric(sys.pardef(indx).value)
                    throw(MException('bdtoolkit:syscheck:pardef','The sys.pardef(%d).value field must be numeric',indx));
+                end
+                % assign a default value to pardef.lim if it is missing  
+                if ~isfield(sys.pardef(indx),'lim') || isempty(sys.pardef(indx).lim)
+                    % default lim entries
+                    lo = floor(min(sys.pardef(indx).value(:)) - 1e-6);
+                    hi =  ceil(max(sys.pardef(indx).value(:)) + 1e-6);
+                    sys.pardef(indx).lim = [lo,hi];
+                end
+                % ensure the pardef.lim field is [lo hi] only
+                if ~isnumeric(sys.pardef(indx).lim) || numel(sys.pardef(indx).lim) ~= 2 || sys.pardef(indx).lim(1)>=sys.pardef(indx).lim(2)
+                   throw(MException('bdtoolkit:syscheck:pardef','The sys.pardef(%d).lim field does not contain valid [lower, upper] limits',indx));
                 end
             end
             
@@ -426,13 +374,31 @@ classdef bd
                throw(MException('bdtoolkit:syscheck:vardef','The sys.vardef.value field is undefined'));
             end
             % check each array entry
+            offset = 0;
             for indx=1:numel(sys.vardef)
+                % ensure the vardef.name field is a string
                 if ~ischar(sys.vardef(indx).name)
                    throw(MException('bdtoolkit:syscheck:vardef','The sys.vardef(%d).name field must be a string',indx));
                 end
+                % ensure the vardef.value field is numeric 
                 if isempty(sys.vardef(indx).value) || ~isnumeric(sys.vardef(indx).value) 
                    throw(MException('bdtoolkit:syscheck:vardef','The sys.vardef(%d).value field must be numeric',indx));
                 end
+                % assign a default value to vardef.lim if it is missing  
+                if ~isfield(sys.vardef(indx),'lim') || isempty(sys.vardef(indx).lim)
+                    % default lim entries
+                    lo = floor(min(sys.vardef(indx).value(:)) - 1e-6);
+                    hi =  ceil(max(sys.vardef(indx).value(:)) + 1e-6);
+                    sys.vardef(indx).lim = [lo,hi];
+                end
+                % ensure the vardef.lim field is [lo hi] only
+                if ~isnumeric(sys.vardef(indx).lim) || numel(sys.vardef(indx).lim) ~= 2 || sys.vardef(indx).lim(1)>=sys.vardef(indx).lim(2)
+                   throw(MException('bdtoolkit:syscheck:vardef','The sys.vardef(%d).lim field does not contain valid [lower, upper] limits',indx));
+                end
+                % assign the corresponding indices to sol
+                len =  numel(sys.vardef(indx).value);
+                sys.vardef(indx).solindx = [1:len] + offset;
+                offset = offset + len;
             end
             
             % check sys.tspan = [0,1]
@@ -445,7 +411,18 @@ classdef bd
             if size(sys.tspan,1)~=1 || size(sys.tspan,2)~=2
                 throw(MException('bdtoolkit:syscheck:tspan','The sys.tspan field must be size 1x2'));
             end
-           
+            if sys.tspan(1) > sys.tspan(2)
+                throw(MException('bdtoolkit:syscheck:tspan','The values in sys.tspan=[t0 t1] must have t0<=t1'));
+            end
+
+            % check sys.tval = t0
+            if ~isfield(sys,'tval')
+                sys.tval = sys.tspan(1);      
+            end
+            % force tval to be bounded by tspan
+            sys.tval = max(sys.tspan(1), sys.tval);
+            sys.tval = min(sys.tspan(2), sys.tval);            
+
             % Must have sys.odefun or sys.ddefun or (sys.sdeF and sdeG)
             if ~isfield(sys,'odefun') && ~isfield(sys,'ddefun') && ~isfield(sys,'sdeF') && ~isfield(sys,'sdeG')
                 throw(MException('bdtoolkit:syscheck:badfun','No function handles found for sys.odefun, sys.ddefun, sys.sdeF or sys.sdeG'));
@@ -574,12 +551,25 @@ classdef bd
                 end
                 % check each array entry
                 for indx=1:numel(sys.lagdef)
+                    % ensure the lagdef.name field is a string
                     if ~ischar(sys.lagdef(indx).name)
                         throw(MException('bdtoolkit:syscheck:lagdef','The sys.lagdef(%d).name field must be a string',indx));
                     end
+                    % ensure the lagdef.value field is numeric
                     if isempty(sys.lagdef(indx).value) || ~isnumeric(sys.lagdef(indx).value)
                         throw(MException('bdtoolkit:syscheck:lagdef','The sys.lagdef(%d).value field must be numeric',indx));
                     end
+                    % assign a default value to lagdef.lim if it is missing  
+                    if ~isfield(sys.lagdef(indx),'lim') || isempty(sys.lagdef(indx).lim)
+                        % default lim entries
+                        lo = floor(min(sys.lagdef(indx).value(:)) - 1e-6);
+                        hi =  ceil(max(sys.lagdef(indx).value(:)) + 1e-6);
+                        sys.lagdef(indx).lim = [lo,hi];
+                    end
+                    % ensure the lagdef.lim field is [lo hi] only
+                    if ~isnumeric(sys.lagdef(indx).lim) || numel(sys.lagdef(indx).lim) ~= 2 || sys.lagdef(indx).lim(1)>=sys.lagdef(indx).lim(2)
+                        throw(MException('bdtoolkit:syscheck:lagdef','The sys.lagdef(%d).lim field does not contain valid [lower, upper] limits',indx));
+                    end                    
                 end
             end
             
@@ -607,7 +597,7 @@ classdef bd
                 
                 % check sys.sdesolver
                 if ~isfield(sys,'sdesolver')
-                    throw(MException('bdtoolkit:syscheck:sdesolver','The sys.sdesolver field must be defined for SDEs'));
+                    sys.sdesolver = {@sdeEM,@sdeSH};
                 end
                 if ~iscell(sys.sdesolver)
                     throw(MException('bdtoolkit:syscheck:sdesolver','The sys.sdesolver field must be a cell array'));
@@ -667,36 +657,12 @@ classdef bd
                 end
             end            
             
-            % check sys.auxfun (optional function handle)
-            if isfield(sys,'auxfun')
-                % check that sys.auxfun is a function handle
-                if ~isa(sys.auxfun,'function_handle')
-                    throw(MException('bdtoolkit:syscheck:auxfun','The sys.auxfun field must be a function handle'));
-                end
-                % check that sys.auxfun is in the search path
-                if strcmp(func2str(sys.auxfun),'UNKNOWN Function')
-                    throw(MException('bdtoolkit:syscheck:auxfun','The sys.auxfun field contains a handle to a mising function.'));
-                end
-            end
-            
             % check sys.panels 
             if ~isfield(sys,'panels')
                 throw(MException('bdtoolkit:syscheck:panels','The sys.panels field is undefined'));
             end
             if ~isstruct(sys.panels)
                 throw(MException('bdtoolkit:syscheck:panels','The sys.panels field must be a struct'));
-            end
-            
-            % check sys.self (optional function handle)
-            if isfield(sys,'self')
-                % check that sys.self is a function handle
-                if ~isa(sys.self,'function_handle')
-                    throw(MException('bdtoolkit:syscheck:self','The sys.self field must be a function handle'));
-                end
-                % check that sys.self is in the search path
-                if strcmp(func2str(sys.self),'UNKNOWN Function')
-                    throw(MException('bdtoolkit:syscheck:self','The sys.self field contains a handle to a missing function.'));
-                end
             end
             
             % all tests have passed, return the updated sys.

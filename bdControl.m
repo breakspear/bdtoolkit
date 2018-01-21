@@ -1,11 +1,12 @@
 classdef bdControl < handle
-    %bdControl  Control panel for the Brain Dynamics Toolbox.
-    %  Internal toolbox object not intended to be called by end-users.
+    %bdControl  Control panel for the Brain Dynamics Toolbox GUI.
+    %  The bdControl class implements the graphical control panel used
+    %  by bdGUI. It is not intended to be called directly by users.
     % 
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a-c)
+    %  Stewart Heitmann (2016a,2017a-c,2018a)
 
-    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -34,40 +35,72 @@ classdef bdControl < handle
     % POSSIBILITY OF SUCH DAMAGE.
     
     properties
-        sys         % user-supplied system definition
-        sol = []    % solution struct returned by the matlab solver
-        sox = []    % auxiliary variables (computed by sys.auxfun)
+        sys             % working copy of the user-supplied system definition
+        sol = []        % solution struct returned by the matlab solver
+        par = []        % copy of the the parameters used to compute sol
+        lag = []        % copy of the the lag parameters used to compute sol
+        tindx           % indices of the non-transient time steps in sol.x 
         solvermap   % maps the solver functions to name and type strings
-        solveridx   % index of the active solver
-        halt = 0    % state of the HALT button
+        solver          % the active solver function
+        solvertype      % solver type string ('odesolver' or 'ddesolver' or 'sdesolver')
+        reverse = 0     % state of the REVERSE button
+        halt = 0        % state of the HALT button
     end
     
     properties (Access=private)
-        fig         % handle of parent figure
-        hld         % handle to HOLD button
-        %hlt         % handle to HALT button
-        cpustart    % cpu start time
-        cpu         % handle to cpu clock
-        pro         % handle to progress counter
-%        listeners   % array of listeners
+        fig             % handle to the parent figue
+        cpanel          % handle to control panel
+        spanel          % handle to solver panel
+
+        % Widgets in the control panel
+        ui_hold         % handle to the noise HOLD button (SDE only)
+        ui_evolve       % handle to the EVOLVE button
+        ui_jitter       % handle to the JITTER button
+        ui_transient    % handle to the TRANSIENT button
+        ui_reverse      % handle to the REVERSE button
+        
+        % Widgets in the solver panel
+        ui_solver       % handle to the SOLVER popup menu
+        ui_nsteps       % handle to the NSTEPS counter
+        ui_nfailed      % handle to the NFAILED counter
+        ui_nfevals      % handle to the NFEVALS counter
+        ui_cputime      % handle to the CPU counter
+        ui_progress     % handle to the PROGRESS counter
+        ui_halt         % handle to the HALT button
+
+        % internal states
+        cpustart        % cpu start time
+        timer           % handle to timer object
     end
     
+    properties (Constant)
+        cpanely = 0;     % vertical position of the control panel
+        cpanelm = 0;     % vertical margin at top of control panel
+        cpanelw = 244;   % width of the control panel
+    end
+
     events
-        recompute   % signals that sol must be recomputed
-        redraw      % signals that sol must be replotted
-        refresh     % signals the widgets to refresh their values
-        closefig    % tell all child figures to close
+        recompute   % notifies the control panel that sol must be recomputed
+        redraw      % notifes all display panels that sol must be replotted
+        refresh     % notifies the control panel widgets to refresh their values
+        vardef      % notifies the control panel widgets that sys.vardef has changed
+        pardef      % notifies the control panel widgets that sys.pardef has changed
+        lagdef      % notifies the control panel widgets that sys.lagdef has changed
     end
     
     methods
-        function this = bdControl(panel,sys)
+        % Constructor. 
+        function this = bdControl(fig,sys)
             % Check the contents of sys and fill any missing fields with
             % default values. Rethrow any problems back to the caller.
             try
-                sys = bd.syscheck(sys);
+                this.sys = bd.syscheck(sys);
             catch ME
                 throwAsCaller(MException('bdtoolkit:bdControl',ME.message));
             end
+            
+            % remember the parent figure
+            this.fig = fig;
             
             % init the sol struct
             this.sol.x=[];
@@ -77,705 +110,581 @@ classdef bdControl < handle
             this.sol.stats.nfailed=0;
             this.sol.stats.nfevals=0;
             
-            % take a working copy of the system struct
-            this.sys = sys;
+            % init the indicies of the non-transient time steps in sol.x
+            this.tindx = (this.sol.x >= this.sys.tval);
             
-            % init the listener array
-            %this.listeners = event.listener.empty(0);
+            % construct solmap
+            %this.solmap = this.SolutionMap(this.sys.vardef);
+
+            % construct the solver map. Q: IS THIS STILL NECESSARY? 
+            this.solvermap = bd.solverMap(this.sys); 
             
-            % contrsuct the solver map
-            this.solvermap = bd.solverMap(sys); 
-            
-            % currently active solver
-            this.solveridx = 1;            
-            
-            % remember the parent figure
-            this.fig = ancestor(panel,'figure');
-            
-            % get parent geometry
-            panelw = panel.Position(3);
-            panelh = panel.Position(4);
-
-            % Begin placing widgets at the top left of parent.
-            % We use the UserData field of each widget to remember its
-            % preferred vertical position. It makes resizing easier.
-            yoffset = 0;
-            posw = panelw - 10;
-            boxw = 50;
-            boxh = 20;
-            rowh = 22;            
-                                 
-            % next row
-            yoffset = yoffset + rowh;                                    
-            
-            % parameter title
-            uicontrol('Style','text', ...
-                'String','Parameters', ...
-                'HorizontalAlignment','left', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'FontWeight','bold', ...
-                'Parent', panel, ...
-                'UserData', yoffset, ...
-                'Tag', 'bdControlWidget', ...
-                'Position',[0 panelh-yoffset posw boxh]);
-            
-            % ODE parameter widgets
-            for parindx=1:numel(sys.pardef)
-                parstr = sys.pardef(parindx).name;    % parameter name (string)
-                parval = sys.pardef(parindx).value;   % parameter value (vector)
-       
-                % switch depending on parval being a scalar, vector or matrix
-                switch ScalarVectorMatrix(parval)
-                    case 1  % parval is a scalar              
-                        % next row
-                        yoffset = yoffset + rowh;
-            
-                        % construct edit box for the scalar
-                        uiobj = uicontrol('Style','edit', ...
-                            'String',num2str(parval,'%0.4g'), ...
-                            'Value',parval, ...
-                            'HorizontalAlignment','right', ...
-                            'FontUnits','pixels', ...
-                            'FontSize',12, ...
-                            'Parent', panel, ...
-                            'UserData', yoffset, ...
-                            'Tag', 'bdControlWidget', ...
-                            'Callback', @(hObj,~) this.ScalarParameter(hObj,parindx), ...
-                            'Position',[0 panelh-yoffset boxw boxh]);
-                        
-                        % listen to the control panel for widget refresh events
-                        %this.listeners(end+1) = addlistener(this,'parwidget',@(~,~) this.UpdateParWidgets(parindx,uiobj));    
-                        addlistener(this,'refresh',@(~,~) this.ScalarParameterRefresh(parindx,uiobj));    
-
-                        % string label
-                        uicontrol('Style','text', ...
-                            'String',parstr, ...
-                            'HorizontalAlignment','left', ...
-                            'FontUnits','pixels', ...
-                            'FontSize',12, ...
-                            'Parent', panel, ...
-                            'UserData', yoffset, ...
-                            'Tag', 'bdControlWidget', ...
-                            'Position',[boxw+5 panelh-yoffset posw-boxw-10 boxh]);
-                        
-                    case 2  % parval is a vector
-                        % next row
-                        yoffset = yoffset + rowh;
-
-                        % construct bar graph widget for the vector
-                        ax = axes('parent', panel, ...
-                            'Units','pixels', ...
-                            'Position',[0 panelh-yoffset boxw boxh]);
-                        barobj = bar(ax,parval, ...
-                            'ButtonDownFcn', @(~,~) bdControlVector(this,'pardef',parstr,['Parameters: ',parstr]) );
-                        xlim([0.5 numel(parval)+0.5]);
-                        set(ax,'Tag','bdControlWidget', 'UserData',yoffset);
-                        axis 'off';
-
-                        % listen to the control panel for widget refresh events
-                        addlistener(this,'refresh',@(~,~) this.VectorParameterRefresh(parindx,barobj));    
-
-                        % string label
-                        uicontrol('Style','text', ...
-                            'String',parstr, ...
-                            'HorizontalAlignment','left', ...
-                            'FontUnits','pixels', ...
-                            'FontSize',12, ...
-                            'Parent', panel, ...
-                            'UserData', yoffset, ...
-                            'Tag', 'bdControlWidget', ...
-                            'Position',[boxw+5 panelh-yoffset posw-boxw-10 boxh]);
-
-                    case 3  % parval is a matrix
-                        % next row
-                        yoffset = yoffset + boxw + 2;
-
-                        % construct image widget for the matrix
-                        ax = axes('parent', panel, ...
-                            'Units','pixels', ...
-                            'Position',[0 panelh-yoffset boxw boxw]);
-                        imObj = imagesc(parval(:,:,1), 'Parent',ax, ...
-                            'ButtonDownFcn', @(~,~) bdControlMatrix(this,'pardef',parstr,['Parameters: ',parstr]) );
-                        axis off;
-                        set(ax,'Tag','bdControlWidget', 'UserData',yoffset); 
-
-                        % listen to the control panel for widget refresh events
-                        addlistener(this,'refresh',@(~,~) this.MatrixParameterRefresh(parindx,imObj));    
-
-                        % string label
-                        uicontrol('Style','text', ...
-                            'String',parstr, ...
-                            'HorizontalAlignment','left', ...
-                            'FontUnits','pixels', ...
-                            'FontSize',12, ...
-                            'Parent', panel, ...
-                            'UserData', yoffset-15, ...
-                            'Tag', 'bdControlWidget', ...
-                            'Position',[boxw+5 panelh-(yoffset-15) posw-boxw-10 boxh]);
-                end
+            % currently active solver (FIX ME)
+            if isfield(this.sys,'odesolver')
+                this.solver = this.sys.odesolver{1};
+                this.solvertype = 'odesolver';
             end
-                       
-            % SDE random-hold widgets (if applicable)
-            if isfield(sys,'sdeF')
-                % next row
-                yoffset = yoffset + 1.5*rowh;                    
-                
-                 % lag title
-                uicontrol('Style','text', ...
-                    'String','Noise Samples', ...
-                    'HorizontalAlignment','left', ...
-                    'FontUnits','pixels', ...
-                    'FontSize',12, ...
-                    'FontWeight','bold', ...
-                    'Parent', panel, ...
-                    'UserData', yoffset, ...
-                    'Tag', 'bdControlWidget', ...
-                    'Position',[0 panelh-yoffset posw boxh]);
-
-                % next row
-                yoffset = yoffset + 0.9*rowh;                    
-
-                % HOLD button
-                this.hld = uicontrol('Style','radio', ...
-                    'String','Hold', ...
-                    'Value', (isfield(sys.sdeoption,'randn') && ~isempty(sys.sdeoption.randn) ), ...
-                    'HorizontalAlignment','left', ...
-                    'FontUnits','pixels', ...
-                    'FontSize',12, ...
-                    'FontWeight','normal', ...
-                    'ForegroundColor', 'k', ...
-                    'Parent', panel, ...
-                    'UserData', yoffset, ...
-                    'Tag', 'bdControlWidget', ...
-                    'ToolTipString', 'Hold the random samples fixed', ...
-                    'Callback', @(~,~) this.HoldCallback(), ...
-                    'Position',[0 panelh-yoffset 2*boxw+5 boxh]);  
+            if isfield(this.sys,'ddesolver')
+                this.solver = this.sys.ddesolver{1};
+                this.solvertype = 'ddesolver';
+            end
+            if isfield(this.sys,'sdesolver')
+                this.solver = this.sys.sdesolver{1};
+                this.solvertype = 'sdesolver';
             end
             
-            % DDE lag widgets (if applicable)
-            if isfield(sys,'lagdef')
-                % next row
-                yoffset = yoffset + 1.5*rowh;                                    
-
-                % lag title
-                uicontrol('Style','text', ...
-                    'String','Time Lags', ...
-                    'HorizontalAlignment','left', ...
-                    'FontUnits','pixels', ...
-                    'FontSize',12, ...
-                    'FontWeight','bold', ...
-                    'Parent', panel, ...
-                    'UserData', yoffset, ...
-                    'Tag', 'bdControlWidget', ...
-                    'Position',[0 panelh-yoffset posw boxh]);
-
-                % for each lagdef entry
-                for lagindx=1:numel(sys.lagdef)
-                    lagstr = sys.lagdef(lagindx).name;    % lag name (string)
-                    lagval = sys.lagdef(lagindx).value;   % lag value (vector)
-
-                    % switch depending on lagval being a scalar, vector or matrix
-                    switch ScalarVectorMatrix(lagval)
-                        case 1  % lagval is a scalar              
-                            % next row
-                            yoffset = yoffset + rowh;
-
-                            % construct edit box for the scalar
-                            uiobj = uicontrol('Style','edit', ...
-                                'String',num2str(lagval,'%0.4g'), ...
-                                'Value',lagval, ...
-                                'HorizontalAlignment','right', ...
-                                'FontUnits','pixels', ...
-                                'FontSize',12, ...
-                                'Parent', panel, ...
-                                'UserData', yoffset, ...
-                                'Tag', 'bdControlWidget', ...
-                                'Callback', @(hObj,~) this.ScalarLag(hObj,lagindx), ...
-                                'Position',[0 panelh-yoffset boxw boxh]);
-                           
-                            % listen to the control panel for widget refresh events
-                            addlistener(this,'refresh',@(~,~) this.ScalarLagRefresh(lagindx,uiobj));    
-
-                            % string label
-                            uicontrol('Style','text', ...
-                                'String',lagstr, ...
-                                'HorizontalAlignment','left', ...
-                                'FontUnits','pixels', ...
-                                'FontSize',12, ...
-                                'Parent', panel, ...
-                                'UserData', yoffset, ...
-                                'Tag', 'bdControlWidget', ...
-                                'Position',[boxw+5 panelh-yoffset posw-boxw-10 boxh]);
-
-                        case 2  % lagval is a vector
-                            % next row
-                            yoffset = yoffset + rowh;
-
-                            % construct bar graph widget for the vector
-                            ax = axes('parent', panel, ...
-                                'Units','pixels', ...
-                                'Position',[0 panelh-yoffset boxw boxh]);
-                            barobj = bar(ax,lagval, ...
-                                'ButtonDownFcn', @(~,~) bdControlVector(this,'lagdef',lagstr,['Time Lags: ',lagstr]) );
-                            xlim([0.5 numel(lagval)+0.5]);
-                            set(ax,'Tag','bdControlWidget', 'UserData',yoffset);
-                            axis 'off';
-
-                            % listen to the control panel for widget refresh events
-                            addlistener(this,'refresh',@(~,~) this.VectorLagRefresh(lagindx,barobj));    
-
-                            % string label
-                            uicontrol('Style','text', ...
-                                'String',lagstr, ...
-                                'HorizontalAlignment','left', ...
-                                'FontUnits','pixels', ...
-                                'FontSize',12, ...
-                                'Parent', panel, ...
-                                'UserData', yoffset, ...
-                                'Tag', 'bdControlWidget', ...
-                                'Position',[boxw+5 panelh-yoffset posw-boxw-10 boxh]);
-
-                        case 3  % parval is a matrix
-                            % next row
-                            yoffset = yoffset + boxw + 2;
-
-                            % construct image widget for the matrix
-                            ax = axes('parent', panel, ...
-                                'Units','pixels', ...
-                                'Position',[0 panelh-yoffset boxw boxw]);
-                            imObj = imagesc(lagval, 'Parent',ax, ...
-                                'ButtonDownFcn', @(~,~) bdControlMatrix(this,'lagdef',lagstr,['Time Lags: ',lagstr]) );
-                            
-                            axis off;
-                            set(ax,'Tag','bdControlWidget', 'UserData',yoffset); 
-
-                            % listen to the control panel for widget refresh events
-                            addlistener(this,'refresh',@(~,~) this.MatrixLagRefresh(lagindx,imObj));    
-
-                            % string label
-                            uicontrol('Style','text', ...
-                                'String',lagstr, ...
-                                'HorizontalAlignment','left', ...
-                                'FontUnits','pixels', ...
-                                'FontSize',12, ...
-                                'Parent', panel, ...
-                                'UserData', yoffset-15, ...
-                                'Tag', 'bdControlWidget', ...
-                                'Position',[boxw+5 panelh-(yoffset-15) posw-boxw-10 boxh]);
-                    end
-                end                
-            end            
+            % initialise the control panel
+            this.ControlPanelInit();
+                                    
+            % initialise the solver panel
+            this.SolverPanelInit();
             
-            % next row
-            yoffset = yoffset + 1.5*rowh;
-
-            % variable title
-            uicontrol('Style','text',...
-                'String','Initial Conditions', ...
-                'HorizontalAlignment','left', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'FontWeight','bold', ...
-                'Parent', panel, ...
-                'UserData', yoffset, ...
-                'Tag', 'bdControlWidget', ...
-                'Position',[0 panelh-yoffset posw boxh]);
-            
-            % ODE variable widgets (initial conditions)
-            for varindx=1:numel(sys.vardef)
-                varstr = sys.vardef(varindx).name;    % variable name (string)
-                varval = sys.vardef(varindx).value;   % variable initial value (vector)
-
-                % switch depending on varval being a scalar, vector or matrix
-                switch ScalarVectorMatrix(varval)
-                    case 1  % varval is a scalar              
-                        % next row
-                        yoffset = yoffset + rowh;
-                
-                        % construct edit box for the scalar
-                        uiobj = uicontrol('Style','edit', ...
-                            'String',num2str(varval,'%0.4g'), ...
-                            'Value',varval, ...
-                            'HorizontalAlignment','right', ...
-                            'FontUnits','pixels', ...
-                            'FontSize',12, ...
-                            'Parent', panel, ...
-                            'UserData', yoffset, ...
-                            'Tag', 'bdControlWidget', ...
-                            'Callback', @(hObj,~) this.ScalarVariable(hObj,varindx), ...
-                            'Position',[0 panelh-yoffset boxw boxh]);
-                        
-                        % listen to the control panel for widget refresh events
-                        addlistener(this,'refresh',@(~,~) this.ScalarVariableRefresh(varindx,uiobj));    
-
-                        % string label
-                        uicontrol('Style','text', ...
-                            'String',varstr, ...
-                            'HorizontalAlignment','left', ...
-                            'FontUnits','pixels', ...
-                            'FontSize',12, ...
-                            'Parent', panel, ...
-                            'UserData', yoffset, ...
-                            'Tag', 'bdControlWidget', ...
-                            'Position',[boxw+5 panelh-yoffset posw-boxw-10 boxh]);
-                        
-                    case 2  % varval is a vector
-                        % next row
-                        yoffset = yoffset + rowh;
-                        
-                        % construct bar graph widget for thr vector
-                        ax = axes('parent', panel, ...
-                            'Units','pixels', ... 
-                            'Position',[0 panelh-yoffset boxw boxh]);
-                        barobj = bar(ax,varval, ...
-                            'ButtonDownFcn', @(~,~) bdControlVector(this,'vardef',varstr,['Initial Conditions: ',varstr]) );
-                        xlim([0.5 numel(varval)+0.5]);
-                        set(ax,'Tag','bdControlWidget', 'UserData',yoffset);
-                        axis 'off';
-
-                        % listen to the control panel for widget refresh events
-                        addlistener(this,'refresh',@(~,~) this.VectorVariableRefresh(varindx,barobj));    
-
-                        % string label
-                        uicontrol('Style','text', ...
-                            'String',varstr, ...
-                            'HorizontalAlignment','left', ...
-                            'FontUnits','pixels', ...
-                            'FontSize',12, ...
-                            'Parent', panel, ...
-                            'UserData', yoffset, ...
-                            'Tag', 'bdControlWidget', ...
-                            'Position',[boxw+5 panelh-yoffset posw-boxw-10 boxh]);
-                        
-                    case 3  % varval is a matrix
-                        % next row
-                        yoffset = yoffset + boxw + 5;
-                        
-                        % construct image widget for the matrix
-                        ax = axes('parent', panel, ...
-                            'Units','pixels', ...
-                            'Position',[0 panelh-yoffset+2.5 boxw boxw]);
-                        imObj = imagesc(varval, 'Parent',ax, ...
-                            'ButtonDownFcn', @(~,~) bdControlMatrix(this,'vardef',varstr,['Initial Conditions: ',varstr]) );
-                        axis off;
-                        set(ax,'Tag','bdControlWidget', 'UserData',yoffset);                         
-                        
-                        % listen to the control panel for widget refresh events
-                        addlistener(this,'refresh',@(~,~) this.MatrixVariableRefresh(varindx,imObj));    
-
-                        % string label
-                        uicontrol('Style','text', ...
-                            'String',varstr, ...
-                            'HorizontalAlignment','left', ...
-                            'FontUnits','pixels', ...
-                            'FontSize',12, ...
-                            'Parent', panel, ...
-                            'UserData', yoffset+17.5, ...
-                            'Tag', 'bdControlWidget', ...
-                            'Position',[boxw+5 panelh-yoffset+17.5 posw-boxw-10 boxh]);                        
-                end
-
-            end
-            
-            % next row
-            yoffset = yoffset + 1.5*rowh;                        
-
-            % time domain
-            uicontrol('Style','text',...
-                'String','Time Domain', ...
-                'HorizontalAlignment','left', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'FontWeight','bold', ...
-                'Parent', panel, ...
-                'UserData', yoffset, ...
-                'Tag', 'bdControlWidget', ...
-                'Position',[0 panelh-yoffset posw boxh]);
-            
-            % next row
-            yoffset = yoffset + rowh;
-
-            % start time
-            uicontrol('Style','edit', ...
-                'String',num2str(sys.tspan(1),'%0.4g'), ...
-                'Value', sys.tspan(1), ...
-                'HorizontalAlignment','center', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'Parent', panel, ...
-                'UserData', yoffset, ...
-                'Tag', 'bdControlWidget', ...
-                'Callback', @(src,~) this.ScalarTspan(src,1), ...
-                'Position',[0 panelh-yoffset boxw boxh]);
-            
-            % end time
-            uicontrol('Style','edit', ...
-                'String',num2str(sys.tspan(2),'%0.4g'), ...
-                'Value', sys.tspan(2), ...
-                'HorizontalAlignment','center', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'Parent', panel, ...
-                'UserData', yoffset, ...
-                'Tag', 'bdControlWidget', ...
-                'Callback', @(src,~) this.ScalarTspan(src,2), ...
-                'Position',[boxw+5 panelh-yoffset boxw boxh]);
-          
-            % next row
-            yoffset = yoffset + 1.5*rowh;                        
-
-            % Solver Heading
-            uicontrol('Style','text', ...
-                'String','CPU Time', ...
-                'HorizontalAlignment','left', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'FontWeight','bold', ...
-                'Parent', panel, ...
-                'UserData', yoffset, ...
-                'Tag', 'bdControlWidget', ...
-                'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
-
-            % listen to the control panel for widget refresh events
-            addlistener(this,'refresh',@(~,~) this.CPUrefresh());    
-
-            % next row
-            yoffset = yoffset + boxh;                        
-
-            % CPU time 
-            this.cpu = uicontrol('Style','text',...
-                'String','0.0s', ...
-                'HorizontalAlignment','left', ...
-                'FontUnits','pixels', ...
-                'FontSize',14, ...
-                'FontWeight','normal', ...
-                'Parent', panel, ...
-                'UserData', yoffset, ...
-                'Tag', 'bdControlWidget', ...
-                'ToolTipString','CPU time (secs)', ...
-                'Position',[0 panelh-yoffset boxw boxh]);
-
-            % Progress counter  
-            this.pro = uicontrol('Style','text',...
-                'String','0%', ...
-                'HorizontalAlignment','right', ...
-                'FontUnits','pixels', ...
-                'FontSize',14, ...
-                'FontWeight','normal', ...
-                'ForegroundColor', [0.5 0.5 0.5], ...
-                'Parent', panel, ...
-                'UserData', yoffset, ...
-                'Tag', 'bdControlWidget', ...
-                'ToolTipString','solver progress', ...
-                'Position',[boxw+5 panelh-yoffset boxw boxh]);
-
-            % next row
-            yoffset = yoffset + 1.25*boxh;                        
-
-            % HALT button
-            %this.hlt = uicontrol('Style','radio', ...
-            haltbutton = uicontrol('Style','radio', ...
-                'String','HALT', ...
-                'Value',this.halt, ...
-                'HorizontalAlignment','left', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'FontWeight','bold', ...
-                'ForegroundColor', 'r', ...
-                'Parent', panel, ...
-                'UserData', yoffset, ...
-                'Tag', 'bdControlWidget', ...
-                'ToolTipString', 'Halt the solver', ...
-                'Callback', @(src,~) this.HaltCallback(src), ...
-                'Position',[0 panelh-yoffset 2*boxw+5 boxh]);
-            
-            % listen to the control panel for widget refresh events
-            addlistener(this,'refresh',@(~,~) this.HALTrefresh(haltbutton));    
-            
-            % register a callback for resizing the panel
-            set(panel,'SizeChangedFcn', @(~,~) SizeChanged(this,panel));
+            % listen for widget refresh events
+            addlistener(this,'refresh',@(~,~) this.RefreshListener());    
+   
+            % listen for redraw events
+            addlistener(this,'redraw',@(~,~) this.RedrawListener());    
             
             % listen for recompute events
-            addlistener(this,'recompute',@(~,~) RecomputeListener(this));
+            addlistener(this,'recompute',@(~,~) this.RecomputeListener(fig));
+
+            % init the timer object but do not start it.
+            
+            this.timer = timer('BusyMode','drop', ...
+                'ExecutionMode','fixedSpacing', ...
+                'Period',0.05, ...
+                'TimerFcn', @(~,~) this.TimerFcn());
+            start(this.timer);
+        end
+        
+        
+        function pos = CanvasPosition(this)
+            % get parent figure geometry
+            figw = this.fig.Position(3);
+            figh = this.fig.Position(4);
+            % get cpanel width
+            cpanelw = this.cpanel.Position(3);
+            % position of canvas
+            pos = [0 50  figw-cpanelw figh-50];
+        end
+        
+        % Resize the control panel to fit the figure window.
+        function SizeChanged(this,fig)
+            % get parent figure geometry
+            figw = fig.Position(3);
+            figh = fig.Position(4);
+
+            % new geometry of the control panel
+            x = figw - this.cpanelw;
+            y = this.cpanely;
+            w = this.cpanelw;
+            h = figh - this.cpanely - this.cpanelm;
+            this.cpanel.Position = [x y w h];
+            
+            % new geometry of the solver panel
+            x = 5;
+            y = 5;
+            w = figw - bdControl.cpanelw - 5;
+            h = 50;
+            this.spanel.Position = [x y w h];
         end
         
     end
     
     
     methods (Access=private)  
-        % Callback for panel resizing. This function relies on each
-        % widget having its desired yoffset stored in its UserData field.
-        function SizeChanged(this,panel)
-            % get new parent geometry
-            panelh = panel.Position(4);
-            
-            % find all widgets in the control panel
-            objs = findobj(panel,'Tag','bdControlWidget');
-            
-            % for each widget, adjust its y position according to its preferred position
-            for indx = 1:numel(objs)
-                obj = objs(indx);                       % get the widget handle
-                yoffset = obj.UserData;                 % retrieve the preferred y position from UserData.
-                obj.Position(2) = panelh - yoffset;     % apply the preferred y position
-            end            
-        end
         
-        % Callback for parameter edit box
-        function ScalarParameter(this,editObj,parindx)
-            this.ScalarCallback(editObj);
-            this.sys.pardef(parindx).value = editObj.Value;
-            notify(this,'recompute');
-        end
-        
-        % Refresh listener for parameter edit box
-        function ScalarParameterRefresh(this,parindx,uiobj)
-            parval = this.sys.pardef(parindx).value;
-            uiobj.Value = parval;
-            uiobj.String = num2str(parval,'%0.4g');
-        end
-        
-        % Callback for DDE lag edit box
-        function ScalarLag(this,editObj,lagindx)
-            this.ScalarCallback(editObj);
-            this.sys.lagdef(lagindx).value = editObj.Value;
-            notify(this,'recompute');
-        end
-        
-        % Refresh listener for DDE lag edit box
-        function ScalarLagRefresh(this,lagindx,uiobj)
-            lagval = this.sys.lagdef(lagindx).value;
-            uiobj.Value = lagval;
-            uiobj.String = num2str(lagval,'%0.4g');
-        end
-        
-        % Callback for variable edit box
-        function ScalarVariable(this,editObj,varindx)
-            this.ScalarCallback(editObj);
-            this.sys.vardef(varindx).value = editObj.Value;
-            notify(this,'recompute');
-        end
+        function ControlPanelInit(this)
+            % get parent figure geometry
+            figw = this.fig.Position(3);
+            figh = this.fig.Position(4);
 
-        % Refresh listener for variable edit box
-        function ScalarVariableRefresh(this,varindx,uiobj)
-            varval = this.sys.vardef(varindx).value;
-            uiobj.Value = varval;
-            uiobj.String = num2str(varval,'%0.4g');
-        end        
-        
-        % Callback for time domain edit box
-        function ScalarTspan(this,hObj,tindx)
-            this.ScalarCallback(hObj);
-            this.sys.tspan(tindx) = hObj.Value;
-            notify(this,'recompute');            
-        end
+            % construct the container uipanel
+            x = figw - this.cpanelw;
+            y = this.cpanely;
+            w = this.cpanelw;
+            h = figh - this.cpanely - this.cpanelm;
+            this.cpanel = uipanel(this.fig,'Units','pixels','Position',[x y w h],'BorderType','none');
 
-        % Callback for generic scalar edit box
-        function ScalarCallback(this,hObj)
-            % ensure hObj is still valid
-            if ~isvalid(hObj)
-                % The object no longer exists. User must have closed the parent window.
-                return
+            % construct a scrolling panel within the container panel
+            scroll = bdScroll(this.cpanel,220,600);
+            
+            % eliminate the border on the scroll viewport
+            scroll.vpanel.BorderType = 'none';
+
+            % Widget geometry constants
+            rowh = 22;
+            boxw = 50;
+            boxh = 20;
+            col1 = 4;
+            col2 = col1 + boxw + 5;
+            col3 = col2 + boxw + 5;
+            col4 = col3 + boxw + 5;
+            col5 = col4 + boxw + 5;
+
+            % Populate the scroll panel with widgets from bottom to top.
+            % It makes it easier to resizie the scroll panel to its final height.
+            ypos = 0.5*rowh;
+            
+            % REVERSE button
+            this.ui_reverse = uicontrol('Style','radio', ...
+                'String','Reverse', ...
+                'Value',this.reverse, ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', scroll.panel, ...
+                'ToolTipString', 'Run the simulation backwards in time', ...
+                'Position',[col3 ypos col5-col3 boxh]);
+                        
+            % next row
+            ypos = ypos + 1.25*boxh;                        
+
+            % Time Domain" checkbox (drawn in the wrong place but we need it now)
+            timecheckbox = uicontrol('Style','checkbox',...
+                'String','Time Domain', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','bold', ...
+                'Value',1, ...       
+                'Callback', @(~,~) notify(this,'refresh'), ...                 
+                'Parent', scroll.panel, ...
+                'Position',[col1 ypos col5-col1 boxh]);
+
+            % Add the time domain control widget
+            bdControlTime(this,scroll.panel,ypos,timecheckbox);
+
+            % next row
+            ypos = ypos + 1.25*boxh;                        
+                      
+            % Move the "Initial Conditions" checkbox to its proper position
+            timecheckbox.Position = [col1 ypos col5-col1 boxh];
+
+            % next row
+            ypos = ypos + 2*boxh;                        
+                      
+            % EVOLVE button
+            this.ui_evolve = uicontrol('Style','radio', ...
+                'String','Evolve', ...
+                'Value',0, ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', scroll.panel, ...
+                'ToolTipString', 'Replace initial conditions with final values', ...
+                'Position',[col1+3 ypos col3-col1 boxh]);
+            
+            % JITTER button
+            this.ui_jitter = uicontrol('Style','radio', ...
+                'String','Jitter', ...
+                'Value',0, ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', scroll.panel, ...
+                'ToolTipString', 'Add jitter (5%) to the initial conditions', ...
+                'Position',[col3 ypos col5-col3 boxh]);
+            
+            % next row
+            ypos = ypos + 1.25*boxh;   
+            
+            % "Initial Conditions" checkbox (drawn in the wrong place but we need it now)
+            varcheckbox = uicontrol('Style','checkbox',...
+                'String','Initial Conditions', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','bold', ...
+                'Value',1, ...
+                'Callback', @(~,~) notify(this,'vardef'), ...
+                'Parent', scroll.panel, ...
+                'Position',[col1 ypos col5-col1 boxh]);
+            
+            % ODE var widgets (initial conditions)
+            for varindx=numel(this.sys.vardef):-1:1
+                % switch depending on the value being a scalar, vector or matrix
+                switch ScalarVectorMatrix(this.sys.vardef(varindx).value)
+                    case 1
+                        % construct a scalar edit box widget
+                        bdControlScalar(this,'vardef',varindx,scroll.panel,ypos,varcheckbox);
+                        ypos = ypos + bdControlScalar.rowh; 
+                    case 2
+                        % construct a vector widget
+                        bdControlVector(this,'vardef',varindx,scroll.panel,ypos);
+                        ypos = ypos + bdControlVector.rowh; 
+                    case 3
+                        % construct a matrix widget
+                        bdControlMatrix(this,'vardef',varindx,scroll.panel,ypos);
+                        ypos = ypos + bdControlMatrix.rowh; 
+                end
+            end
+
+            % Move the "Initial Conditions" checkbox to its proper position
+            varcheckbox.Position = [col1 ypos col5-col1 boxh];
+
+            % DDE lag widgets (if applicable)
+            if isfield(this.sys,'lagdef')
+                % next row
+                ypos = ypos + 2*boxh;                        
+                        
+                % "Lag Parameters" checkbox (drawn in the wrong place but we need it now)
+                lagcheckbox = uicontrol('Style','checkbox', ...
+                    'String','Time Lags', ...
+                    'HorizontalAlignment','left', ...
+                    'FontUnits','pixels', ...
+                    'FontSize',12, ...
+                    'FontWeight','bold', ...
+                    'Value',1, ...
+                    'Callback', @(~,~) notify(this,'lagdef'), ...                 
+                    'Parent', scroll.panel, ...
+                    'Position',[col1 ypos col5-col1 boxh]);
+
+                % for each lagdef entry
+                for lagindx=numel(this.sys.lagdef):-1:1
+                    % switch depending on the value being a scalar, vector or matrix
+                    switch ScalarVectorMatrix(this.sys.lagdef(lagindx).value)
+                        case 1              
+                            % construct a scalar edit box widget
+                            bdControlScalar(this,'lagdef',lagindx,scroll.panel,ypos,lagcheckbox);
+                            ypos = ypos + bdControlScalar.rowh; 
+                        case 2
+                            % construct a vector widget
+                            bdControlVector(this,'lagdef',lagindx,scroll.panel,ypos);
+                            ypos = ypos + bdControlVector.rowh; 
+                        case 3
+                            % construct a matrix widget
+                            bdControlMatrix(this,'lagdef',lagindx,scroll.panel,ypos);
+                            ypos = ypos + bdControlMatrix.rowh; 
+                    end
+                end     
+
+                % Move the "Lag Parameters" checkbox to its proper position
+                lagcheckbox.Position = [col1 ypos col5-col1 boxh];
             end
             
-            % get the incoming value
-            val = str2double(hObj.String);
-            if isnan(val)
-                dlg = errordlg(['Invalid Number ''', hObj.String, ''''],'Invalid number','modal');
-                val = hObj.Value;           % restore the previous value                
-                uiwait(dlg);                % wait for dialog box to close
-            else
-                hObj.Value = val;           % remember the new value
-            end            
+            % SDE random-hold widgets (if applicable)
+            if isfield(this.sys,'sdeF')
+                % next row
+                ypos = ypos + 2*boxh;
+                
+                % HOLD button
+                this.ui_hold = uicontrol('Style','radio', ...
+                    'String','Hold', ...
+                    'Value', (isfield(this.sys.sdeoption,'randn') && ~isempty(this.sys.sdeoption.randn) ), ...
+                    'HorizontalAlignment','left', ...
+                    'FontUnits','pixels', ...
+                    'FontSize',12, ...
+                    'FontWeight','normal', ...
+                    'ForegroundColor', 'k', ...
+                    'Parent', scroll.panel, ...
+                    'ToolTipString', 'Hold the random samples fixed', ...
+                    'Callback', @(~,~) this.HoldCallback(), ...
+                    'Position',[col1 ypos col5-col1 boxh]);
+                
+                % next row
+                ypos = ypos + boxh;                        
+
+                % Noise title
+                uicontrol('Style','text', ...
+                    'String','Noise Samples', ...
+                    'HorizontalAlignment','left', ...
+                    'FontUnits','pixels', ...
+                    'FontSize',12, ...
+                    'FontWeight','bold', ...
+                    'Parent', scroll.panel, ...
+                    'Position',[col1 ypos col5-col1 boxh]);
+            end
             
-            % update the edit box string
-            hObj.String = num2str(val,'%0.4g');
+            % next row
+            ypos = ypos + 2*boxh;                        
+            
+            % "Parameters" checkbox (drawn in the wrong place but we need it now)
+            parcheckbox = uicontrol('Style','checkbox', ...
+                'String','Parameters', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','bold', ...
+                'Value',1, ... 
+                'Callback', @(~,~) notify(this,'pardef'), ...                
+                'Parent', scroll.panel, ...
+                'Position',[col1 ypos col5-col1 boxh]);
+
+            % ODE parameter widgets
+            for parindx=numel(this.sys.pardef):-1:1
+                % switch depending on the value being a scalar, vector or matrix
+                switch ScalarVectorMatrix(this.sys.pardef(parindx).value)
+                    case 1 
+                        % construct a scalar edit box widget
+                        bdControlScalar(this,'pardef',parindx,scroll.panel,ypos,parcheckbox);
+                        ypos = ypos + bdControlScalar.rowh; 
+                    case 2
+                        % construct a vector widget
+                        bdControlVector(this,'pardef',parindx,scroll.panel,ypos);
+                        ypos = ypos + bdControlVector.rowh; 
+                    case 3
+                        % construct a matrix widget
+                        bdControlMatrix(this,'pardef',parindx,scroll.panel,ypos);
+                        ypos = ypos + bdControlMatrix.rowh; 
+                end
+            end
+            
+            % Move the "Parameters" checkbox to its proper position
+            parcheckbox.Position = [col1 ypos col5-col1 boxh];
+            
+            % next row
+            ypos = ypos + 1.5*boxh;                        
+            
+            % adjust the height of the scroll panel so that it fits the widgets snugly
+            scroll.panel.Position(4) = ypos;
+        end
+           
+        function SolverPanelInit(this)
+            % get figure geometry
+            figw = this.fig.Position(3);
+            figh = this.fig.Position(4);
+
+            % Widget geometry constants
+            row1 = 2;
+            row2 = row1 + 20;
+            row3 = row2 + 27;
+            col1 = 4;
+            col2 = col1 + 100;
+            col3 = col2 + 55;
+            col4 = col3 + 55;
+            col5 = col4 + 55;
+            col6 = col5 + 80;
+            col7 = col6 + 60;
+            
+            % construct the container uipanel
+            x = 5;
+            y = 5;
+            w = figw - bdControl.cpanelw - 5;
+            this.spanel = uipanel(this.fig,'Units','pixels','Position',[x y w row3],'BorderType','none');
+            
+            % SOLVER pop-up menu 
+            this.ui_solver = uicontrol('Style','popupmenu',...
+                'String', this.SolverStrings(), ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',14, ...
+                'FontWeight','normal', ...
+                'Parent', this.spanel, ...
+                'Position',[col1 row2+2 col2-col1 25], ...
+                'Callback', @(menuitem,~) this.SolverMenuCallback(menuitem), ...
+                'ToolTipString','Solver');
+            
+            % HALT button
+            this.ui_halt = uicontrol('Style','radio', ...
+                'String','HALT', ...
+                'Value',this.halt, ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',14, ...
+                'FontWeight','bold', ...
+                'ForegroundColor', 'r', ...
+                'Parent', this.spanel, ...
+                'ToolTipString', 'Halt the solver', ...
+                'Callback', @(src,~) this.HaltCallback(src), ...
+                'Position',[col1+4 row1 col2-col1 row2-row1]);            
+
+            % nsteps Heading
+            uicontrol('Style','text', ...
+                'String','nsteps', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','normal', ...
+                'Parent', this.spanel, ...
+                'Position',[col2 row2 col3-col2 20]);
+
+            % nsteps counter 
+            this.ui_nsteps = uicontrol('Style','text',...
+                'String','0', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',14, ...
+                'FontWeight','normal', ...
+                'Parent', this.spanel, ...
+                'ToolTipString','Number of steps taken by the solver', ...
+                'Position',[col2 row1 col3-col2 row2-row1]);
+            
+            % nfailed Heading
+            uicontrol('Style','text', ...
+                'String','nfailed', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','normal', ...
+                'Parent', this.spanel, ...
+                'Position',[col3 row2 col4-col3 20]);
+
+            % nfailed counter 
+            this.ui_nfailed = uicontrol('Style','text',...
+                'String','0', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',14, ...
+                'FontWeight','normal', ...
+                'Parent', this.spanel, ...
+                'ToolTipString','Number of steps that failed', ...
+                'Position',[col3 row1 col4-col3 row2-row1]);
+
+            % nfevals Heading
+            uicontrol('Style','text', ...
+                'String','nfevals', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','normal', ...
+                'Parent', this.spanel, ...
+                'Position',[col4 row2 col5-col4 20]);
+
+            % nfevals counter 
+            this.ui_nfevals = uicontrol('Style','text',...
+                'String','0', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',14, ...
+                'FontWeight','normal', ...
+                'Parent', this.spanel, ...
+                'ToolTipString','Number of function evaluations', ...
+                'Position',[col4 row1 col5-col4 row2-row1]);
+                        
+            % Progress Heading
+            uicontrol('Style','text', ...
+                'String','Progress', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','normal', ...
+                'Parent', this.spanel, ...
+                'Position',[col5 row2 col6-col5 20]);
+
+            % Progress counter  
+            this.ui_progress = uicontrol('Style','text',...
+                'String','0%', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',14, ...
+                'FontWeight','normal', ...
+        ...        'ForegroundColor', [0.5 0.5 0.5], ...
+                'Parent', this.spanel, ...
+                'ToolTipString','Progress of the solver algorithm', ...
+                'Position',[col5 row1 col6-col5 row2-row1]);
+            
+            % CPU Heading
+            uicontrol('Style','text', ...
+                'String','CPU', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','normal', ...
+                'Parent', this.spanel, ...
+                'Position',[col6 row2 col7-col6 20]);
+
+            % CPU time 
+            this.ui_cputime = uicontrol('Style','text',...
+                'String','0.00s', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',14, ...
+                'FontWeight','normal', ...
+                'Parent', this.spanel, ...
+                'ToolTipString','CPU time (secs)', ...
+                'Position',[col6 row1 col7-col6 row2-row1]);
         end
         
-        % Refresh listener for vector parameter widget
-        function VectorParameterRefresh(this,parindx,barObj)
-            parval = this.sys.pardef(parindx).value;
-            barObj.YData = parval;
+        % Return a cell array of strings for the solver functions
+        function str = SolverStrings(this)
+            str = {};
+            if isfield(this.sys,'odesolver')
+                for indx=1:numel(this.sys.odesolver)
+                    str{indx} = func2str(this.sys.odesolver{indx});
+                end
+            end
+            if isfield(this.sys,'ddesolver')
+                for indx=1:numel(this.sys.ddesolver)
+                    str{indx} = func2str(this.sys.ddesolver{indx});
+                end
+            end
+            if isfield(this.sys,'sdesolver')
+                for indx=1:numel(this.sys.sdesolver)
+                    str{indx} = func2str(this.sys.sdesolver{indx});
+                end
+            end
         end
         
-        % Refresh listener for DDE lag widget
-        function VectorLagRefresh(this,lagindx,barObj)
-            lagval = this.sys.lagdef(lagindx).value;
-            barObj.YData = lagval;
+        % Solver Popup Menu Callback
+        function SolverMenuCallback(this,menuitem)
+            % Set the index of the active solver
+            %this.solveridx = menuitem.UserData;
+            strindx = menuitem.Value;
+            this.solver = str2func(menuitem.String{strindx});
+            
+            % Recompute using the new solver
+            notify(this,'recompute');  
         end
+                    
+        % Listener for widget REFRESH events
+        function RefreshListener(this)
+            %disp('bdControl.RefreshListener');
+            
+            % refresh the NSTEPS counter
+            this.ui_nsteps.String = num2str(this.sol.stats.nsteps,'%d');
 
-        % Refresh listener for vector variable widget
-        function VectorVariableRefresh(this,varindx,barObj)
-            varval = this.sys.vardef(varindx).value;
-            barObj.YData = varval;
+            % refresh the NFAILED counter
+            this.ui_nfailed.String = num2str(this.sol.stats.nfailed,'%d');
+
+            % refresh the NFEVALS counter
+            this.ui_nfevals.String = num2str(this.sol.stats.nfevals,'%d');
+
+            % refresh the HALT button
+            this.ui_halt.Value = this.halt;                
+
+            if this.halt
+                % change the solver stats to red
+                this.ui_nsteps.ForegroundColor = 'r';
+                this.ui_nfailed.ForegroundColor = 'r';
+                this.ui_nfevals.ForegroundColor = 'r';
+                this.ui_cputime.ForegroundColor = 'r';
+                this.ui_progress.ForegroundColor = 'r';
+                %this.ui_cputime.String = '0.00s';
+                %this.ui_progress.String = '-';
+            else
+                % change the solver stats to black
+                this.ui_nsteps.ForegroundColor = 'k';
+                this.ui_nfailed.ForegroundColor = 'k';
+                this.ui_nfevals.ForegroundColor = 'k';
+                this.ui_cputime.ForegroundColor = 'k';
+                this.ui_progress.ForegroundColor = 'k';
+            end
         end
         
-%         % Callback for parameter matrix widget
-%         function MatrixParameter(this,imObj,name,parindx)
-%             % open dialog box for editing a matrix
-%             this.sys.pardef(parindx).value = bdEditMatrix(this.sys.pardef(parindx).value,name);
-%             % update the image data in the control panel
-%             set(imObj,'CData',this.sys.pardef(parindx).value);
-%             notify(this,'recompute');
-%         end
-
-        % Refresh listener for matrix parameter widget
-        function MatrixParameterRefresh(this,parindx,imObj)
-            parval = this.sys.pardef(parindx).value;
-            imObj.CData = parval;
-        end
-
-%         % Callback for DDE lag matrix widget
-%         function MatrixLag(this,imObj,name,lagindx)
-%             % open dialog box for editing a matrix
-%             this.sys.lagdef(lagindx).value = bdEditMatrix(this.sys.lagdef(lagindx).value,name);
-%             % update the image data in the control panel
-%             set(imObj,'CData',this.sys.lagdef(lagindx).value);
-%             notify(this,'recompute');
-%         end
-
-        % Refresh listener for DDE lag matrix widget
-        function MatrixLagRefresh(this,lagindx,imObj)
-            lagval = this.sys.lagdef(lagindx).value;
-            imObj.CData = lagval;
+        % Listener for REDRAW events
+        function RedrawListener(this)
+            % refresh the solver stats (is this realy necessary?)
+            %this.RefreshListener();  
         end
         
-%         % Callback for ODE variable matrix widget
-%         function MatrixVariable(this,imObj,name,varindx)
-%             % open dialog box for editing a matrix
-%             this.sys.vardef(varindx).value = bdEditMatrix(this.sys.vardef(varindx).value,name);
-%             % update the image data in the control panel
-%             set(imObj,'CData',this.sys.vardef(varindx).value);
-%             notify(this,'recompute');
-%         end
-        
-        % Refresh listener for variable matrix widget
-        function MatrixVariableRefresh(this,varindx,imObj)
-            varval = this.sys.vardef(varindx).value;
-            imObj.CData = varval;
-        end
-
-        % Listener for the compute flag
-        function RecomputeListener(this)
+        % Listener for RECOMPUTE events
+        function RecomputeListener(this,fig)
             % Do nothing if the HALT button is active
             if this.halt
                 return
             end
             
             % Change mouse cursor to hourglass
-            set(this.fig,'Pointer','watch');
-            drawnow;
+            %set(fig,'Pointer','watch');
+            %drawnow;
 
-            % determine the active solver
-            solverfunc = this.solvermap(this.solveridx).solverfunc;
-            solvertype = this.solvermap(this.solveridx).solvertype;
-            
             % We use the ODE OutputFcn to track progress in our solver
-            % and to detect halt events. We specify tspan so that OutputFcn
-            % is called 11 times. These correspond to 0%, 10%, ... , 100%
-            % progress of the solver.
-            tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
-            switch solvertype
+            % and to detect halt events. 
+            %tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
+            nstops = max(11,round(this.sol.stats.nsteps/1000));
+            tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), nstops);
+            switch this.solvertype
                 case 'odesolver'
                     this.sys.odeoption = odeset(this.sys.odeoption, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
                 case 'ddesolver'
@@ -783,42 +692,153 @@ classdef bdControl < handle
                 case 'sdesolver'
                     this.sys.sdeoption.OutputFcn = @this.odeplot;
                     this.sys.sdeoption.OutputSel = [];      
-             end
+            end
+
+            % Remember the parameters of the (to be computed) solution in the control.par struct.
+            % We do this because the controls can change the values in sys.pardef
+            % faster than the solver can keep up.
+            for indx = 1:numel(this.sys.pardef)
+                name = this.sys.pardef(indx).name;
+                value = this.sys.pardef(indx).value;
+                this.par.(name) = value;
+            end
+
+            % Remember the lag parameters too (if applicable)
+            if isfield(this.sys,'lagdef')
+                for indx = 1:numel(this.sys.lagdef)
+                    name = this.sys.lagdef(indx).name;
+                    value = this.sys.lagdef(indx).value;
+                    this.lag.(name) = value;
+                end
+            end
 
             % Call the solver
-            [this.sol,this.sox] = bd.solve(this.sys,tspan,solverfunc,solvertype);
+            if this.ui_jitter.Value
+                % Make a working copy of the sys
+                worksys = this.sys;
+                % Apply a small jitter to each variable
+                for indx = 1:numel(worksys.vardef)
+                    % determine the limits of the variable
+                    lo = worksys.vardef(indx).lim(1);
+                    hi = worksys.vardef(indx).lim(2);
+                    % determine the size of the variable
+                    valsize = size(worksys.vardef(indx).value);
+                    % perturb the variable by 5% uniform random
+                    worksys.vardef(indx).value =  worksys.vardef(indx).value + ...
+                        0.05*(hi-lo)*(rand(valsize)-0.5);
+                end
+                % call the solver using the working copy of sys
+                this.sol = bd.solve(worksys,tspan,this.solver,this.solvertype);
+            else
+                % call the solver using the sys 
+                this.sol = bd.solve(this.sys,tspan,this.solver,this.solvertype);
+            end
             
             % Hold the SDEnoise if the HOLD button is 'on'
-            switch solvertype
+            switch this.solvertype
                 case 'sdesolver'
-                    if this.hld.Value==1 && isempty(this.sys.sdeoption.randn) 
+                    if this.ui_hold.Value==1 && isempty(this.sys.sdeoption.randn) 
                          dt = this.sol.x(2) - this.sol.x(1);
                          this.sys.sdeoption.randn = this.sol.dW ./ sqrt(dt);
                     end
             end
             
+            % update the indices of the non-transient steps in sol.x
+            % Note: tindx can be all zeros in cases where the solver
+            % terminated early because of blow-out.
+            this.tindx = (this.sol.x >= this.sys.tval);
+
             % notify all listeners that a redraw is required
             notify(this,'redraw');
             
+            % evolve the initial conditions (if required)
+            if this.ui_evolve.Value
+                offset = 0;
+                % for each vardef entry ...
+                for indx=1:numel(this.sys.vardef)
+                    s = size(this.sys.vardef(indx).value);
+                    n = numel(this.sys.vardef(indx).value);
+                    val = this.sol.y([1:n]+offset,end);
+                    val = reshape(val,s);
+                    this.sys.vardef(indx).value = val; 
+                    offset = offset+n;
+                    
+                    % Disengage the EVOLVE button if the initial conditions
+                    % have breached the var limits. This prevents run-away blow-out.
+                    minval = min(val(:));
+                    maxval = max(val(:));
+                    if minval < this.sys.vardef(indx).lim(1) || maxval > this.sys.vardef(indx).lim(2)
+                        this.ui_evolve.Value = 0;
+                        beep;
+                    end
+                end
+                % notify all widgets to refresh (we only really need to refresh the initial conditions)
+                %notify(this,'refresh');
+                notify(this,'vardef');
+            end
+            
             % Change mouse cursor to arrow
-            set(this.fig,'Pointer','arrow');
+            %set(fig,'Pointer','arrow');
+
+            % refresh the solver NSTEPS counter
+            this.ui_nsteps.String = num2str(this.sol.stats.nsteps,'%d');
+
+            % refresh the solver NFAILED counter
+            this.ui_nfailed.String = num2str(this.sol.stats.nfailed,'%d');
+
+            % refresh the solver NFEVALS counter
+            this.ui_nfevals.String = num2str(this.sol.stats.nfevals,'%d');
+            
+            % update the CPU time to include the time to redraw/refresh the GUI
+            cpu = cputime - this.cpustart;
+            this.ui_cputime.String = num2str(cpu,'%5.2fs');
+        end
+   
+        function TimerFcn(this)
+            %disp('TimerFcn');
+            
+            % if the application figure is gone then... 
+            if ~ishghandle(this.fig)
+                stop(this.timer);       % stop the timer
+                %delete(this.timer);     % delete the timer object
+                return
+            end
+            
+            % If either of the EVOLVE or JITTER buttons are active
+            % then initate a recompute event.
+            if (this.ui_jitter.Value || this.ui_evolve.Value)
+            %if (this.ui_jitter.Value)
+                notify(this,'recompute');
+            end
         end
         
-        % ODE solver callback function
+        % Callback function for ODE solver output
         function status = odeplot(this,tspan,~,flag,varargin)
             switch flag
                 case 'init'
                     this.cpustart = cputime;
+                    this.ui_nsteps.ForegroundColor = [0.75 0.75 0.75];
+                    this.ui_nfailed.ForegroundColor = [0.75 0.75 0.75];
+                    this.ui_nfevals.ForegroundColor = [0.75 0.75 0.75];
+                    %this.ui_nsteps.String = '-';
+                    %this.ui_nfailed.String = '-';
+                    %this.ui_nfevals.String = '-';
+                    %this.ui_cputime.String = '-';
+                    this.ui_progress.String = '  0%';
+                    drawnow;
                 case ''
                     cpu = cputime - this.cpustart;
-                    this.cpu.String = num2str(cpu,'%5.2fs');
-                    this.pro.String = num2str(100*tspan(1)/this.sys.tspan(2),'%3.0f%%');
+                    this.ui_cputime.String = num2str(cpu,'%5.2fs');
+                    this.ui_progress.String = num2str(100*tspan(1)/this.sys.tspan(2),'%3.0f%%');
                     drawnow;
                 case 'done'
                    if this.halt~=1
                         cpu = cputime - this.cpustart;
-                        this.cpu.String = num2str(cpu,'%5.2fs');
-                        this.pro.String = '100%';
+                        this.ui_cputime.String = num2str(cpu,'%5.2fs');
+                        this.ui_progress.String = '100%';
+                        this.ui_nsteps.ForegroundColor = [0 0 0];
+                        this.ui_nfailed.ForegroundColor = [0 0 0];
+                        this.ui_nfevals.ForegroundColor = [0 0 0];            
                         drawnow;
                    end
             end   
@@ -826,7 +846,7 @@ classdef bdControl < handle
             status = this.halt;
         end
 
-        % HOLD button callback
+        % Callback for the noise HOLD button (SDE only)
         function HoldCallback(this)
             if this.hld.Value==1
                 dt = this.sol.x(2) - this.sol.x(1);
@@ -836,38 +856,22 @@ classdef bdControl < handle
             end
         end
         
-        % Refresh listener for CPU button
-        function CPUrefresh(this)
-            if this.halt
-                this.cpu.ForegroundColor = [0.5 0.5 0.5];
-            else
-                this.cpu.ForegroundColor = [0 0 0];
-            end
-        end
-
-        % Refresh listener for HALT button
-        function HALTrefresh(this,haltbutton)
-            %disp('HALTrefresh');
-            haltbutton.Value = this.halt;
-        end
-
-        % HALT button callback
+        % Callback for the HALT button
         function HaltCallback(this,haltbutton)
             this.halt = haltbutton.Value;
             if this.halt
-                this.cpu.ForegroundColor = [0.5 0.5 0.5];
                 notify(this,'refresh');             % notify widgets to refresh themselves
+                notify(this,'redraw');
             else
-                this.cpu.ForegroundColor = [0 0 0];
                 notify(this,'refresh');             % notify widgets to refresh themselves
                 notify(this,'recompute');           % recompute the new solution
             end
         end
-    end               
+    
+    end
 end
 
-% Utility function to classify X as
-% scalar (1), vector (2) or matrix (3)
+% Utility function to classify X as scalar (1), vector (2) or matrix (3)
 function val = ScalarVectorMatrix(X)
     [nr,nc] = size(X);
     if nr*nc==1

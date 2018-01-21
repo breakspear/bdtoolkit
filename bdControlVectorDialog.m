@@ -1,11 +1,10 @@
-classdef bdControlVector < handle
-    %bdControlVector Implements the control-panel Vector-Edit dialog box
-    %   This class performs a similar job to bdEditVector but is
-    %   specialised to work in tandem with the control panel (bdControl).
+classdef bdControlVectorDialog < handle
+    %bdControlVectorDialog  Dialog box for editing a vector control widget
+    %   This class specialised to work in tandem with the control panel.
     %   It should not be called directly by the user. 
     %
     %AUTHORS
-    %  Stewart Heitmann (2017c)
+    %  Stewart Heitmann (2017c,d)
 
     % Copyright (C) 2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -35,67 +34,138 @@ classdef bdControlVector < handle
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
     
-    properties
+    properties (Access=private)
         control         % handle to control panel
         dialogfig       % handle to dialog box figure
         datatable       % handle to the table widget
+        baraxes         % handle to bar graph axes
         bargraph        % handle to bar graph widget
         histogrm        % handle to histogram widget
+        minbox          % handle to minbox
+        maxbox          % handle to maxbox
         haltbutton      % handle to halt button
         listener        % handle to listener(s)
     end
     
     methods
-        % Constructs a bdControlVector dialog box where 
+        % Constructs a bdControlVectorDialog dialog box where 
         % control = handel to the bdControl object
         % xxxdef = 'pardef' or 'vardef' or 'lagdef' (string).
         % xxxindx is an index of the sys.xxxdef array.
-        function this = bdControlVector(control,xxxdef,xxxname,titlestr)
-            % init the listener array
-            this.listener = event.listener.empty(0);
-
+        function this = bdControlVectorDialog(control,xxxdef,xxxindx,titlestr)
             % remember the control panel handle
             this.control = control; 
 
-            % get the vector data from control.sys.xxxdef
-            [data,xxxindx] = bdGetValue(this.control.sys.(xxxdef),xxxname);
-            n = numel(data);
+            % extract the relevant fields from control.sys.xxxdef
+            xxxname  = control.sys.(xxxdef)(xxxindx).name;
+            xxxvalue = control.sys.(xxxdef)(xxxindx).value;
+            xxxlim   = control.sys.(xxxdef)(xxxindx).lim;
             
             % construct dialog box (at the current mouse position)
             xypos = get(groot,'PointerLocation'); 
             this.dialogfig = figure('Units','pixels', ...
-                'Position',[xypos(1) xypos(2), 400, 300], ...
+                'Position',[xypos(1) xypos(2), 385, 330], ...
                 'MenuBar','none', ...
                 'Name',titlestr, ...
                 'NumberTitle','off', ...
                 'ToolBar', 'none', ...
                 'Resize','off', ...
-                'DeleteFcn', @(~,~) this.deletefig );
-
-            % axes
-            ax1 = axes('parent',this.dialogfig, 'Units','pixels', 'Position',[185 205 200 70]);      % axes for bar graph
-            ax2 = axes('parent',this.dialogfig, 'Units','pixels', 'Position',[185  80 200 70]);      % axes for histogram
-            
-            % bar graph
-            this.bargraph = bar(data, 'parent',ax1);
-            xlim(ax1,[0.5 n+0.5]);
-            xlabel('parent',ax1,'index');
-            ylabel('parent',ax1,'value');
-            title(ax1,['Values of ', xxxname]);
-
-            % histogram
-            this.histogrm = histogram(data,'parent',ax2, 'Normalization','probability');
-            xlabel('parent',ax2,'value');
-            ylabel('parent',ax2,'proportion');
-            title(ax2,['Histogram of ', xxxname]);
+                'DeleteFcn', @(~,~) delete(this) );
 
             % data table 
-            this.datatable = uitable(this.dialogfig,'Position',[10 10 125, 280], ...
-                'Data',reshape(data,[],1), ...       % ensure data is column vector
+            this.datatable = uitable(this.dialogfig,'Position',[10 10 125, 300], ...
+                'Data',reshape(xxxvalue,[],1), ...       % ensure data is column vector
                 'ColumnName',{xxxname}, ...
         ...        'ColumnWidth',{75}, ...
                 'ColumnEditable',true, ...
                 'CellEditCallback', @(src,~) this.CellEditCallback(xxxdef,xxxindx));
+
+            % axes for vector values (bar graph)
+            this.baraxes = axes('parent',this.dialogfig, ...
+                'Units','pixels', ...
+                'Position',[180 250 190 60]); 
+            
+            % axes for histogram
+            ax2 = axes('parent',this.dialogfig, ...
+                'Units','pixels', ...
+                'Position',[180 135 190 60]);
+            
+            % bar graph
+            n = numel(xxxvalue);
+            this.bargraph = bar(xxxvalue, 'parent',this.baraxes);
+            xlim(this.baraxes,[0.5 n+0.5]);
+            ylim(this.baraxes,xxxlim+[-1e-6,1e-6]);
+            xlabel('parent',this.baraxes,'index');
+            ylabel('parent',this.baraxes,'value');
+            title(this.baraxes,xxxname);
+            grid(this.baraxes,'on');
+            
+            % histogram with 10 bins (11 edges)
+            this.histogrm = histogram(xxxvalue, 11, ...
+                'parent',ax2, ...
+              ...  'BinLimits', xxxlim, ...
+              ...  'BinMethod','sturges', ...
+                'Normalization','probability');
+            xlabel('parent',ax2,'value');
+           %ylabel('parent',ax2,'proportion');
+            title(ax2,'Histogram');
+           
+            % 'ZERO' button
+            uicontrol('Style','pushbutton', ...
+                'String','ZERO', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', this.dialogfig, ...
+                'Callback', @(~,~) this.ZeroCallback(xxxdef,xxxindx), ...
+                'Position',[180 65 60 20], ...
+                'ToolTipString','Zero the data');            
+
+            % 'RAND' button
+            uicontrol('Style','pushbutton', ...
+                'String','RAND', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', this.dialogfig, ...
+                'Callback', @(~,~) this.RandCallback(xxxdef,xxxindx), ...
+                'Position',[245 65 60 20], ...
+                'ToolTipString','Uniform random data');            
+
+            % 'PERB' button
+            uicontrol('Style','pushbutton', ...
+                'String','PERB', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', this.dialogfig, ...
+                'Callback', @(~,~) this.PerbCallback(xxxdef,xxxindx), ...
+                'Position',[310 65 60 20], ...
+                'ToolTipString','Uniform perturbation (5%)');            
+
+            % min box
+            this.minbox = uicontrol('Parent',this.dialogfig, ...
+                'Style', 'edit', ...
+                'Units','pixels',...
+                'Position',[180 40 60 20], ...
+                'String',num2str(xxxlim(1),'%0.4g'), ...
+                'Value',xxxlim(1), ...
+                'HorizontalAlignment','center', ...
+                'Visible','on', ...
+                'Callback', @(~,~) this.minboxCallback(xxxdef,xxxindx), ...
+                'ToolTipString','Lower limit');
+
+            % max box
+            this.maxbox = uicontrol('Parent',this.dialogfig, ...
+                'Style', 'edit', ...
+                'Units','pixels',...
+                'Position',[245 40 60 20], ...
+                'String',num2str(xxxlim(2),'%0.4g'), ...
+                'Value',xxxlim(2), ...
+                'HorizontalAlignment','center', ...
+                'Visible','on', ...
+                'Callback', @(~,~) this.maxboxCallback(xxxdef,xxxindx), ...
+                'ToolTipString','Upper limit');
 
             % HALT button
             this.haltbutton = uicontrol('Style','radio', ...
@@ -109,7 +179,7 @@ classdef bdControlVector < handle
                 'Parent', this.dialogfig, ...
                 'ToolTipString', 'Halt the solver', ...
                 'Callback', @(src,~) this.HaltCallback(src), ...
-                'Position',[175 10 60 20]);
+                'Position',[180 10 60 20]);
 
             % 'Close' button
             uicontrol('Style','pushbutton', ...
@@ -118,37 +188,30 @@ classdef bdControlVector < handle
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
                 'Parent', this.dialogfig, ...
-                'Callback', @(~,~) delete(this.dialogfig), ...
-                'Position',[325 10 60 20]);
-            
+                'Callback', @(~,~) this.visible('off'), ...
+                'Position',[310 10 60 20], ...
+                'ToolTipString','Close the dialog box');
+ 
             % listen to the control panel for widget refresh events (incuding those generate by this dialog box)
-            this.listener = addlistener(control,'refresh',@(~,~) this.refreshListener(xxxdef,xxxname));   
-            
-            % litsen to the control panel for any closefig events
-            this.listener(end+1) = addlistener(control,'closefig',@(~,~) delete(this.dialogfig));   
+            this.listener = event.listener.empty(0);
+            this.listener(1) = listener(control,'refresh',@(~,~) this.refreshListener(xxxdef,xxxindx));   
+            this.listener(2) = listener(control,xxxdef,@(~,~) this.refreshListener(xxxdef,xxxindx));   
         end
         
         % Destructor (called when this object is no longer referenced)
         function delete(this)
-            %disp('bdControlVector.destructor');
+            delete(this.listener);
             delete(this.dialogfig);
         end
         
-        % Figure Destructor (called when the dialog box is destroyed)
-        function deletefig(this)
-            %disp('deletefig');
-            delete(this.listener);
-        end        
-        
-        % HALT button callback
-        function HaltCallback(this,haltbutton)
-            this.control.halt = haltbutton.Value;    % get the HALT button state
-            notify(this.control,'refresh');          % notify all widgets to refresh themselves
-            if ~this.control.halt
-                notify(this.control,'recompute');    % tell the solver to recompute
-            end
+        % Make the dialog box visible/invisible
+        function visible(this,flag)
+            figure(this.dialogfig);
+            this.dialogfig.Visible = flag;
         end
-        
+    end
+    
+    methods (Access=private)
         % TABLE cell edit callback
         function CellEditCallback(this,xxxdef,xxxindx)
             %disp('CellEditCallback'); 
@@ -160,9 +223,26 @@ classdef bdControlVector < handle
             
             % update the control panel.
             this.control.sys.(xxxdef)(xxxindx).value = data;
+
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            %notify(this.control,'refresh');
+            notify(this.control,xxxdef);
             
-            % notify all widgets (which includes ourself) to refresh
-            notify(this.control,'refresh');
+            % tell the solver to recompute the solution
+            if ~this.control.halt
+                notify(this.control,'recompute');
+            end
+        end
+        
+        % ZERO button callback
+        function ZeroCallback(this,xxxdef,xxxindx)
+            % update the control panel.
+            valsize = size(this.control.sys.(xxxdef)(xxxindx).value);
+            this.control.sys.(xxxdef)(xxxindx).value = zeros(valsize);
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            %notify(this.control,'refresh');
+            notify(this.control,xxxdef);
             
             % tell the solver to recompute the solution
             if ~this.control.halt
@@ -170,25 +250,140 @@ classdef bdControlVector < handle
             end
         end
 
-        % Listener for widget refresh events from the control panel
-        function refreshListener(this,xxxdef,xxxname)
-            %disp('bdControlVector.refreshListener')         
+        % RAND button callback
+        function RandCallback(this,xxxdef,xxxindx)
+            % determine the limits of the random values
+            xxxlim = this.control.sys.(xxxdef)(xxxindx).lim;
+            lo = xxxlim(1);
+            hi = xxxlim(2);
             
-            % read the data from control.sys.xxxdef
-            data = bdGetValue(this.control.sys.(xxxdef),xxxname);
-           
-            % rehsape it to a column vector
-            data = reshape(data,[],1);
+            % update the control panel.
+            valsize = size(this.control.sys.(xxxdef)(xxxindx).value);
+            this.control.sys.(xxxdef)(xxxindx).value = (hi-lo)*rand(valsize) + lo;
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            %notify(this.control,'refresh');
+            notify(this.control,xxxdef);
+            
+            % tell the solver to recompute the solution
+            if ~this.control.halt
+                notify(this.control,'recompute');
+            end
+        end
+
+        % PERB button callback
+        function PerbCallback(this,xxxdef,xxxindx)
+            % determine the limits of the random values
+            xxxlim = this.control.sys.(xxxdef)(xxxindx).lim;
+            lo = xxxlim(1);
+            hi = xxxlim(2);
+            
+            % update the control panel with a perturned version of the data
+            valsize = size(this.control.sys.(xxxdef)(xxxindx).value);
+            this.control.sys.(xxxdef)(xxxindx).value =  ...
+                this.control.sys.(xxxdef)(xxxindx).value + ...
+                0.05*(hi-lo)*(rand(valsize)-0.5);
+
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            %notify(this.control,'refresh');
+            notify(this.control,xxxdef);
+            
+            % tell the solver to recompute the solution
+            if ~this.control.halt
+                notify(this.control,'recompute');
+            end
+        end
+        
+        % min box callback function
+        function minboxCallback(this,xxxdef,xxxindx)
+            % read the minbox string and convert to a number
+            str = this.minbox.String;
+            minval = str2double(str);
+            if isnan(minval)
+                hndl = errordlg(['Invalid number: ',str], 'Invalid Number', 'modal');
+                uiwait(hndl);
+                % restore the minbox string to its previous value
+                this.minbox.String = num2str(this.minbox.Value,'%0.4g');                 
+            else           
+                % adjust the max box if necessary
+                maxval = max(this.maxbox.Value, minval);
+                
+                % update control.sys
+                this.control.sys.(xxxdef)(xxxindx).lim = [minval maxval];
+                
+                % notify all widgets (which includes ourself) that sys.xxxdef has changed
+                %notify(this.control,'refresh');
+                notify(this.control,xxxdef);
+
+                % notify all display panels to redraw themselves
+                notify(this.control,'redraw');
+            end
+        end        
+        
+        % max box callback function
+        function maxboxCallback(this,xxxdef,xxxindx)
+            % read the maxbox string and convert to a number
+            str = this.maxbox.String;
+            maxval = str2double(str);
+            if isnan(maxval)
+                hndl = errordlg(['Invalid number: ',str], 'Invalid Number', 'modal');
+                uiwait(hndl);
+                % restore the minbox string to its previous value
+                this.maxbox.String = num2str(this.maxbox.Value,'%0.4g');                 
+            else           
+                % adjust the min box if necessary
+                minval = min(this.minbox.Value, maxval);
+                
+                % update control.sys
+                this.control.sys.(xxxdef)(xxxindx).lim = [minval maxval];
+                
+                % notify all widgets (which includes ourself) that sys.xxxdef has changed
+                %notify(this.control,'refresh');
+                notify(this.control,xxxdef);
+
+                % notify all display panels to redraw themselves
+                notify(this.control,'redraw');
+            end
+        end
+        
+        % HALT button callback
+        function HaltCallback(this,haltbutton)
+            this.control.halt = haltbutton.Value;    % get the HALT button state
+            notify(this.control,'refresh');          % notify all widgets to refresh themselves
+            if ~this.control.halt
+                notify(this.control,'recompute');    % tell the solver to recompute
+            end
+        end
+        
+        % Listener for widget refresh events from the control panel
+        function refreshListener(this,xxxdef,xxxindx)
+            disp(['bdControlVectorDialog.refreshListener:' xxxdef])         
+            
+            % extract the data from control.sys.xxxdef
+            xxxvalue = this.control.sys.(xxxdef)(xxxindx).value;
+            xxxlim = this.control.sys.(xxxdef)(xxxindx).lim;
+          
+            % rehsape the value data to a column vector
+            data = reshape(xxxvalue,[],1);
             
             % update the data table
             this.datatable.Data = data;
             
             % update bar graph
             this.bargraph.YData = data;
-            
+            this.baraxes.YLim = xxxlim + [-1e-6 1e-6];
+
             % update histogram
             this.histogrm.Data = data;
             this.histogrm.BinLimitsMode='auto';
+
+            % update the min box
+            this.minbox.Value = xxxlim(1);
+            this.minbox.String = num2str(xxxlim(1),'%0.4g');
+           
+            % update the max box
+            this.maxbox.Value = xxxlim(2);
+            this.maxbox.String = num2str(xxxlim(2),'%0.4g');
 
             % update the HALT button
             this.haltbutton.Value = this.control.halt; 

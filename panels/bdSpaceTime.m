@@ -113,8 +113,8 @@ classdef bdSpaceTime < bdPanel
                 varindx = this.submenu.UserData.xxxindx;
                 control.sys.vardef(varindx).lim = bdPanel.RoundLim(lo,hi);
 
-                % refresh the control widgets
-                notify(control,'refresh');
+                % refresh the vardef control widgets
+                notify(control,'vardef');
                 
                 % redraw all panels (because the new limits apply to all panels)
                 notify(control,'redraw');

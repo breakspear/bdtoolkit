@@ -40,11 +40,11 @@ classdef bdScroll < handle
     
     properties (Access = public)
         panel        % uipanel for user-defined graphics objects
+        vpanel       % viewport panel
     end
     
     properties (Access = private)
         cpanel       % container panel
-        vpanel       % viewport panel
         vscroll      % vertical scrollbar
         hscroll      % horizontal scrollbar
     end

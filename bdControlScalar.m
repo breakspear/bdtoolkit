@@ -47,6 +47,8 @@ classdef bdControlScalar < handle
         jslider
         valbox
         labelbtn
+        listener1
+        listener2
         dialog
     end
     
@@ -149,11 +151,11 @@ classdef bdControlScalar < handle
                 'Callback', @(~,~) this.labelbtnCallback(control,xxxdef,xxxindx,xxxname), ...
                 'ToolTipString',['more options for ''',xxxname,'''']);
        
-            % listen for widget refresh events from the control panel 
-            addlistener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
-            
+            % Listen for widget refresh events from the control panel.
+            this.listener1 = listener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
+            this.listener2 = listener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
         end
-  
+        
         function mode(this,flag)            
             %disp('bdControlScalar.mode()');
             if flag
@@ -330,7 +332,7 @@ classdef bdControlScalar < handle
         
         % Update the widgets according to the values in control.sys.xxxdef
         function refresh(this,control,xxxdef,xxxindx,modecheckbox) 
-            %disp('bdControlScalar.refresh');
+            disp(['bdControlScalar.refresh:' xxxdef]);
             
             % extract the relevant fields from control.sys.xxxdef
             xxxvalue = control.sys.(xxxdef)(xxxindx).value;

@@ -5,7 +5,7 @@
 %   Y = bdGetValues(xxxdef)
 %where
 %   xxxdef is any array of structs that contains a field called 'value', 
-%       such as sys.vardef, sys.pardef, sys.lagdef and sys.auxdef.
+%       such as sys.vardef, sys.pardef and sys.lagdef.
 %
 %EXAMPLE
 %   vardef = [ struct('name','a', 'value',1);

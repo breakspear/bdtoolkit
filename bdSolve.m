@@ -1,6 +1,9 @@
 %bdSolve  Solve an initial-value problem using the Brain Dynamics Toolbox
 %Usage: 
-%   [sol,sox] = bdSolve(sys,tspan,@solverfun,solvertype)
+%   sol = bdSolve(sys)
+%   sol = bdSolve(sys,tspan)
+%   sol = bdSolve(sys,tspan,@solverfun)
+%   sol = bdSolve(sys,tspan,@solverfun,solvertype)
 %where
 %   sys is a system struct describing the dynamical system
 %   tspan=[0 100] is the time span of the integration (optional)
@@ -15,13 +18,16 @@
 %   or 'sdesolver').
 %
 %RETURNS
-%   sol is the solution structure in the same format as that returned
-%      by the matlab ode45 solver.
-%   sox is a solution structure that contains any auxiliary variables
-%      that the model has defined. The format is the same as sol.
-%   Use the bdEval function to extract the results from sol and sox.
+%   sol is the solution structure. It has the same format as that returned
+%      by the matlab ode45 solver. Use the bdEval function to extract the
+%      results from sol.
 %
-%EXAMPLE 1
+%NOTE
+%   Older versions of bdSolve returned the solutions of auxiliary variables
+%   in a second output parameter. Auxiliary variables are no longer
+%   supported. They were deprecated in version 2018a. 
+%
+%EXAMPLE
 %   sys = LinearODE;                % Linear system of ODEs
 %   tspan = [0 10];                 % integration time domain
 %   sol = bdSolve(sys,tspan);       % call the solver
@@ -30,24 +36,10 @@
 %   plot(tplot,Y);                  % plot the result
 %   xlabel('time'); ylabel('y');
 %
-%EXAMPLE 2 (Auxiliary variables)
-%   n = 20;                         % number of oscillators
-%   Kij = ones(n);                  % coupling matrix (global coupling)
-%   sys = KuramotoNet(Kij);         % Kuramoto model
-%   tspan = [0 100];                % integration time domain
-%   [sol,sox] = bdSolve(sys,tspan); % call the solver
-%   tplot = 0:1:100;                % time domain of interest
-%   phi = bdEval(sox,tplot,1:n);    % extract auxiliary variables, phi
-%   R = bdEval(sox,tplot,n+1);      % extract auxiliary variable, R
-%   figure; plot(tplot,phi);        % plot the phi variables
-%   xlabel('time'); ylabel('sin(theta)');
-%   figure; plot(tplot,R);          % plot the R variable
-%   xlabel('time'); ylabel('Kuramoto R');
-%
 %AUTHORS
-%   Stewart Heitmann (2016a,2017a)
+%   Stewart Heitmann (2016a,2017a,2018a)
 
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -74,12 +66,12 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function [sol,sox] = bdSolve(sys,tspan,solverfun,solvertype)
+function sol = bdSolve(sys,tspan,solverfun,solvertype)
         % add the bdtoolkit/solvers directory to the path
         addpath(fullfile(fileparts(mfilename('fullpath')),'solvers'));
 
         % check the number of output variables
-        if nargout>2
+        if nargout>1
             error('Too many output variables');
         end
         
@@ -116,7 +108,7 @@ function [sol,sox] = bdSolve(sys,tspan,solverfun,solvertype)
         
         % Call the appropriate solver
         try
-            [sol,sox] = bd.solve(sys,tspan,solverfun,solvertype);
+            sol = bd.solve(sys,tspan,solverfun,solvertype);
         catch ME
             throwAsCaller(ME);
         end

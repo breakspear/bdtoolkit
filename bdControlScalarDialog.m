@@ -50,9 +50,6 @@ classdef bdControlScalarDialog < handle
         % xxxindx is an index of the sys.xxxdef array.
         % titlestr is the title of the dialog box
         function this = bdControlScalarDialog(control,xxxdef,xxxindx,titlestr)
-            % init the listener array
-            this.listener = event.listener.empty(0);
-
             % remember the control panel handle
             this.control = control; 
 
@@ -156,7 +153,9 @@ classdef bdControlScalarDialog < handle
                 'ToolTipString','Perturb');            
             
             % listen to the control panel for widget refresh events (incuding those generate by this dialog box)
-            this.listener = listener(control,'refresh',@(~,~) this.refresh(xxxdef,xxxindx));   
+            this.listener = event.listener.empty(0);
+            this.listener(1) = listener(control,'refresh',@(~,~) this.refresh(xxxdef,xxxindx));
+            this.listener(2) = listener(control,xxxdef,@(~,~) this.refresh(xxxdef,xxxindx));
         end
         
         % Destructor (called when the object is no longer referenced)
@@ -173,7 +172,7 @@ classdef bdControlScalarDialog < handle
         
         % Refresh the widgets from the control panel
         function refresh(this,xxxdef,xxxindx)
-            disp('bdControlScalarDialog.refresh')         
+            disp(['bdControlScalarDialog.refresh:' xxxdef])         
 
             % extract the data from control.sys.xxxdef
             xxxvalue = this.control.sys.(xxxdef)(xxxindx).value;
@@ -208,9 +207,10 @@ classdef bdControlScalarDialog < handle
             valsize = size(this.control.sys.(xxxdef)(xxxindx).value);
             this.control.sys.(xxxdef)(xxxindx).value = (hi-lo)*rand(valsize) + lo;
             
-            % notify all widgets (which includes ourself) to refresh
-            notify(this.control,'refresh');
-            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            %notify(this.control,'refresh');
+            notify(this.control,xxxdef);
+
             % tell the solver to recompute the solution
             if ~this.control.halt
                 notify(this.control,'recompute');
@@ -232,8 +232,9 @@ classdef bdControlScalarDialog < handle
                 this.control.sys.(xxxdef)(xxxindx).value + ...
                 0.05*(hi-lo)*(rand(valsize)-0.5);
             
-            % notify all widgets (which includes ourself) to refresh
-            notify(this.control,'refresh');
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            %notify(this.control,'refresh');
+            notify(this.control,xxxdef);
             
             % tell the solver to recompute the solution
             if ~this.control.halt
@@ -255,8 +256,9 @@ classdef bdControlScalarDialog < handle
                 % update control.sys
                 this.control.sys.(xxxdef)(xxxindx).value = val;
                 
-                % notify all widgets (which includes ourself) to refresh
-                notify(this.control,'refresh');
+                % notify all widgets (which includes ourself) that sys.xxxdef has changed
+                %notify(this.control,'refresh');
+                notify(this.control,xxxdef);
 
                 % tell the control panel to recompute the solution
                 notify(this.control,'recompute');
@@ -280,8 +282,9 @@ classdef bdControlScalarDialog < handle
                 % update control.sys
                 this.control.sys.(xxxdef)(xxxindx).lim = [minval maxval];
                 
-                % notify all widgets (which includes ourself) to refresh
-                notify(this.control,'refresh');
+                % notify all widgets (which includes ourself) that sys.xxxdef has changed
+                %notify(this.control,'refresh');
+                notify(this.control,xxxdef);
 
                 % notify all display panels to redraw themselves
                 notify(this.control,'redraw');
@@ -305,8 +308,9 @@ classdef bdControlScalarDialog < handle
                 % update control.sys
                 this.control.sys.(xxxdef)(xxxindx).lim = [minval maxval];
                 
-                % notify all widgets (which includes ourself) to refresh
-                notify(this.control,'refresh');
+                % notify all widgets (which includes ourself) that sys.xxxdef has changed
+                %notify(this.control,'refresh');
+                notify(this.control,xxxdef);
 
                 % notify all display panels to redraw themselves
                 notify(this.control,'redraw');

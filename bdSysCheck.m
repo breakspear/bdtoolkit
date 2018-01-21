@@ -1,10 +1,10 @@
-function bdSysCheck(sys)
-    %bdSysCheck - Verifies the format of a sys struct.
-    %Use bdSysCheck to check the validity of a user-defined sys struct.
+function syscheck(sys)
+    %syscheck - Verifies the format of a sys struct.
+    %Use syscheck to check the validity of a user-defined sys struct.
     %
     %EXAMPLE
     %  >> sys = LinearODE2D();
-    %  >> bdSysCheck(sys);
+    %  >> syscheck(sys);
     %
     %  sys struct format is OK
     %  Calling Y = sys.odefun(t,Y0,a,b,c,d) where
@@ -19,9 +19,9 @@ function bdSysCheck(sys)
     %  ALL TESTS PASSED OK
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a)
+    %  Stewart Heitmann (2016a,2017a,2018a)
     
-    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -49,11 +49,24 @@ function bdSysCheck(sys)
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
+    % check for deprecated fields that bd.syscheck ordinarily fixes
+    % without complaint but we want to want the user to know about them here.
+    
+    % check for obsolete fields (from version 2017c)
+    if isfield(sys,'auxdef') || isfield(sys,'auxfun')
+        throwAsCaller(MException('bdtoolkit:syscheck:obsolete','The system structure contains fields relating to auxiliary variables. These fields were deprecated after version 2017c. Remove the ''sys.auxfun'' and ''sys.auxdef'' fields and try again.'));               
+    end
+    if isfield(sys,'self')
+        throw(MException('bdtoolkit:syscheck:obsolete','The system structure contains a ''self'' field. This field was deprecated after version 2017c. Remove the ''sys.self'' field and try again.'));               
+    end
+
+    
+
     % check that sys is valid and fill missing fields with defaults   
     try
         sys = bd.syscheck(sys);
     catch ME
-        throwAsCaller(MException('bdtoolkit:bdSysCheck',ME.message));
+        throwAsCaller(MException('bdtoolkit:syscheck',ME.message));
     end
     disp('sys struct format is OK');
     
@@ -78,7 +91,7 @@ function bdSysCheck(sys)
         Y = sys.odefun(t,Y0,par{:});
         disp(['  ',num2str(size(Y),'Returns Y as size [%d %d]')]);
         if size(Y,2)~=1
-            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.odefun must return Y as a column vector'));
+            throwAsCaller(MException('bdtoolkit:syscheck','sys.odefun must return Y as a column vector'));
         end
         disp('  sys.odefun format is OK');
     end
@@ -108,11 +121,11 @@ function bdSysCheck(sys)
                 aux = sys.auxfun(sol,par{:});
                 disp(['  ',num2str(size(aux),'aux as size [%d %d]')]);      
                 if size(aux,2)~=size(sol.y,2)
-                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with the same number of columns as sol.y'));
+                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with the same number of columns as sol.y'));
                 end
                 aux0 = bdGetValues(sys.auxdef);
                 if size(aux,1)~=numel(aux0)
-                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
+                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
                 end                
                 disp('  sys.auxfun format is OK');
             end            
@@ -145,10 +158,10 @@ function bdSysCheck(sys)
         Y = sys.ddefun(t,Y0,Z,par{:});
         disp(['  ',num2str(size(Y),'Returns Y as size [%d %d]')]);
         if size(Y,2)~=1
-            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.ddefun must return Y as a column vector'));
+            throwAsCaller(MException('bdtoolkit:syscheck','sys.ddefun must return Y as a column vector'));
         end
         if size(Y,1)~=n
-            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.odefun must return Y as size [%d 1]',n));
+            throwAsCaller(MException('bdtoolkit:syscheck','sys.odefun must return Y as size [%d 1]',n));
         end
         disp('sys.ddefun format is OK');
     end
@@ -178,11 +191,11 @@ function bdSysCheck(sys)
                 aux = sys.auxfun(sol,par{:});
                 disp(['  ',num2str(size(aux),'aux as size [%d %d]')]);      
                 if size(aux,2)~=size(sol.y,2)
-                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with the same number of columns as sol.y'));
+                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with the same number of columns as sol.y'));
                 end
                 aux0 = bdGetValues(sys.auxdef);
                 if size(aux,1)~=numel(aux0)
-                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
+                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
                 end                
                 disp('  sys.auxfun format is OK');
             end            
@@ -211,7 +224,7 @@ function bdSysCheck(sys)
         Y = sys.sdeF(t,Y0,par{:});
         disp(['  ',num2str(size(Y),'Returns Y as size [%d %d]')]);
         if size(Y,2)~=1
-            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.sdeF must return Y as a column vector'));
+            throwAsCaller(MException('bdtoolkit:syscheck','sys.sdeF must return Y as a column vector'));
         end
         disp('  sys.sdeF format is OK');
     end
@@ -237,10 +250,10 @@ function bdSysCheck(sys)
         G = sys.sdeG(t,Y0,par{:});
         disp(['  ',num2str(size(G),'Returns G as size [%d %d]')]);      
         if size(G,1)~=size(Y0,1)
-            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.sdeG must return an (nxm) matrix where n=numel(Y0)'));
+            throwAsCaller(MException('bdtoolkit:syscheck','sys.sdeG must return an (nxm) matrix where n=numel(Y0)'));
         end
         if size(G,2)~=sys.sdeoption.NoiseSources
-            throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.sdeG must return an (nxm) matrix where m=sys.sdeoption.NoiseSources'));
+            throwAsCaller(MException('bdtoolkit:syscheck','sys.sdeG must return an (nxm) matrix where m=sys.sdeoption.NoiseSources'));
         end
         disp('  sys.sdeG format is OK');
     end
@@ -272,11 +285,11 @@ function bdSysCheck(sys)
                 aux = sys.auxfun(sol,par{:});
                 disp(['  ',num2str(size(aux),'aux as size [%d %d]')]);      
                 if size(aux,2)~=size(sol.y,2)
-                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with the same number of columns as sol.y'));
+                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with the same number of columns as sol.y'));
                 end
                 aux0 = bdGetValues(sys.auxdef);
                 if size(aux,1)~=numel(aux0)
-                    throwAsCaller(MException('bdtoolkit:bdSysCheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
+                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
                 end                
                 disp('  sys.auxfun format is OK');
             end            

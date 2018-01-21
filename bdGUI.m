@@ -72,7 +72,7 @@ classdef bdGUI < handle
     % POSSIBILITY OF SUCH DAMAGE.
 
     properties (Constant=true)
-        version = '2017c';      % version number of the toolbox
+        version = '2018a';      % version number of the toolbox
     end
     
     properties
@@ -84,6 +84,7 @@ classdef bdGUI < handle
         var0            % initial conditions (read/write)
         var             % solution varables (read only)
         t               % solution time steps (read only)
+        tindx           % logical index of the non-transient time steps (read only)
         lag             % DDE time lags (read/write)
         sys             % system definition structure (read only)
         sol             % current output of the solver (read only)
@@ -93,10 +94,7 @@ classdef bdGUI < handle
     
     properties (Access=private)
         control         % handle to the bdControl object
-        uipanel1        % handle to uipanel 1
-        uipanel2        % handle to uipanel 2
-        tabgroup        % handle to tabgroup in panel1
-        panelmgr = [];  % contains handles to panel class objects
+        display         % handle to the bdDisplay object
     end
     
     methods
@@ -153,19 +151,70 @@ classdef bdGUI < handle
                     end
             end     
                                     
-           % initialize the GUI
-           this.init(sys,sol);                        
+            % construct figure
+            figw = 800;
+            figh = 500;
+            this.fig = figure('Units','pixels', ...
+                'Position',[randi(100,1,1) randi(100,1,1) figw figh], ...
+                'name', 'Brain Dynamics Toolbox', ...
+                'NumberTitle','off', ...
+                'MenuBar','none', ...
+                'DockControls','off', ...
+                'Toolbar','figure');
+
+            % construct the control panel and attach it to the figure
+            this.control = bdControl(this.fig,sys);
+
+            % construct the display panel and attach it to the figure
+            this.display = bdDisplay(this.fig,sys);
+
+            % Construct the System menu
+            this.SystemMenu(sys);
+
+            % Customize the Toolbar
+            this.CustomizeToolbar();
+
+            try
+                % construct the display panels menu
+                this.display.PanelsMenu(this.fig,this.control);
+            catch ME
+                close(this.fig);
+                ME.throwAsCaller;
+            end
+
+            % resize the uipanels (putting them in their exact position)
+            this.SizeChanged();
+
+            % load all of the display panels specified in sys.panels
+            this.display.LoadPanels(this.control);
+
+            % register a callback for resizing the figure
+            set(this.fig,'SizeChangedFcn', @(~,~) this.SizeChanged());
+
+            if isempty(sol)
+                % force a recompute
+                notify(this.control,'recompute');
+            else
+                % use the given sol and trigger a redraw event
+                this.control.sol = sol;
+                this.control.sox = bd.computesox(sys,sol);
+                notify(this.control,'redraw');
+            end
+                      
         end
        
         % Get par property
         function par = get.par(this)
             % return a struct with paramater values stored by name
-            par = [];
-            for indx = 1:numel(this.control.sys.pardef)
-                name = this.control.sys.pardef(indx).name;
-                value = this.control.sys.pardef(indx).value;
-                par.(name) = value;
-            end
+            par = this.control.par;
+            
+            % the old way
+            %par = [];
+            %for indx = 1:numel(this.control.sys.pardef)
+            %    name = this.control.sys.pardef(indx).name;
+            %    value = this.control.sys.pardef(indx).value;
+            %    par.(name) = value;
+            %end
         end 
         
         % Set par property
@@ -208,9 +257,9 @@ classdef bdGUI < handle
             % in teh control panel with the working copy.
             this.control.sys.pardef = syspardef;
             
-            % Notify the control panel to refresh its widgets
+            % Notify the control panel to refresh its pardef widgets
             % and then to recompute the trajectory.
-            notify(this.control,'refresh');
+            notify(this.control,'pardef');
             notify(this.control,'recompute');
         end
 
@@ -265,9 +314,9 @@ classdef bdGUI < handle
             % in the control panel with the working copy.
             this.control.sys.vardef = sysvardef;
             
-            % Notify the control panel to refresh its widgets
+            % Notify the control panel to refresh its vardef widgets
             % and then to recompute the trajectory.
-            notify(this.control,'refresh');
+            notify(this.control,'vardef');
             notify(this.control,'recompute');
         end
         
@@ -291,18 +340,26 @@ classdef bdGUI < handle
         function t = get.t(this)
             t = this.control.sol.x;
         end
+        
+        % Get tindx (index of the non-transient time steps) property
+        function tindx = get.tindx(this)
+            tindx = this.control.tindx;
+        end
 
         % Get lag property
         function lag = get.lag(this)
             % return a struct with initial values stored by name
-            lag = [];
-            if isfield(this.control.sys,'lagdef')
-                for indx = 1:numel(this.control.sys.lagdef)
-                    name = this.control.sys.lagdef(indx).name;
-                    value = this.control.sys.lagdef(indx).value;
-                    lag.(name) = value;
-                end
-            end
+            lag = this.control.lag;
+            
+            %the old way
+            %lag = [];
+            %if isfield(this.control.sys,'lagdef')
+            %    for indx = 1:numel(this.control.sys.lagdef)
+            %        name = this.control.sys.lagdef(indx).name;
+            %        value = this.control.sys.lagdef(indx).value;
+            %        lag.(name) = value;
+            %    end
+            %end
         end 
         
         % Set lag property
@@ -351,9 +408,9 @@ classdef bdGUI < handle
             % in the control panel with the working copy.
             this.control.sys.lagdef = syslagdef;
             
-            % Notify the control panel to refresh its widgets
+            % Notify the control panel to refresh its lagdef widgets
             % and then to recompute the trajectory.
-            notify(this.control,'refresh');
+            notify(this.control,'lagdef');
             notify(this.control,'recompute');
         end       
         
@@ -371,110 +428,16 @@ classdef bdGUI < handle
         function sox = get.sox(this)
             sox = this.control.sox;
         end
-        
+ 
         % Get panels property
-        function panels = get.panels(this) 
-            % Returns a deep copy of the class properties in panelmgr
-            panels = [];
-
-            % Clean the panelmgr of any stale handles to panel classes
-            % that have since been destroyed.
-            this.CleanPanelMgr();
-
-            % for each class in panelmgr
-            classnames = fieldnames(this.panelmgr);
-            for cindx = 1:numel(classnames)
-                classname = classnames{cindx};
-                classcount = numel(this.panelmgr.(classname));
-                panels.(classname) = [];
-
-                % for each instance of the class
-                for iindx = 1:classcount
-                    % for each field in the class
-                    fldnames = fieldnames(this.panelmgr.(classname));
-                    for findx = 1:numel(fldnames)
-                        fname = fldnames{findx};
-                        % deep copy of class properties to output
-                        panels.(classname)(iindx).(fname) = this.panelmgr.(classname)(iindx).(fname);
-                    end                    
-                end
-            end    
-        end
-
+       function panels = get.panels(this)
+           panels = this.display.PanelProperties(); 
+       end
+ 
     end
        
     
     methods (Access=private)
-        
-        % Initialise the bdGUI class object
-        function init(this,sys,sol)
-            % construct figure
-            this.fig = figure('Units','pixels', ...
-                'Position',[randi(100,1,1) randi(100,1,1) 900 600], ...
-                'name', 'Brain Dynamics Toolbox', ...
-                'NumberTitle','off', ...
-                'MenuBar','none', ...
-                'Toolbar','figure');
-            
-            % construct the LHS panel (using an approximate position)
-            this.uipanel1 = uipanel(this.fig,'Units','pixels','Position',[5 5 600 600],'BorderType','none');
-            this.tabgroup = uitabgroup(this.uipanel1);
-            
-            % construct the RHS panel (using an approximate position)
-            this.uipanel2 = uipanel(this.fig,'Units','pixels','Position',[5 5 300 600],'BorderType','none');
-
-            % construct the control panel
-            this.control = bdControl(this.uipanel2,sys);
-
-            % register a callback with the uipanel2 to notify all figures spawned by the control panel
-            % to close themselves when the control panel itself is deleted.
-            this.uipanel2.DeleteFcn = @(~,~) notify(this.control,'closefig'); 
-            
-            % resize the panels (putting them in their exact position)
-            this.SizeChanged();
-
-            % Construct the System menu
-            this.SystemMenu(sys);
-
-            % Construct the Panels menu
-            this.PanelsMenu(sys);
-
-            % Construct the Solver menu
-            this.SolverMenu(this.control);
-
-            % load each gui panel listed in sys.panels
-            if isfield(sys,'panels')
-                panelnames = fieldnames(sys.panels);
-                for indx = 1:numel(panelnames)
-                    classname = panelnames{indx};
-                    if exist(classname,'class')
-                        % construct the panel, keep a handle to it.
-                        classhndl = feval(classname,this.tabgroup,this.control);
-                        if ~isfield(this.panelmgr,classname)
-                            this.panelmgr.(classname) = classhndl;
-                        else
-                            this.panelmgr.(classname)(end+1) = classhndl;
-                        end
-                    else
-                        dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
-                        uiwait(dlg);
-                    end
-                end
-            end
-            
-            % register a callback for resizing the figure
-            set(this.fig,'SizeChangedFcn', @(~,~) this.SizeChanged());
-
-            if isempty(sol)
-                % force a recompute
-                notify(this.control,'recompute');
-            else
-                % use the given sol and trigger a redraw event
-                this.control.sol = sol;
-                this.control.sox = bd.computesox(sys,sol);
-                notify(this.control,'redraw');
-            end
-        end       
         
         % Construct the System menu
         function menuobj = SystemMenu(this,sys)
@@ -485,15 +448,9 @@ classdef bdGUI < handle
             uimenu('Parent',menuobj, ...
                    'Label','About', ...
                    'Callback',@(~,~) SystemAbout() );
-            if isfield(sys,'self')
-                uimenu('Parent',menuobj, ...
-                       'Label','Reconfigure', ...
-                       'Callback', @(~,~) SystemNew() );
-            else
-                uimenu('Parent',menuobj, ...
-                       'Label','Reconfigure', ...
-                       'Enable', 'off');
-            end
+            uimenu('Parent',menuobj, ...
+                   'Label','New', ...
+                   'Callback', @(~,~) bdGUI(this.control.sys) );
             uimenu('Parent',menuobj, ...
                    'Label','Load', ...
                    'Callback', @(~,~) bdGUI() );
@@ -507,22 +464,67 @@ classdef bdGUI < handle
 
             % Callback for System-About menu
             function SystemAbout()
-                msg = {['Brain Dynamics Toolbox Version ' this.version]
+                msg = {'The Brain Dynamics Toolbox'
+                       ['Version ' this.version]
+                       ''
+                       'Stewart Heitmann & Michael Breakspear'
+                       'QIMR Berghofer Medical Research Institute'
+                       'Stewart.Heitmann@qimrberghofer.edu.au'
+                       'Michael.Breakspear@qimrberghofer.edu.au'
+                       ''
                        'http://bdtoolbox.blogspot.com.au'
+                       ''
                        };
-                uiwait(msgbox(msg,'About','FontSize',24,'CreateMode','modal'));
+                uiwait(helpdlg(msg,'About'));
             end
             
-            % Callback for System-New menu
-            function SystemNew()
-                if isfield(this.control.sys,'self')
-                    newsys = feval(this.control.sys.self);
-                    if ~isempty(newsys)
-                        bdGUI(newsys);
-                    end
-                end
+        end
+        
+        % Customize the Figure Toolbar
+        function CustomizeToolbar(this)
+            % get handle to the toolbar
+            hToolBar = findall(this.fig,'tag','FigureToolBar');
+            if isempty(hToolBar)
+                return
             end
+            
+            % customize the NewFigure tool
+            hnd = findall(hToolBar,'tag','Standard.NewFigure');
+            if ~isempty(hnd)
+                hnd.ClickedCallback =  @(~,~) bdGUI(this.control.sys); 
+                hnd.TooltipString = 'New Instance';
+            end
+            
+            % customize the FileOpen tool
+            hnd = findall(hToolBar,'tag','Standard.FileOpen');
+            if ~isempty(hnd)
+                hnd.ClickedCallback =  @(~,~) bdGUI(); 
+                hnd.TooltipString = 'Load System';
+            end
+            
+            % customize the SaveFigure tool
+            hnd = findall(hToolBar,'tag','Standard.SaveFigure');
+            if ~isempty(hnd)
+                hnd.ClickedCallback =  @(~,~) this.SystemSaveDialog(); 
+                hnd.TooltipString = 'Save System';
+            end
+            
+            % delete the PrintFigure tool
+            delete( findall(hToolBar,'tag','Standard.PrintFigure') );
+            
+            % delete the EditPlot tool
+            delete( findall(hToolBar,'tag','Standard.EditPlot') );
 
+            % delete the Data Linking tool
+            delete( findall(hToolBar,'tag','DataManager.Linking') );
+            
+            % delete the Annotation tools
+            delete( findall(hToolBar,'tag','Annotation.InsertLegend') );
+            delete( findall(hToolBar,'tag','Annotation.InsertColorbar') );
+            
+            % delete the PlotTools
+            delete( findall(hToolBar,'tag','Plottools.PlottoolsOn') );
+            delete( findall(hToolBar,'tag','Plottools.PlottoolsOff') );
         end
         
         % Construct the System-Save Dialog
@@ -913,159 +915,12 @@ classdef bdGUI < handle
             
         end
         
-        % Construct the Panel menu
-        function menuobj = PanelsMenu(this,sys)
-            classnames = {'bdLatexPanel','bdTimePortrait','bdPhasePortrait','bdSpaceTime','bdCorrPanel','bdHilbert','bdSurrogate','bdSolverPanel','bdTrapPanel'};
-            menuobj = uimenu('Parent',this.fig, 'Label','New Panel');
-            uimenu('Parent',menuobj, ...
-                    'Label','Equations', ...
-                    'Callback', @(~,~) NewPanel('bdLatexPanel'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Time Portrait', ...
-                    'Callback', @(~,~) NewPanel('bdTimePortrait'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Phase Portrait', ...
-                    'Callback', @(~,~) NewPanel('bdPhasePortrait'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Space-Time', ...
-                    'Callback', @(~,~) NewPanel('bdSpaceTime'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Correlations', ...
-                    'Callback', @(~,~) NewPanel('bdCorrPanel'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Hilbert Transform', ...
-                    'Callback', @(~,~) NewPanel('bdHilbert'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Surrogate Signal', ...
-                    'Callback', @(~,~) NewPanel('bdSurrogate'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Solver Panel', ...
-                    'Callback', @(~,~) NewPanel('bdSolverPanel'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Trap Panel', ...
-                    'Callback', @(~,~) NewPanel('bdTrapPanel'));
-      
-            % add any custom gui panels to the menu and also to this.panelclasses
-            if isfield(sys,'panels')
-                panelnames = fieldnames(sys.panels);
-                for indx = 1:numel(panelnames)
-                    classname = panelnames{indx};
-                    if exist(classname,'class')
-                        switch classname
-                            case classnames
-                                % Nothing to do. We have this one already.
-                            otherwise
-                                % Add a menu item for the novel panel
-                                uimenu('Parent',menuobj, ...
-                                       'Label',classname, ...
-                                       'Callback', @(~,~) NewPanel(classname));
-                                % Remember the name of the novel panel class
-                                classnames{end} = classname;
-                        end
-                    end
-                end
-            end 
-            
-            % Menu Callback function
-            function NewPanel(classname)
-               if exist(classname,'class')
-                    % construct the panel, keep a handle to it.
-                    classhndl = feval(classname,this.tabgroup,this.control);
-                    if ~isfield(this.panelmgr,classname)
-                        this.panelmgr.(classname) = classhndl;
-                    else
-                        this.panelmgr.(classname)(end+1) = classhndl;
-                    end
-                    
-                    % force a redraw event
-                    notify(this.control,'redraw');
-                else
-                    dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
-                    uiwait(dlg);
-                end          
-            end
-            
-        end
-  
-        % Construct the Solver menu
-        function menuobj = SolverMenu(this,control)
-            menuobj = uimenu('Parent',this.fig, 'Label','Solver', 'Tag','bdSolverPanelMenu');
-            checkstr='on';
-             for indx = 1:numel(control.solvermap)
-                uimenu('Parent',menuobj, ...
-                    'Label',control.solvermap(indx).solvername, ...
-                    'Tag', 'bdSolverSelector', ...
-                    'UserData', indx, ...
-                    'Checked',checkstr, ...
-                    'Callback', @(menuitem,~) SolverCallback(menuobj,menuitem,control) );
-                checkstr='off';                
-            end
-        
-            % Solver Menu Item Callback
-            function SolverCallback(menuobj,menuitem,control)
-                % Find all solver menu items and un-check them.
-                menuitems = findobj(menuobj,'Tag','bdSolverSelector');
-                for ix=1:numel(menuitems)                
-                    menuitems(ix).Checked='off';
-                end
-                % Now check the newly selected menu item
-                menuitem.Checked = 'on';
-                % Set the index of the active solver in the control object
-                control.solveridx = menuitem.UserData;
-                % Recompute using the new solver
-                notify(control,'recompute');  
-            end
-        end        
-        
-        % Remove stale (deleted) class handles from this.panelmgr.
-        % We need to do this because the panel classes can delete themselves
-        % without informing the GUI that they are gone.
-        function CleanPanelMgr(this)
-            % for each class in panelmgr
-            classnames = fieldnames(this.panelmgr);
-            for cindx = 1:numel(classnames)
-                classname = classnames{cindx};
-                classcount = numel(this.panelmgr.(classname));
-
-                % for each instance of the class (in reverse order)
-                for iindx = classcount:-1:1
-                    % remove any handles to invalid classes
-                    if ~isvalid(this.panelmgr.(classname)(iindx))
-                        this.panelmgr.(classname)(iindx) = [];
-                    end
-                end
-                
-                % remove empty classes
-                if isempty(this.panelmgr.(classname))
-                    % remove it from this.panelmgr
-                    this.panelmgr = rmfield(this.panelmgr,classname);
-                end
-            end    
-            
-        end
-        
         % Callback for window resize events
         function SizeChanged(this)
-            % get the new figure size
-            figw = this.fig.Position(3);
-            figh = this.fig.Position(4);
-            
-            % dont allow small figures to cramp our panels
-            figw = max(figw,300);
-            figh = max(figh,300);
-            
-            % width of the RHS panel
-            panel2w = 105;
-            
-            % resize the LHS panel
-            w1 = figw - panel2w - 10;
-            h1 = figh - 10;
-            this.uipanel1.Position = [5 5 w1 h1];
-            
-            % resize the RHS panel
-            w2 = panel2w;
-            h2 = figh - 10;
-            this.uipanel2.Position = [8+w1 5 w2 h2];            
+            % resize the control panel
+            this.control.SizeChanged(this.fig);
+            % resize the display panel
+            this.display.SizeChanged(this.fig);
         end
         
     end
@@ -1157,9 +1012,7 @@ function [sys,sol] = loadsys()
             case {'bdtoolkit:syscheck:odefun'
                   'bdtoolkit:syscheck:ddefun'
                   'bdtoolkit:syscheck:sdeF'
-                  'bdtoolkit:syscheck:sdeG'
-                  'bdtoolkit:syscheck:auxfun'
-                  'bdtoolkit:syscheck:self'}
+                  'bdtoolkit:syscheck:sdeG'}
                 msg = {ME.message
                        ''
                        'Explanation: The model could not be loaded because its ''sys'' structure contains a handle to a function that is not in the matlab search path.'
@@ -1168,6 +1021,7 @@ function [sys,sol] = loadsys()
                        ''
                        };
                 uiwait( warndlg(msg,'Missing Function') );
+            
             otherwise
                 msg = {ME.message,
                        '',

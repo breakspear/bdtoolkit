@@ -171,8 +171,8 @@ classdef bdPhasePortrait < bdPanel
                 control.sys.vardef(varindx1).lim = bdPanel.RoundLim(lo1,hi1);
                 control.sys.vardef(varindx2).lim = bdPanel.RoundLim(lo2,hi2);
                 
-                % refresh the control widgets (becasue their limits have changed)
-                notify(control,'refresh');
+                % refresh the vardef control widgets (becasue their limits have changed)
+                notify(control,'vardef');
                  
                 % redraw all panels (because the new limits apply to all panels)
                 notify(control,'redraw');

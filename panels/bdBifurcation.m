@@ -117,8 +117,8 @@ classdef bdBifurcation < bdPanel
                 control.sys.vardef(indx2).lim = bdPanel.RoundLim(this.ylo,this.yhi);
                 control.sys.vardef(indx3).lim = bdPanel.RoundLim(this.zlo,this.zhi);
                 
-                % refresh the control widgets
-                notify(control,'refresh');
+                % refresh the vardef control widgets
+                notify(control,'vardef');
                 
                 % redraw all panels (because the new limits apply to all panels)
                 notify(control,'redraw');

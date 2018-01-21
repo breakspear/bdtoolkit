@@ -1,9 +1,43 @@
 classdef (Abstract) bdPanel < handle
-    % Base class for display panels in bdGUI.
+    % Base class for display panels in the Brain Dynamics Toolbox GUI.
+    % User-defined panels must be drived from this class. Among other
+    % things, it manages the construction and destruction of the panel
+    % tab as well as the visibility of the panel's menu in the toolbar.
+    %
+    % AUTHORS
+    % Stewart Heitmann (2018a)   
+    
+    % Copyright (C) 2018 QIMR Berghofer Medical Research Institute
+    % All rights reserved.
+    %
+    % Redistribution and use in source and binary forms, with or without
+    % modification, are permitted provided that the following conditions
+    % are met:
+    %
+    % 1. Redistributions of source code must retain the above copyright
+    %    notice, this list of conditions and the following disclaimer.
+    % 
+    % 2. Redistributions in binary form must reproduce the above copyright
+    %    notice, this list of conditions and the following disclaimer in
+    %    the documentation and/or other materials provided with the
+    %    distribution.
+    %
+    % THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+    % "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+    % LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+    % FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    % COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+    % INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+    % BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+    % LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    % CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+    % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    % POSSIBILITY OF SUCH DAMAGE.
     
     properties (Access=protected)
-        menu                                % handle to the panel's toolbar uimenu
-        tab                                 % handle to the panel's uitab
+        menu                                % Handle to the panel's toolbar uimenu
+        tab                                 % Handle to the panel's uitab
     end
 
     methods
@@ -49,8 +83,19 @@ classdef (Abstract) bdPanel < handle
     end
     
     methods (Static)
-        % Construct a subpanel where the position is given in normal coordinates
         function [ax,cmenu,spanel] = Subpanel(parent,panelpos,axespos)
+            % Construct a graphical subpanel in the parent tab.
+            %
+            % [ax,cmenu,spanel] = Subpanel(parent,panelpos,axespos)
+            %
+            % The position of the subpanel within the parent is dictated
+            % by panelpos. The position of the axes within the subpanel
+            % is dictated by axespos. Both positions are in normal
+            % coordinates.
+            %
+            % Returns handles to the subpanel's axes (ax), its context
+            % menu (cmenu) and its uipanel container (spanel).
+
             % handle to the parent figure
             fig = ancestor(parent,'figure');
 
@@ -65,6 +110,7 @@ classdef (Abstract) bdPanel < handle
                 'Units','normal', ...
                 'OuterPosition',axespos, ...
                 'NextPlot','add', ...
+                'FontSize',12, ...
                 'Box','on');
 
             % Define the icon for the menu button
@@ -107,12 +153,21 @@ classdef (Abstract) bdPanel < handle
             end
         end
 
-        % Construct menu items for each entry in xxxdef.
-        % All menu items are assigned the same tag and callback.
-        % The separator only applies to the first menu item.
-        % The menu for the checkindx'th entry is checked 'on'.
-        % Returns a handle to the checked menu item
         function menuitem = SelectorMenu(menu,xxxdef,callback,separator,tag,checkindx)
+            % Construct a set of selector menu items for each entry in xxxdef.
+            %
+            % menuitem = SelectorMenu(menu,xxxdef,callback,separator,tag,checkindx)
+            %
+            % The menu items are assigned to the specified parent menu.
+            % Each one of those menu items are assigned the specified tag
+            % and callback function. The Check state of all menu items are
+            % set to 'off' except for the checkindx'th menu item which is
+            % set to 'on'. The separator flag ('on' or 'off') only applies
+            % to the first menu item. It is useful when concatenating
+            % several selector menus to the same parent menu.
+            %
+            % Returns a handle to the checked menu item
+            
             n = numel(xxxdef);
             for xxxindx=1:n
                 UserData.xxxname = xxxdef(xxxindx).name;
@@ -143,8 +198,15 @@ classdef (Abstract) bdPanel < handle
             end
         end
         
-        % generate a nested menu
         function menuitem = SelectorMenuFull(menu,xxxdef,callback,separator,tag,checkindx,checkvalindx)
+            % Construct a fully enumerated selector menu for each entry in xxxdef.
+            %
+            % menuitem = SelectorMenuFull(menu,xxxdef,callback,separator,tag,checkindx,checkvalindx)
+            %
+            % Similar to SelectorMenu except that the individual elements
+            % of vector and matrix values in xxxdef are all enumerated as
+            % seperate menu items.
+            
             n = numel(xxxdef);
             for xxxindx=1:n
                 xxxname = xxxdef(xxxindx).name;
@@ -269,7 +331,14 @@ classdef (Abstract) bdPanel < handle
         end
         
         function SelectorCheckItem(menuitem)
-            % check 'off' all menu items with the same tag
+            % Check 'on' the selected menu item and check 'off' the others.
+            %
+            % SelectorCheckItem(menuitem)
+            %
+            % The Checked state of the given menu item is set to 'on'
+            % while the Checked state of all other menu items with the
+            % same tag as that menuitem are set to 'off'.
+            
             objs = findobj(menuitem.UserData.rootmenu,'Tag',menuitem.Tag);
             for indx=1:numel(objs)
                 objs(indx).Checked='off';
@@ -278,15 +347,20 @@ classdef (Abstract) bdPanel < handle
             menuitem.Checked='on';
         end
         
-        % Utility function that returns a [lo hi] limit which is
-        % rounded to 2 significant digits.
         function lim = RoundLim(lo,hi)
+            % Utility function for rounding limits to 2 significant digits. 
+            %
+            % lim = RoundLim(lo,hi)
+            %
+            % Returns a [lo hi] limit that brackets the specified range.
+            
             d = hi-lo;
-            lim = round([lo-0.1*d, hi+0.1*d],2,'significant');
+            lim = round([lo-0.1*d-1e-6, hi+0.1*d+1e-6],2,'significant');
         end
 
-        % Callback executed by the tabgroup whenever the selected tab changes
         function PanelSelectionChangedFcn(~,evnt)
+            % Callback executed by the parent tabgroup when the selected tab changes.
+
             disp('bdPanel.PanelSelectionChangedFcn');
             % Hide the panel menu associated with the old tab
             evnt.OldValue.UserData.menu.Visible = 'off';

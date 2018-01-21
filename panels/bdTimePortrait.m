@@ -114,10 +114,10 @@ classdef bdTimePortrait < bdPanel
                 end
 
                 % find the limits of the upper and lower plots
-                lo1 = min(this.y1(tindx));
-                lo2 = min(this.y2(tindx));
-                hi1 = max(this.y1(tindx));
-                hi2 = max(this.y2(tindx));
+                lo1 = min(min(this.y1(:,tindx)));
+                lo2 = min(min(this.y2(:,tindx)));
+                hi1 = max(max(this.y1(:,tindx)));
+                hi2 = max(max(this.y2(:,tindx)));
                 
                 % get the indices of the upper and lower variables in sys.vardef
                 varindx1 = this.submenu1.UserData.xxxindx;
@@ -134,8 +134,9 @@ classdef bdTimePortrait < bdPanel
                 control.sys.vardef(varindx1).lim = bdPanel.RoundLim(lo1,hi1);
                 control.sys.vardef(varindx2).lim = bdPanel.RoundLim(lo2,hi2);
 
-                % refresh the control widgets
-                notify(control,'refresh');
+                % refresh the vardef control widgets
+                %notify(control,'refresh');
+                notify(control,'vardef');
                 
                 % redraw all panels (because the new limits apply to all panels)
                 notify(control,'redraw');

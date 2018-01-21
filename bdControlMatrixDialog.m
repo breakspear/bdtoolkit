@@ -1,11 +1,10 @@
-classdef bdControlMatrix < handle
-    %bdControlMatrix Implements the control-panel Matrix-Edit dialog box
-    %   This class performs a similar job to bdEditMatrix but is
-    %   specialised to work in tandem with the control panel (bdControl).
+classdef bdControlMatrixDialog < handle
+    %bdControlMatrixDialog  Dialog box for editing a matrix control widget
+    %   This class is specialised to work in tandem with the control panel.
     %   It should not be called directly by the user. 
     % 
     %AUTHORS
-    %  Stewart Heitmann (2017c)
+    %  Stewart Heitmann (2017c-d)
 
     % Copyright (C) 2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -35,59 +34,122 @@ classdef bdControlMatrix < handle
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
     
-    properties
+    properties (Access=private)
         control         % handle to control panel
         dialogfig       % handle to dialog box figure
         datatable       % handle to the table widget
+        imageaxes       % handle to image axes
         dataimage       % handle to image plot widget
-        haltbutton      % handle to halt button
+        minbox          % handle to minbox
+        maxbox          % handle to maxbox
+        haltbutton      % handle to HALT button
         listener        % handle to listener(s)
     end
     
     methods
-        % Constructs a bdControlMatrix dialog box where 
+        % Constructs a bdControlMatrixDialog dialog box where 
         % control = handel to the bdControl object
         % xxxdef = 'pardef' or 'vardef' or 'lagdef' (string).
         % xxxindx is an index of the sys.xxxdef array.
-        function this = bdControlMatrix(control,xxxdef,xxxname,titlestr)
-            % init the listener array
-            this.listener = event.listener.empty(0);
-
+        function this = bdControlMatrixDialog(control,xxxdef,xxxindx,titlestr)
             % remember the control panel handle
             this.control = control; 
 
-            % get the matrix data from control.sys.xxxdef
-            [data,xxxindx] = bdGetValue(this.control.sys.(xxxdef),xxxname);
-            %n = numel(data);
-            
+            % extract the relevant fields from control.sys.xxxdef
+            xxxname  = control.sys.(xxxdef)(xxxindx).name;
+            xxxvalue = control.sys.(xxxdef)(xxxindx).value;
+            xxxlim   = control.sys.(xxxdef)(xxxindx).lim;
+
             % construct dialog box (at the current mouse position)
             xypos = get(groot,'PointerLocation'); 
             this.dialogfig = figure('Units','pixels', ...
-                'Position',[xypos(1), xypos(2), 600, 270], ...
+                'Position',[xypos(1), xypos(2), 550, 330], ...
                 'MenuBar','none', ...
                 'Name',titlestr, ...
                 'NumberTitle','off', ...
                 'ToolBar', 'none', ...
                 'Resize','off', ...
-                'DeleteFcn', @(~,~) this.deletefig );
+                'DeleteFcn', @(~,~) delete(this) );
 
             % set data cursor mode
             dcm = datacursormode(this.dialogfig);
-            set(dcm, 'DisplayStyle','datatip', 'Enable','on','UpdateFcn',@(src,evnt) this.UpdateFcn(src,evnt));
-
-            % axes for data image
-            ax = axes('parent',this.dialogfig, 'Units','pixels', 'Position',[390 60 200 200]);      % axes for bar graph
-            
-            % data image
-            this.dataimage = imagesc('CData',data, 'parent',ax);
-            axis image ij
+            set(dcm, 'DisplayStyle','datatip', ...
+                'Enable','on', ...
+                'UpdateFcn',@(src,evnt) this.UpdateFcn(src,evnt));
 
             % data table 
-            this.datatable = uitable(this.dialogfig,'Position',[10 10 350, 250], ...
-                'Data',data, ...  
+            this.datatable = uitable(this.dialogfig,'Position',[10 10 300, 300], ...
+                'Data',xxxvalue, ...  
                 'ColumnWidth',{50}, ...
                 'ColumnEditable',true, ...
                 'CellEditCallback', @(src,~) this.CellEditCallback(xxxdef,xxxindx));
+
+            % axes for data image
+            this.imageaxes = axes('parent',this.dialogfig, ...
+                'Units','pixels', ...
+                'Position',[350 120 190 190]);
+            
+            % data image
+            this.dataimage = imagesc('CData',xxxvalue, 'parent',this.imageaxes,xxxlim+[-1e-6 1e-6]);
+            axis image ij
+            title(xxxname);
+
+            % 'ZERO' button
+            uicontrol('Style','pushbutton', ...
+                'String','ZERO', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', this.dialogfig, ...
+                'Callback', @(~,~) this.ZeroCallback(xxxdef,xxxindx), ...
+                'Position',[350 65 60 20], ...
+                'ToolTipString','Zero the data');            
+
+            % 'RAND' button
+            uicontrol('Style','pushbutton', ...
+                'String','RAND', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', this.dialogfig, ...
+                'Callback', @(~,~) this.RandCallback(xxxdef,xxxindx), ...
+                'Position',[415 65 60 20], ...
+                'ToolTipString','Uniform random data');            
+
+            % 'PERB' button
+            uicontrol('Style','pushbutton', ...
+                'String','PERB', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', this.dialogfig, ...
+                'Callback', @(~,~) this.PerbCallback(xxxdef,xxxindx), ...
+                'Position',[480 65 60 20], ...
+                'ToolTipString','Uniform perturbation (5%)');            
+
+            % min box
+            this.minbox = uicontrol('Parent',this.dialogfig, ...
+                'Style', 'edit', ...
+                'Units','pixels',...
+                'Position',[350 40 60 20], ...
+                'String',num2str(xxxlim(1),'%0.4g'), ...
+                'Value',xxxlim(1), ...
+                'HorizontalAlignment','center', ...
+                'Visible','on', ...
+                'Callback', @(~,~) this.minboxCallback(xxxdef,xxxindx), ...
+                'ToolTipString','Lower limit');
+
+            % max box
+            this.maxbox = uicontrol('Parent',this.dialogfig, ...
+                'Style', 'edit', ...
+                'Units','pixels',...
+                'Position',[415 40 60 20], ...
+                'String',num2str(xxxlim(2),'%0.4g'), ...
+                'Value',xxxlim(2), ...
+                'HorizontalAlignment','center', ...
+                'Visible','on', ...
+                'Callback', @(~,~) this.maxboxCallback(xxxdef,xxxindx), ...
+                'ToolTipString','Upper limit');
 
             % HALT button
             this.haltbutton = uicontrol('Style','radio', ...
@@ -101,7 +163,7 @@ classdef bdControlMatrix < handle
                 'Parent', this.dialogfig, ...
                 'ToolTipString', 'Halt the solver', ...
                 'Callback', @(src,~) this.HaltCallback(src), ...
-                'Position',[390 10 60 20]);
+                'Position',[350 10 60 20]);
 
             % 'Close' button
             uicontrol('Style','pushbutton', ...
@@ -110,19 +172,19 @@ classdef bdControlMatrix < handle
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
                 'Parent', this.dialogfig, ...
-                'Callback', @(~,~) delete(this.dialogfig), ...
-                'Position',[530 10 60 20]);
+                'Callback', @(~,~) this.visible('off'), ...
+                'Position',[480 10 60 20], ...
+                'ToolTipString','Close the dialog box');
             
             % listen to the control panel for widget refresh events (incuding those generate by this dialog box)
-            this.listener = addlistener(control,'refresh',@(~,~) this.refreshListener(xxxdef,xxxname));   
-            
-            % litsen to the control panel for any closefig events
-            this.listener(end+1) = addlistener(control,'closefig',@(~,~) delete(this.dialogfig));   
+            this.listener = event.listener.empty(0);
+            this.listener(1) = listener(control,'refresh',@(~,~) this.refreshListener(xxxdef,xxxindx));   
+            this.listener(2) = listener(control,xxxdef,@(~,~) this.refreshListener(xxxdef,xxxindx));   
         end
         
         % Destructor (called when this object is no longer referenced)
         function delete(this)
-            %disp('bdControlMatrix.destructor');
+            delete(this.listener);
             delete(this.dialogfig);
         end
         
@@ -130,7 +192,147 @@ classdef bdControlMatrix < handle
         function deletefig(this)
             %disp('deletefig');
             delete(this.listener);
+        end
+        
+        % Make the dialog box visible/invisible
+        function visible(this,flag)
+            figure(this.dialogfig);
+            this.dialogfig.Visible = flag;
+        end
+    end
+    
+    methods (Access=private)
+        % TABLE cell edit callback
+        function CellEditCallback(this,xxxdef,xxxindx)
+            %disp('CellEditCallback'); 
+            % get the data from the table
+            data = get(this.datatable,'data');
+            
+            % update the control panel.
+            this.control.sys.(xxxdef)(xxxindx).value = data;
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            %notify(this.control,'refresh');
+            notify(this.control,xxxdef);
+
+            
+            % tell the solver to recompute the solution
+            if ~this.control.halt
+                notify(this.control,'recompute');
+            end
+        end
+   
+        % ZERO button callback
+        function ZeroCallback(this,xxxdef,xxxindx)
+            % update the control panel.
+            valsize = size(this.control.sys.(xxxdef)(xxxindx).value);
+            this.control.sys.(xxxdef)(xxxindx).value = zeros(valsize);
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            %notify(this.control,'refresh');
+            notify(this.control,xxxdef);
+            
+            % tell the solver to recompute the solution
+            if ~this.control.halt
+                notify(this.control,'recompute');
+            end
+        end
+
+        % RAND button callback
+        function RandCallback(this,xxxdef,xxxindx)
+            % determine the limits of the random values
+            xxxlim = this.control.sys.(xxxdef)(xxxindx).lim;
+            lo = xxxlim(1);
+            hi = xxxlim(2);
+            
+            % update the control panel.
+            valsize = size(this.control.sys.(xxxdef)(xxxindx).value);
+            this.control.sys.(xxxdef)(xxxindx).value = (hi-lo)*rand(valsize) + lo;
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            %notify(this.control,'refresh');
+            notify(this.control,xxxdef);
+            
+            % tell the solver to recompute the solution
+            if ~this.control.halt
+                notify(this.control,'recompute');
+            end
+        end
+
+        % PERB button callback
+        function PerbCallback(this,xxxdef,xxxindx)
+            % determine the limits of the random values
+            xxxlim = this.control.sys.(xxxdef)(xxxindx).lim;
+            lo = xxxlim(1);
+            hi = xxxlim(2);
+            
+            % update the control panel with a perturned version of the data
+            valsize = size(this.control.sys.(xxxdef)(xxxindx).value);
+            this.control.sys.(xxxdef)(xxxindx).value =  ...
+                this.control.sys.(xxxdef)(xxxindx).value + ...
+                0.05*(hi-lo)*(rand(valsize)-0.5);
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            %notify(this.control,'refresh');
+            notify(this.control,xxxdef);
+            
+            % tell the solver to recompute the solution
+            if ~this.control.halt
+                notify(this.control,'recompute');
+            end
+        end
+        
+        % min box callback function
+        function minboxCallback(this,xxxdef,xxxindx)
+            % read the minbox string and convert to a number
+            str = this.minbox.String;
+            minval = str2double(str);
+            if isnan(minval)
+                hndl = errordlg(['Invalid number: ',str], 'Invalid Number', 'modal');
+                uiwait(hndl);
+                % restore the minbox string to its previous value
+                this.minbox.String = num2str(this.minbox.Value,'%0.4g');                 
+            else           
+                % adjust the max box if necessary
+                maxval = max(this.maxbox.Value, minval);
+                
+                % update control.sys
+                this.control.sys.(xxxdef)(xxxindx).lim = [minval maxval];
+                
+                % notify all widgets (which includes ourself) that sys.xxxdef has changed
+                %notify(this.control,'refresh');
+                notify(this.control,xxxdef);
+
+                % notify all display panels to redraw themselves
+                notify(this.control,'redraw');
+            end
         end        
+        
+        % max box callback function
+        function maxboxCallback(this,xxxdef,xxxindx)
+            % read the maxbox string and convert to a number
+            str = this.maxbox.String;
+            maxval = str2double(str);
+            if isnan(maxval)
+                hndl = errordlg(['Invalid number: ',str], 'Invalid Number', 'modal');
+                uiwait(hndl);
+                % restore the minbox string to its previous value
+                this.maxbox.String = num2str(this.maxbox.Value,'%0.4g');                 
+            else           
+                % adjust the min box if necessary
+                minval = min(this.minbox.Value, maxval);
+                
+                % update control.sys
+                this.control.sys.(xxxdef)(xxxindx).lim = [minval maxval];
+                
+                % notify all widgets (which includes ourself) that sys.xxxdef has changed
+                %notify(this.control,'refresh');
+                notify(this.control,xxxdef);
+
+                % notify all display panels to redraw themselves
+                notify(this.control,'redraw');
+            end
+        end
         
         % HALT button callback
         function HaltCallback(this,haltbutton)
@@ -141,37 +343,31 @@ classdef bdControlMatrix < handle
             end
         end
         
-        % TABLE cell edit callback
-        function CellEditCallback(this,xxxdef,xxxindx)
-            %disp('CellEditCallback'); 
-            % get the data from the table
-            data = get(this.datatable,'data');
-            
-            % update the control panel.
-            this.control.sys.(xxxdef)(xxxindx).value = data;
-            
-            % notify all widgets (which includes ourself) to refresh
-            notify(this.control,'refresh');
-            
-            % tell the solver to recompute the solution
-            if ~this.control.halt
-                notify(this.control,'recompute');
-            end
-        end
-
         % Listener for widget refresh events from the control panel
-        function refreshListener(this,xxxdef,xxxname)
-            %disp('bdControlMatrix.refreshListener')         
+        function refreshListener(this,xxxdef,xxxindx)
+            %disp('bdControlMatrixDialog.refreshListener')         
             
-            % read the data from control.sys.xxxdef
-            data = bdGetValue(this.control.sys.(xxxdef),xxxname);
-           
+            % extract the data from control.sys.xxxdef
+            xxxvalue = this.control.sys.(xxxdef)(xxxindx).value;
+            xxxlim = this.control.sys.(xxxdef)(xxxindx).lim;
+            
             % update the data table
-            this.datatable.Data = data;
+            this.datatable.Data = xxxvalue;
             
             % update the data image
-            this.dataimage.CData = data;
+            this.dataimage.CData = xxxvalue;
 
+            % update the colour scale limits of the image
+            this.imageaxes.CLim = xxxlim + [-1e-6, 1e-6];
+
+            % update the min box
+            this.minbox.Value = xxxlim(1);
+            this.minbox.String = num2str(xxxlim(1),'%0.4g');
+           
+            % update the max box
+            this.maxbox.Value = xxxlim(2);
+            this.maxbox.String = num2str(xxxlim(2),'%0.4g');
+           
             % update the HALT button
             this.haltbutton.Value = this.control.halt; 
         end
