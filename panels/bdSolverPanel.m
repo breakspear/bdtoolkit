@@ -193,7 +193,7 @@ classdef bdSolverPanel < bdPanel
         
         % Initialise the panel
         function InitPanel(this,control)
-            disp('bdSolverPanel.InitPanel');
+            %disp('bdSolverPanel.InitPanel');
             
             % Construct the uipanel container
             spanel = uipanel(this.tab, ...
@@ -385,7 +385,7 @@ classdef bdSolverPanel < bdPanel
         
         % Redraw the data plots
         function redraw(this,control)
-            disp('bdSolverPanel.redraw()')
+            %disp('bdSolverPanel.redraw()')
             
             % compute the time steps
             this.dt = diff(control.sol.x);

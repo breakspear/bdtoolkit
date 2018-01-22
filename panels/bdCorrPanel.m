@@ -1,19 +1,11 @@
-classdef bdCorrPanel < handle
-    %bdCorrPanel - Brain Dynamics GUI panel for linear correlation.
+classdef bdCorrPanel < bdPanel
+    %bdCorrPanel - Display panel for plotting linear correlations in bdGUI.
     %   Displays the linear correlation matrix for the system variables.
-    %   This class implements a linear correlation matrix of the system
-    %   variables for the graphical user interface of the Brain Dynamics
-    %   Toolbox (bdGUI). Users never call this class directly. They instead
-    %   instruct the bdGUI application to load the panel by specifying
-    %   options in their model's sys struct.
-    %
-    %SYS OPTIONS
-    %   sys.panels.bdCorrPanel.title = 'Correlation'
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a,2017c)
+    %  Stewart Heitmann (2016a,2017a,2017c,2018a)
 
-    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -41,144 +33,85 @@ classdef bdCorrPanel < handle
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
+    properties (Constant)
+        title = 'Correlation';
+    end    
+
     properties
-        R       % matrix of correlation cooefficients
+        ax              % Handle to the plot axes
+        t               % Time points at which the data was sampled (1 x t)
+        Y               % The sampled data points (n x t)
+        R               % Matrix of correlation cooefficients (n x n)
     end
     
     properties (Access=private) 
-        tab             % handle to uitab object
-        ax              % handle to plot axes
-        img             % handle to axes image
-        popup           % handle to variable selector
-        varMap          % maps entries in vardef to rows in sol.y
-        auxMap          % maps entries in auxdef to rows in sal
+        tranmenu        % handle to TRANSIENTS menu item
+        submenu         % handle to subpanel selector menu item
+        img             % handle to the image object
         listener        % handle to listener
     end
     
     methods
         function this = bdCorrPanel(tabgroup,control)
-            % Construct a new tab panel in the parent tabgroup.
-            % Usage:
-            %    bdCorrPanel(tabgroup,control)
-            % where 
-            %    tabgroup is a handle to the parent uitabgroup object.
-            %    control is a handle to the GUI control panel.
+            % Construct a new Correlation Panel in the given tabgroup
 
-            % apply default settings to sys.panels.bdTimePortrait
+            % initialise the base class (specifically this.menu and this.tab)
+            this@bdPanel(tabgroup);
+
+            % assign default values to missing options in sys.panels.bdTimePortrait
             control.sys.panels.bdCorrPanel = bdCorrPanel.syscheck(control.sys);
 
-            % map vardef entries to rows in sol
-            this.varMap = bd.varMap(control.sys.vardef);
-            if isfield(control.sys,'auxdef')
-                % map auxdef entries to rows in sal
-                this.auxMap = bd.varMap(control.sys.auxdef);
-            else
-                % construct empty maps
-                this.auxMap = bd.varMap([]);
+            % configure the pull-down menu
+            this.menu.Text = control.sys.panels.bdCorrPanel.title;
+            this.InitCalibrateMenu(control);
+            this.InitTransientsMenu(control);
+            this.InitExportMenu(control);
+            this.InitCloseMenu(control);
+
+            % configure the panel graphics
+            this.tab.Title = control.sys.panels.bdCorrPanel.title;
+            this.InitSubpanel(control);
+
+            % listen to the control panel for redraw events
+            this.listener = listener(control,'redraw',@(~,~) this.redraw(control));    
+        end
+        
+        function redraw(this,control)
+            %disp('bdCorrPanel.redraw()')
+                        
+            % get the details of the currently selected dynamic variable
+            varname  = this.submenu.UserData.xxxname;           % generic name of variable
+            varlabel = this.submenu.UserData.label;             % plot label for selected variable
+            varindx  = this.submenu.UserData.xxxindx;           % index of selected variable in sys.vardef
+            solindx  = control.sys.vardef(varindx).solindx;     % indices of selected entries in sol
+
+            % if the TRANSIENT menu is enabled then  ...
+            switch this.tranmenu.Checked
+                case 'on'
+                    % use all time steps in sol.x
+                    tindx = true(size(control.tindx));  % logical indices of all time steps in this.t
+
+                    % update the title
+                    title(this.ax,['Correlation Coefficients for ',varname,' (including transients)']);
+
+                case 'off'
+                    % use only the non-transient time steps in sol.x
+                    tindx = control.tindx;              % logical indices of the non-transient time steps
+
+                    % update the title
+                    title(this.ax,['Correlation Coefficients for ',varname,' (excluding transients)']);
             end
-            
-            % construct the uitab
-            this.tab = uitab(tabgroup, ...
-                'title',control.sys.panels.bdCorrPanel.title, ...
-                'Tag','bdCorrPanelTab', ...
-                'Units','pixels', ...
-                'TooltipString','Right click for menu');
-            
-            % get tab geometry
-            parentw = this.tab.Position(3);
-            parenth = this.tab.Position(4);
-            
-            % check that we have the statistics toolbox (for the corr function)
-            if ~license('test','Statistics_Toolbox') || ~exist('corr','file')
-                % Statistics Toolbox is missing 
-                uicontrol('Style','text', ...
-                          'String','Requires the Matlab Statistics and Machine Learning Toolbox', ...
-                          'Parent', this.tab, ...
-                          'HorizontalAlignment','center', ...
-                          'Units','normal', ...
-                          'Position',[0 0.5 1 0.1]);
 
-                % construct the tab context menu
-                this.tab.UIContextMenu = uicontextmenu;
-                uimenu(this.tab.UIContextMenu,'Label','Close', 'Callback',@(~,~) this.delete());
-            else            
-                % plot axes
-                posx = 50;
-                posy = 80;
-                posw = parentw-120;
-                posh = parenth-90;
-                this.ax = axes('Parent',this.tab, ...
-                    'Units','pixels', ...
-                    'Position',[posx posy posw posh]);           
-
-                % plot image (empty)
-                this.img = imagesc([],'Parent',this.ax);
-                xlabel('node', 'FontSize',16);
-                ylabel('node', 'FontSize',16);
-
-                % Force CLim to manual mode and add a colorbar
-                this.ax.CLim = [-1 1];
-                this.ax.CLimMode = 'manual';
-                colorbar('peer',this.ax);
-
-                % var selector
-                posx = 10;
-                posy = 10;
-                posw = 100;
-                posh = 20;
-
-                %popuplist = {this.solMap.name, this.salMap.name};
-                popuplist = {this.varMap.name, this.auxMap.name};
-                this.popup = uicontrol('Style','popup', ...
-                    'String', popuplist, ...
-                    'Value', 1, ...
-                    'Callback', @(~,~) this.selectorCallback(control), ...
-                    'HorizontalAlignment','left', ...
-                    'FontUnits','pixels', ...
-                    'FontSize',12, ...
-                    'Parent', this.tab, ...
-                    'Position',[posx posy posw posh]);
-
-                % construct the tab context menu
-                this.tab.UIContextMenu = uicontextmenu;
-                uimenu(this.tab.UIContextMenu,'Label','Close', 'Callback',@(~,~) this.delete());
-
-                % register a callback for resizing the panel
-                set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
-
-                % listen to the control panel for redraw events
-                this.listener = addlistener(control,'redraw',@(~,~) this.render(control));    
-            end    
-        end
-        
-        % Destructor
-        function delete(this)
-            delete(this.listener);
-            delete(this.tab);          
-        end
-        
-        function render(this,control)
-            %disp('bdCorrPanel.render()')
-            
             % Cross-correlation assumes equi-spaced time steps. However
             % many of our solver are auto-steppers, so we must interpolate
             % the solution to ensure that our time steps are equi-spaced.
             % How we interpolate depends on the type of solver.
-
-            % Determine the type of the active solver
-            solvertype = control.solvermap(control.solveridx).solvertype;
-
-            % We must also be mindful that interpolating solutions from
-            % stochastic differential equations is difficult because the value
-            % returned must be drawn from a specific distribution dependent on
-            % any already determined surrounding points and time- and state-
-            % dependent diffusion rate.
-            switch solvertype
+            switch control.solvertype
                 case 'sde'
-                    % We avoid interpolation by using the solver's own
-                    % time steps as our interpolant time steps. Our only
-                    % restriction is that values for t<0 are ignored.
-                    tinterp = find(control.sol.x>=0);
+                    % At this time, all SDE solvers only fixed time steps
+                    % so we can avoid interpolation altogether and simply
+                    % use the solver's own time steps.
+                    this.t = control.sol.x(tindx);
 
                 otherwise
                     % We use interpolation for all other solvers to ensure
@@ -186,49 +119,21 @@ classdef bdCorrPanel < handle
                     % We choose the number of time steps of the interpolant
                     % to be similar to the number of steps chosen by the
                     % solver. This avoids over-sampling and under-sampling.
-                    % The number of time steps we choose need not be exact.
-                    t0 = max(0,control.sol.x(1));
-                    t1 = control.sol.x(end);
-                    tinterp = linspace(t0,t1,numel(control.sol.x));                        
+                    tt = control.sol.x(tindx);
+                    this.t = linspace(tt(1),tt(end),numel(tt));                        
             end
-
-            % read the variable selector
-            popindx = this.popup.Value;
-
-            % number of row entries in vardef and varMap
-            nvardef = size(this.varMap,1);
-     
-            % if the user selected a variable from vardef then ...
-            if popindx <= nvardef
-                % the popup index corresponds to a vardef entry.
-                solrows = this.varMap(popindx).solindx;                
-                
-                % interpolate the solution
-                %Y = control.deval(tinterp,solrows)';                
-                Y = bdEval(control.sol,tinterp,solrows);
-            else
-                % the popup index refers to an auxilary variable 
-                solrows = this.auxMap(popindx-nvardef).solindx;
-                
-                % interpolate the aux solution
-                %Y = interp1(control.sol.x,control.sal(solrows,:)',tinterp);                
-                Y = bdEval(control.solx,tinterp,solrows);
-            end
+                        
+            % interpolate the solution
+            this.Y = bdEval(control.sol,this.t,solindx);
             
-            % compute the cross correlation
-            if size(Y,2)==1
-                this.R = 1;
-            else
-                this.R = corr(Y');
-                nanindx = isnan(this.R);
-                this.R(nanindx) = 1;
-            end
+            % compute the correlation coefficients
+            this.R = corrcoef(this.Y');
                 
             % update the cross-correlation matrix (image)
-            this.img.CData = this.R; % * size(colormap,1);
+            this.img.CData = this.R;
             xlim(this.ax,[0.5 size(this.R,1)+0.5]);
             ylim(this.ax,[0.5 size(this.R,1)+0.5]);  
-            
+    
             % clean up the Tick labels if n is small.
             n = size(this.R,1);
             if n<=20
@@ -242,20 +147,120 @@ classdef bdCorrPanel < handle
     
     methods (Access=private)
         
-        % Callback for panel resizing. 
-        function SizeChanged(this,parent)
-            % get new parent geometry
-            parentw = parent.Position(3);
-            parenth = parent.Position(4);            
-            % resize the axes
-            this.ax.Position = [50, 80, parentw-120, parenth-90];
-        end
-         
-        % Callback ffor the plot variable selectors
-        function selectorCallback(this,control)
-            this.render(control);
+        % Initialise the CALIBRATE menu item
+        function InitCalibrateMenu(this,control)
+            % construct the menu item
+            uimenu(this.menu, ...
+               'Text','Calibrate Axes', ...
+                'Callback', @CalibrateMenuCallback );
+            
+            % Menu callback function
+            function CalibrateMenuCallback(~,~)
+                % adjust the color axis limits of the correlation martix
+                hi = max(this.R(:));    % Get the maximum value in R
+                lo = min(this.R(:));    % Get the minimum value in R
+                clim = bdPanel.RoundLim(lo - 1e-4, hi + 1e-4);
+                caxis(this.ax, clim);
+            end
+
         end
         
+        % Initiliase the TRANISENTS menu item
+        function InitTransientsMenu(this,control)
+            % get the default transient menu setting from sys.panels
+            if control.sys.panels.bdCorrPanel.transients
+                checkflag = 'on';
+            else
+                checkflag = 'off';
+            end
+
+            % construct the menu item
+            this.tranmenu = uimenu(this.menu, ...
+                'Text','Transients', ...
+                'Checked',checkflag, ...
+                'Callback', @TranMenuCallback);
+
+            % Menu callback function
+            function TranMenuCallback(menuitem,~)
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                    case 'off'
+                        menuitem.Checked='on';
+                end
+                % redraw this panel only
+                this.redraw(control);
+            end
+        end
+        
+        % Initialise the EXPORT menu item
+        function InitExportMenu(this,~)
+            % construct the menu item
+            uimenu(this.menu, ...
+               'Text','Export Figure', ...
+               'Callback',@callback);
+           
+            function callback(~,~)
+                % Construct a new figure
+                fig = figure();    
+                
+                % Change mouse cursor to hourglass
+                set(fig,'Pointer','watch');
+                drawnow;
+                
+                % Copy the plot data to the new figure
+                axnew = copyobj(this.ax,fig);
+                axnew.OuterPosition = [0 0 1 1];
+
+                % Allow the user to hit everything in axnew
+                objs = findobj(axnew,'-property', 'HitTest');
+                set(objs,'HitTest','on');
+                
+                % Change mouse cursor to arrow
+                set(fig,'Pointer','arrow');
+                drawnow;
+            end
+        end
+
+        % Initialise the CLOSE menu item
+        function InitCloseMenu(this,~)
+            % construct the menu item
+            uimenu(this.menu, ...
+                   'Text','Close', ...
+                   'Callback',@(~,~) this.close());
+        end
+    
+        % Initialise the subpanel
+        function InitSubpanel(this,control)
+            % construct the subpanel
+            [this.ax,cmenu] = bdPanel.Subpanel(this.tab,[0 0 1 1],[0 0 1 1]);
+            xlabel(this.ax,'node');
+            ylabel(this.ax,'node');
+            
+            % construct an empty image
+            this.img = imagesc([],'Parent',this.ax);
+            axis(this.ax,'ij');
+
+            % add the colorbar
+            colorbar('peer',this.ax);
+            
+            % construct a selector menu comprising items from sys.vardef
+            this.submenu = bdPanel.SelectorMenu(cmenu, ...
+                control.sys.vardef, ...
+                @callback, ...
+                'off', 'mb1',1);
+            
+            % Callback function for the subpanel selector menu
+            function callback(menuitem,~)
+                % check 'on' the selected menu item and check 'off' all others
+                bdPanel.SelectorCheckItem(menuitem);
+                % update our handle to the selected menu item
+                this.submenu = menuitem;
+                % redraw the panel
+                this.redraw(control);
+            end
+        end
+   
     end
     
     methods (Static)
@@ -263,7 +268,8 @@ classdef bdCorrPanel < handle
         % Check the sys.panels struct
         function syspanel = syscheck(sys)
             % Default panel settings
-            syspanel.title = 'Correlation';
+            syspanel.title = bdCorrPanel.title;
+            syspanel.transients = false;
             
             % Nothing more to do if sys.panels.bdCorrPanel is undefined
             if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdCorrPanel')
@@ -274,6 +280,12 @@ classdef bdCorrPanel < handle
             if isfield(sys.panels.bdCorrPanel,'title')
                 syspanel.title = sys.panels.bdCorrPanel.title;
             end
+            
+            % sys.panels.bdCorrPanel.transients
+            if isfield(sys.panels.bdCorrPanel,'transients')
+                syspanel.transients = sys.panels.bdCorrPanel.transients;
+            end
+
         end
         
     end
