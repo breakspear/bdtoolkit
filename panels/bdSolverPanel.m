@@ -158,13 +158,24 @@ classdef bdSolverPanel < bdPanel
                 set(fig,'Pointer','watch');
                 drawnow;
                 
-                % Copy the plot data to the new figure
-                %axnew = copyobj(this.ax,fig);
-                %axnew.OuterPosition = [0 0 1 1];
-                
+                % Copy the upper axes to the new figure
+                ax1new = copyobj(this.ax1,fig);
+                ax1new.Units = 'normal';
+                ax1new.OuterPosition = [0 0.5 1 0.5];
+                xlabel(ax1new,'time (t)');
+                title(ax1new,'Vector Norm of the Solution Increment');
+
+               % Copy the lower axes to the new figure
+                ax2new = copyobj(this.ax2,fig);
+                ax2new.Units = 'normal';
+                ax2new.OuterPosition = [0 0 1 0.5];
+                title(ax2new,'Time Steps');
+
                 % Allow the user to hit everything in the new figure
-                %objs = findobj(axnew,'-property', 'HitTest');
-                %set(objs,'HitTest','on');
+                objs = findobj(ax1new,'-property', 'HitTest');
+                set(objs,'HitTest','on');
+                objs = findobj(ax2new,'-property', 'HitTest');
+                set(objs,'HitTest','on');
                 
                 % Change mouse cursor to arrow
                 set(fig,'Pointer','arrow');
