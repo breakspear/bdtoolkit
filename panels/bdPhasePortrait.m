@@ -2,7 +2,7 @@ classdef bdPhasePortrait < bdPanel
     %bdPhasePortrait Display panel for plotting phase portraits in bdGUI.
     %  The Phase Portrait shows the temporal relationship between two or
     %  three dynamic variables of the user's choosing.
-
+    %
     %AUTHORS
     %Stewart Heitmann (2016a,2017a-c,2018a)   
     
