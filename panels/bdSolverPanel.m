@@ -468,11 +468,11 @@ function editboxCallback(control,uibox,fieldname)
     % update the solver options
     switch control.solvertype
         case 'odesolver'
-            control.sys.odeoption = setfield(control.sys.odeoption,fieldname,val);
+            control.sys.odeoption.(fieldname) = val;
         case 'ddesolver'
-            control.sys.ddeoption = setfield(control.sys.ddeoption,fieldname,val);
+            control.sys.ddeoption.(fieldname) = val;
         case 'sdesolver'
-            control.sys.sdeoption = setfield(control.sys.sdeoption,fieldname,val);
+            control.sys.sdeoption.(fieldname) = val;
             control.sys.sdeoption.randn = [];
     end
 
