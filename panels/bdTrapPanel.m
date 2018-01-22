@@ -1,18 +1,14 @@
-classdef bdTrapPanel < handle
+classdef bdTrapPanel < bdPanel
     %bdTrapPanel - Brain Dynamics Toolbox panel for debugging other panels.
-    %   This class contsructs a dummy axis which it uses to detect (trap)
+    %   This panel constructs a dummy axis which it uses to detect (trap)
     %   erroneous drawing commands from other panels. Its purpose is to
-    %   detect the most common error in GUI panels - that of drawing to
-    %   the current graphics axes rather than a speccific axes handle.
-    %   Load this panel to test whether another panel is misbehaving.
-    %
-    %SYS OPTIONS
-    %   sys.panels.bdTrapPanel.title = 'Trap'
+    %   detect the most common programming error in display panels - that
+    %   of drawing to the current graphics axes rather than a given axes handle.
     %
     %AUTHORS
-    %  Stewart Heitmann (2017b)
+    %  Stewart Heitmann (2017b,2018a)
 
-    % Copyright (C) 2017 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2017-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -40,88 +36,82 @@ classdef bdTrapPanel < handle
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
+    properties (Constant)
+        title = 'Trap';
+    end
+    
+    properties
+        ax              % Handle to the trap axes
+    end
+
     properties (Access=private) 
-        tab             % handle to uitab object
-        ax              % handle to the trap axis
-        listener        % handle to listener
+        listener        % Handle to listener
     end
 
     methods        
         function this = bdTrapPanel(tabgroup,control)
-            % apply default settings to sys.panels.bdTrapPanel
+            % Construct a new Trap Panel in the given tabgroup
+
+            % initialise the base class (specifically this.menu and this.tab)
+            this@bdPanel(tabgroup);
+            
+            % assign default values to missing options in sys.panels.bdTrapPanel
             control.sys.panels.bdTrapPanel = bdTrapPanel.syscheck(control.sys);
 
-            % construct the uitab
-            this.tab = uitab(tabgroup, ...
-                'title',control.sys.panels.bdTrapPanel.title, ...
-                'Tag','bdTrapPanelTab', ...
-                'Units','points', ...
-                'TooltipString','Right click for menu');
+            % configure the pull-down menu
+            this.menu.Text = control.sys.panels.bdTrapPanel.title;
+            this.InitCloseMenu(control);
 
-            % construct the trap axes
-            this.ax = axes('Parent',this.tab, ...
-                'Units','normal', 'Position',[0.1 0.5 0.85 0.45]);
-                
-            % construct the message box
-            msg = ['The Trap panel is useful for debugging user-defined GUI panels. ' ...
-                   'It detects errant panels by monitoring ' ...
-                   'drawing commands in the decoy axis (above). ' ...
-                   'The decoy axis should always appear blank. ' ...
-                   'Incursions will trigger a Trap Panel warning. ' ];
-            uicontrol('Style','Text', ...
-                'String',msg, ...
-                'Parent',this.tab, ...
-                'Units','normal', ...
-                'Position',[0.02 0 0.96 0.4], ...
-          ...      'FontSize', 14, ...
-                'HorizontalAlignment', 'left' );
-            
-            % construct the tab context menu
-            this.tab.UIContextMenu = uicontextmenu;
-            uimenu(this.tab.UIContextMenu,'Label','Close', 'Callback',@(~,~) this.delete());
+            % configure the panel graphics
+            this.tab.Title = control.sys.panels.bdTrapPanel.title;
+            this.InitSubpanel(control);
 
-            % register a callback for resizing the panel
-            set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
-            
             % listen to the control panel for redraw events
-            this.listener = addlistener(control,'redraw',@(~,~) this.render(control));
+            this.listener = listener(control,'redraw',@(~,~) this.redraw(control));
             
             % Set the current axis to this.ax. This is the honey in the trap.
             axes(this.ax);
         end
-        
-        % Destructor
-        function delete(this)
-            delete(this.listener);
-            delete(this.tab);          
-        end
-
     end
     
     methods (Access = private)
-    
-        % Callback for panel resizing. This function relies on each
-        % widget having its desired yoffset stored in its UserData field.
-        function SizeChanged(~,panel)
-            % get new parent geometry
-            panelh = panel.Position(4);
-            
-            % find all widgets in the control panel
-            objs = findobj(panel,'Tag','bdTrapPanelWidget');
-            
-            % for each widget, adjust its y position according to its preferred position
-            for indx = 1:numel(objs)
-                obj = objs(indx);                       % get the widget handle
-                yoffset = obj.UserData;                 % retrieve the preferred y position from UserData.
-                obj.Position(2) = panelh - yoffset;     % apply the preferred y position
-            end            
+        
+        % Initialise the CLOSE menu item
+        function InitCloseMenu(this,~)
+            % construct the menu item
+            uimenu(this.menu, ...
+                   'Text','Close', ...
+                   'Callback',@(~,~) this.close());
         end
-       
-       function render(this,~)
-            % debugging 
-            %disp('bdTrapPanel.render()') 
+        
+        % Initialise the upper panel
+        function InitSubpanel(this,control)
+            % construct the subpanel
+            [this.ax,~,spanel] = bdPanel.Subpanel(this.tab,[0 0 1 1],[0 0.35 1 0.6]);
             
-            % Error messages are accumulate in this cell array.
+            % Reset the axis properties to defaults
+            cla(this.ax);
+            reset(this.ax);
+
+            % construct the message box
+            msg = ['The Trap panel is useful for debugging user-defined GUI panels. ' ...
+                   'It detects errant drawing commands in other panels by monitoring ' ...
+                   'the decoy axis (above). The decoy axis should always appear blank. ' ...
+                   'Any wayward drawing commands will trigger a warning dialog. ' ];
+            uicontrol('Style','Text', ...
+                'String',msg, ...
+                'Parent',spanel, ...
+                'Units','normal', ...
+                'Position',[0.075 0 0.875 0.3], ...
+          ...      'FontSize', 14, ...
+                'HorizontalAlignment', 'left' );
+        end
+          
+       % Check the trap axes for anything suspicious
+       function redraw(this,control)
+            disp('bdTrapPanel.redraw()') 
+            
+            % Error messages are accumulated in this cell array.
             errmsgs = {};
             
             % Detect illegal drawing activity
@@ -202,10 +192,10 @@ classdef bdTrapPanel < handle
             end            
             
             if ~isempty(errmsgs)
-                msg = ['A GUI panel has illegally drawn into the Trap axis.', ...
+                msg = ['Something has illegally drawn into the Trap axes.', ...
                        errmsgs, ...
-                       'This indicates a drawing error by one of the panels.', ...
-                       'Panels should never draw into the current axis.'];
+                       'It is likely that one of the currently loaded display panels is to blame.', ...
+                       'This usually happens when a panel draws into the current axes instead of its own axes handle.'];
                 for indx = 1:numel(msg)
                     disp(msg{indx});
                 end
@@ -216,7 +206,7 @@ classdef bdTrapPanel < handle
             cla(this.ax);
             reset(this.ax);
 
-            % Make this.ax the current axis. This is the honey in the trap.
+            % Ensure this.ax the current axis. This is the honey in the trap.
             axes(this.ax);     
        end
        
@@ -227,7 +217,7 @@ classdef bdTrapPanel < handle
         % Check the sys.panels struct
         function syspanel = syscheck(sys)
             % Default panel settings
-            syspanel.title = 'Trap';
+            syspanel.title = bdTrapPanel.title
             
             % Nothing more to do if sys.panels.bdTrapPanel is undefined
             if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdTrapPanel')
