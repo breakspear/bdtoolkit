@@ -131,7 +131,7 @@ function centroid1(ax,t,sol,Kij,k,omega)
     
     % Plot the centroid.
     centroidplot(ax,ztheta);
-    title('centroid of oscillators'); 
+    title(ax,'centroid of oscillators'); 
 end
 
 % Auxiliary function that plots the centroid of the oscillators
@@ -147,7 +147,7 @@ function centroid2(ax,t,sol,Kij,k,omega)
     
     % Plot the centroid.
     centroidplot(ax,ztheta);
-    title('centroid of oscillators (rotating frame)'); 
+    title(ax,'centroid of oscillators (rotating frame)'); 
 end
 
 % Utility function for plotting the centroid
@@ -189,7 +189,7 @@ function aux = KuramotoR(ax,t,sol,Kij,k,omega)
     t1 = sol.x(end);
     xlim(ax,[t0 t1]);
     ylim(ax,[-0.1 1.1]);
-    xlabel('time');
-    ylabel('R = abs(centroid)');
-    title('Kuramoto Order Parameter (R)')
+    xlabel(ax,'time');
+    ylabel(ax,'R = abs(centroid)');
+    title(ax,'Kuramoto Order Parameter (R)')
 end
