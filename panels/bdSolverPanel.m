@@ -49,7 +49,11 @@ classdef bdSolverPanel < bdPanel
     properties (Access=private) 
         gridmenu        % handle to GRID menu item
         plt1            % handle to plot line (axis 1)
-        plt2            % handle to plot line (axis 2)        
+        plt2            % handle to plot line (axis 2)     
+        AbsTol          % handle to AbsTol edit box
+        RelTol          % handle to RelTol edit box
+        InitialStep     % handle to InitialStep edit box
+        MaxStep         % handle to MaxStep edit box
         listener        % handle to listener
     end
  
@@ -253,7 +257,7 @@ classdef bdSolverPanel < bdPanel
 
             % construct edit box for AbsTol
             fieldname = 'AbsTol';
-            AbsTol = uicontrol('Style','edit', ...
+            this.AbsTol = uicontrol('Style','edit', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -275,7 +279,7 @@ classdef bdSolverPanel < bdPanel
             
             % construct edit box for RelTol
             fieldname = 'RelTol';
-            RelTol = uicontrol('Style','edit', ...
+            this.RelTol = uicontrol('Style','edit', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -308,7 +312,7 @@ classdef bdSolverPanel < bdPanel
 
             % construct edit box for InitialStep
             fieldname = 'InitialStep';
-            InitialStep = uicontrol('Style','edit', ...
+            this.InitialStep = uicontrol('Style','edit', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -330,7 +334,7 @@ classdef bdSolverPanel < bdPanel
 
             % construct edit box for MaxStep
             fieldname = 'MaxStep';
-            MaxStep = uicontrol('Style','edit', ...
+            this.MaxStep = uicontrol('Style','edit', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -350,31 +354,31 @@ classdef bdSolverPanel < bdPanel
             % fill the edit boxes
             switch control.solvertype
                 case 'odesolver'
-                    AbsTol.String = num2str(odeget(control.sys.odeoption,'AbsTol'),'%g');
-                    RelTol.String = num2str(odeget(control.sys.odeoption,'RelTol'),'%g');
-                    InitialStep.String = num2str(odeget(control.sys.odeoption,'InitialStep'),'%g');
-                    MaxStep.String = num2str(odeget(control.sys.odeoption,'MaxStep'),'%g');
-                    AbsTol.Enable = 'on';
-                    RelTol.Enable = 'on';
-                    InitialStep.Enable = 'on';
-                    MaxStep.Enable = 'on';
+                    this.AbsTol.String = num2str(odeget(control.sys.odeoption,'AbsTol'),'%g');
+                    this.RelTol.String = num2str(odeget(control.sys.odeoption,'RelTol'),'%g');
+                    this.InitialStep.String = num2str(odeget(control.sys.odeoption,'InitialStep'),'%g');
+                    this.MaxStep.String = num2str(odeget(control.sys.odeoption,'MaxStep'),'%g');
+                    %AbsTol.Enable = 'on';
+                    %RelTol.Enable = 'on';
+                    %InitialStep.Enable = 'on';
+                    %MaxStep.Enable = 'on';
                 case 'ddesolver'
-                    AbsTol.String = num2str(ddeget(control.sys.ddeoption,'AbsTol'),'%g');
-                    RelTol.String = num2str(ddeget(control.sys.ddeoption,'RelTol'),'%g');
-                    InitialStep.String = num2str(ddeget(control.sys.ddeoption,'InitialStep'),'%g');
-                    MaxStep.String = num2str(ddeget(control.sys.ddeoption,'MaxStep'),'%g');
-                    AbsTol.Enable = 'on';
-                    RelTol.Enable = 'on';
-                    InitialStep.Enable = 'on';
-                    MaxStep.Enable = 'on';
+                    this.AbsTol.String = num2str(ddeget(control.sys.ddeoption,'AbsTol'),'%g');
+                    this.RelTol.String = num2str(ddeget(control.sys.ddeoption,'RelTol'),'%g');
+                    this.InitialStep.String = num2str(ddeget(control.sys.ddeoption,'InitialStep'),'%g');
+                    this.MaxStep.String = num2str(ddeget(control.sys.ddeoption,'MaxStep'),'%g');
+                    %AbsTol.Enable = 'on';
+                    %RelTol.Enable = 'on';
+                    %InitialStep.Enable = 'on';
+                    %MaxStep.Enable = 'on';
                 case 'sdesolver'
                     if isfield(control.sys.sdeoption,'InitialStep')
-                        InitialStep.String = num2str(control.sys.sdeoption.InitialStep,'%g');
+                        this.InitialStep.String = num2str(control.sys.sdeoption.InitialStep,'%g');
                     end
-                    AbsTol.Enable = 'off';
-                    RelTol.Enable = 'off';
-                    InitialStep.Enable = 'on';
-                    MaxStep.Enable = 'off';
+                    %AbsTol.Enable = 'off';
+                    %RelTol.Enable = 'off';
+                    %InitialStep.Enable = 'on';
+                    %MaxStep.Enable = 'off';
             end
             
         end
@@ -400,6 +404,33 @@ classdef bdSolverPanel < bdPanel
             % render the step size versus time
             set(this.plt2, 'XData',control.sol.x, 'YData',this.dt([1:end,end]));
             
+            % Enable/Disable the edit boxes for special cases
+            switch control.solvertype
+                case 'odesolver'
+                    switch func2str(control.solver)
+                        case 'odeEul'
+                            this.AbsTol.Enable = 'off';
+                            this.RelTol.Enable = 'off';
+                            this.InitialStep.Enable = 'on';
+                            this.MaxStep.Enable = 'off';
+                        otherwise
+                            this.AbsTol.Enable = 'on';
+                            this.RelTol.Enable = 'on';
+                            this.InitialStep.Enable = 'on';
+                            this.MaxStep.Enable = 'on';
+                    end
+                case 'ddesolver'
+                    this.AbsTol.Enable = 'on';
+                    this.RelTol.Enable = 'on';
+                    this.InitialStep.Enable = 'on';
+                    his.MaxStep.Enable = 'on';
+                case 'sdesolver'
+                    this.AbsTol.Enable = 'off';
+                    this.RelTol.Enable = 'off';
+                    this.InitialStep.Enable = 'on';
+                    this.MaxStep.Enable = 'off';
+            end
+
         end
           
         % Callback for panel resizing.
