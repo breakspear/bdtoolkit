@@ -193,8 +193,8 @@ classdef bdControlMatrix < handle
                 control.sys.(xxxdef)(xxxindx).lim = [minval maxval];
                 
                 % notify all widgets (which includes ourself) that sys.xxxdef has changed
-                %notify(this.control,'refresh');
-                notify(this.control,xxxdef);
+                %notify(control,'refresh');
+                notify(control,xxxdef);
 
                 % notify all display panels to redraw themselves
                 notify(control,'redraw');
