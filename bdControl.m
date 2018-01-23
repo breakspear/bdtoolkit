@@ -763,14 +763,14 @@ classdef bdControl < handle
                     this.sys.vardef(indx).value = val; 
                     offset = offset+n;
                     
-                    % Disengage the EVOLVE button if the initial conditions
-                    % have breached the var limits. This prevents run-away blow-out.
-                    minval = min(val(:));
-                    maxval = max(val(:));
-                    if minval < this.sys.vardef(indx).lim(1) || maxval > this.sys.vardef(indx).lim(2)
-                        this.ui_evolve.Value = 0;
-                        beep;
-                    end
+%                     % Disengage the EVOLVE button if the initial conditions
+%                     % have breached the var limits. This prevents run-away blow-out.
+%                     minval = min(val(:));
+%                     maxval = max(val(:));
+%                     if minval < this.sys.vardef(indx).lim(1) || maxval > this.sys.vardef(indx).lim(2)
+%                         this.ui_evolve.Value = 0;
+%                         beep;
+%                     end
                 end
                 % notify all widgets to refresh (we only really need to refresh the initial conditions)
                 %notify(this,'refresh');
