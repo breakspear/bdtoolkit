@@ -99,6 +99,7 @@ function sys = KuramotoNet(Kij)
  
     % Phase Portrait panel
     sys.panels.bdPhasePortrait.title = 'Phase Portrait';
+    sys.panels.bdPhasePortrait.mod = true;
 
     % Auxiliary panel
     sys.panels.bdAuxiliary.title = 'Auxiliary';
