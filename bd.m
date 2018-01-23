@@ -86,93 +86,7 @@ classdef bd
             % restore the original units for the panel
             panel.Units = panelunits;
         end
-
         
-%         % Returns the hull geometry of all children within a uipanel where
-%         % marginw and marginh specify the margins of the hull.
-%         function pos = childHull(panel,marginw,marginh)
-%             % work in pixels
-%             panelunits = panel.Units;
-%             panel.Units = 'pixels';
-% 
-%             % init hull coords
-%             xmin = NaN;
-%             xmax = NaN;
-%             ymin = NaN;
-%             ymax = NaN;    
-% 
-%             % Find the vertical extent of the highest child in the panel
-%             for indx=1:numel(panel.Children)
-%                 % work in pixels
-%                 childunits = panel.Children(indx).Units;
-%                 panel.Children(indx).Units = 'pixels';
-% 
-%                 % get the x,y position of teh child
-%                 childx = panel.Children(indx).Position(1);
-%                 childy = panel.Children(indx).Position(2);
-% 
-%                 % get the width and height (extent) of the child
-%                 try
-%                     childw = panel.Children(indx).Extent(3);
-%                     childh = panel.Children(indx).Extent(4);
-%                 catch
-%                     childw = panel.Children(indx).Position(3);
-%                     childh = panel.Children(indx).Position(4);
-%                 end
-% 
-%                 % remember the extremes
-%                 xmin = min(xmin,childx);
-%                 xmax = max(xmax,childx+childw);
-%                 ymin = min(ymin,childy);
-%                 ymax = max(ymax,childy+childh);
-% 
-%                 % restore the original units for the child object
-%                 panel.Children(indx).Units = childunits;
-% 
-%             end
-% 
-%             % restore the original units for the panel
-%             panel.Units = panelunits;
-% 
-%             % return value
-%             pos = [xmin-marginw ymin-marginh xmax-xmin+2*marginw+1 ymax-ymin+2*marginh+1];        
-%         end
-        
-        
-        % Returns a struct array which maps the ODE variables described
-        % in vardef{} to the corresponding row entries in sol.y.
-        %
-        % The resulting map has one entry per vardef entry where
-        %    map.name is the string name of the variable
-        %    map.solindx contains the row indexes of sol.y
-        %
-        % For example, 
-        %    vardef = [ struct('name','A', 'value',rand(4,1)); 
-        %               struct('name','B', 'value',rand(2,1));
-        %               struct('name','C', 'value',rand(3,1)); ];
-        %    map = varMap(vardef)
-        % generates map as follows:
-        %    map(1).name = 'A'   map(1).solindx = [1 2 3 4]
-        %    map(2).name = 'B'   map(2).solindx = [5 6]
-        %    map(3).name = 'C'   map(3).solindx = [7 8 9]
-        %    
-%         function map = varMap(vardef)
-%             % number of entries in vardef
-%             n = numel(vardef);
-% 
-%             % preallocate the return map with n entries
-%             map = struct('name',cell(n,1),'solindx',[]);
-% 
-%             % for each entry in vardef
-%             row = 0;                                  % current row index of sol.y
-%             for indx = 1:n
-%                 len = numel(vardef(indx).value);      % number of ODE variables represented by this vardef
-%                 map(indx).name = vardef(indx).name;   % name field
-%                 map(indx).solindx = (1:len) + row;    % row indexes to corresponding sol.y values
-%                 row = row + len;                      % next row position
-%             end
-%         end        
-                
         
         % Return the type (odesolver,ddesolver,sdesolver) of the given
         % solver function handle. If the solver is not supported by the
@@ -216,38 +130,6 @@ classdef bd
            
             % No match found
             typestr = 'unsupported';
-        end
-
-        
-        % Utility function to construct a map of the solvers defined in sys.
-        % The map is an array of structs with fields describing the name,
-        % function handle and type of solver, as in:
-        %    map.solvername = 'ode45'
-        %    map.solverfunc = @ode45
-        %    map.solvertype = 'odesolver'
-        function map = solverMap(sys)
-            map = struct('solvername',{}, 'solverfunc',{}, 'solvertype',{});
-            if isfield(sys,'odesolver')
-                for idx = 1:numel(sys.odesolver)
-                    func = sys.odesolver{idx};
-                    name = func2str(func);
-                    map(end+1) = struct('solvername',name, 'solverfunc',func, 'solvertype','odesolver');
-                end
-            end
-            if isfield(sys,'ddesolver')
-                for idx = 1:numel(sys.ddesolver)
-                    func = sys.ddesolver{idx};
-                    name = func2str(func);
-                    map(end+1) = struct('solvername',name, 'solverfunc',func, 'solvertype','ddesolver');
-                end
-            end
-            if isfield(sys,'sdesolver')
-                for idx = 1:numel(sys.sdesolver)
-                    func = sys.sdesolver{idx};
-                    name = func2str(func);
-                    map(end+1) = struct('solvername',name, 'solverfunc',func, 'solvertype','sdesolver');
-                end
-            end
         end
         
         % The functionality of bdSolve but without the error checking on sys

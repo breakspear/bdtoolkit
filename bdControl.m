@@ -40,7 +40,6 @@ classdef bdControl < handle
         par = []        % copy of the the parameters used to compute sol
         lag = []        % copy of the the lag parameters used to compute sol
         tindx           % indices of the non-transient time steps in sol.x 
-        solvermap   % maps the solver functions to name and type strings
         solver          % the active solver function
         solvertype      % solver type string ('odesolver' or 'ddesolver' or 'sdesolver')
         reverse = 0     % state of the REVERSE button
@@ -113,13 +112,7 @@ classdef bdControl < handle
             % init the indicies of the non-transient time steps in sol.x
             this.tindx = (this.sol.x >= this.sys.tval);
             
-            % construct solmap
-            %this.solmap = this.SolutionMap(this.sys.vardef);
-
-            % construct the solver map. Q: IS THIS STILL NECESSARY? 
-            this.solvermap = bd.solverMap(this.sys); 
-            
-            % currently active solver (FIX ME)
+            % currently active solver (FIX ME TO ALLOW SOLVER SELECTION BEYOND THE FIRST SOLVER ONLY)
             if isfield(this.sys,'odesolver')
                 this.solver = this.sys.odesolver{1};
                 this.solvertype = 'odesolver';
@@ -143,7 +136,7 @@ classdef bdControl < handle
             addlistener(this,'refresh',@(~,~) this.RefreshListener());    
    
             % listen for redraw events
-            addlistener(this,'redraw',@(~,~) this.RedrawListener());    
+            %addlistener(this,'redraw',@(~,~) this.RedrawListener());    
             
             % listen for recompute events
             addlistener(this,'recompute',@(~,~) this.RecomputeListener(fig));
@@ -188,7 +181,12 @@ classdef bdControl < handle
             h = 50;
             this.spanel.Position = [x y w h];
         end
-        
+       
+        % Destructor
+        function delete(this)
+            stop(this.timer);
+            delete(this.timer);
+        end
     end
     
     
@@ -663,10 +661,10 @@ classdef bdControl < handle
         end
         
         % Listener for REDRAW events
-        function RedrawListener(this)
-            % refresh the solver stats (is this realy necessary?)
-            %this.RefreshListener();  
-        end
+        %function RedrawListener(this)
+        %    % refresh the solver stats (is this realy necessary?)
+        %    %this.RefreshListener();  
+        %end
         
         % Listener for RECOMPUTE events
         function RecomputeListener(this,fig)

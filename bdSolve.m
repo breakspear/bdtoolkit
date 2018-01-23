@@ -89,21 +89,56 @@ function sol = bdSolve(sys,tspan,solverfun,solvertype)
 
         % use defaults for missing input parameters
         switch nargin
-            case 1      % Case of bdSolve(sys)
-                % Get tspan from the sys settings. 
+            case 1  
+                % Caller specified bdSolve(sys).
+                
+                % Get tspan from sys.tspan 
                 tspan = sys.tspan;
-                % Use the first solver found in the sys settings. 
-                solvermap = bd.solverMap(sys);
-                solverfun = solvermap(1).solverfunc;
-                solvertype = solvermap(1).solvertype;
-            case 2      % Case of bdSolve(sys,tspan)
-                % Use the first solver found in the sys settings. 
-                solvermap = bd.solverMap(sys);
-                solverfun = solvermap(1).solverfunc;
-                solvertype = solvermap(1).solvertype;
-            case 3      % Case of bdSolve(sys,tspan,solverfun)
-                % Determine the solvertype from the sys settings
-                solvertype = bd.solverType(sys,solverfun);
+                
+                % Get solverfun and solvertype from sys 
+                if isfield(this.sys,'odesolver')
+                    solverfun = this.sys.odesolver{1};
+                    solvertype = 'odesolver';
+                end
+                if isfield(this.sys,'ddesolver')
+                    solverfun = this.sys.ddesolver{1};
+                    solvertype = 'ddesolver';
+                end
+                if isfield(this.sys,'sdesolver')
+                    solverfun = this.sys.sdesolver{1};
+                    solvertype = 'sdesolver';
+                end
+
+            case 2
+                % Caller specified bdSolve(sys,tspan).
+                
+                % Get solverfun and solvertype from sys 
+                if isfield(this.sys,'odesolver')
+                    solverfun = this.sys.odesolver{1};
+                    solvertype = 'odesolver';
+                end
+                if isfield(this.sys,'ddesolver')
+                    solverfun = this.sys.ddesolver{1};
+                    solvertype = 'ddesolver';
+                end
+                if isfield(this.sys,'sdesolver')
+                    solverfun = this.sys.sdesolver{1};
+                    solvertype = 'sdesolver';
+                end
+                
+            case 3
+                % Caller specified bdSolve(sys,tspan,solverfun).
+                
+                % Get solvertype from sys 
+                if isfield(this.sys,'odesolver')
+                    solvertype = 'odesolver';
+                end
+                if isfield(this.sys,'ddesolver')
+                    solvertype = 'ddesolver';
+                end
+                if isfield(this.sys,'sdesolver')
+                    solvertype = 'sdesolver';
+                end
         end
         
         % Call the appropriate solver
