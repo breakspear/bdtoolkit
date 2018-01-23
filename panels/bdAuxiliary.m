@@ -42,7 +42,7 @@ classdef bdAuxiliary < bdPanel
     
     properties (Access=private)
         holdmenu        % handle to HOLD menu item
-        submenu         % handle to subpanel selector menu item
+        submenu = []    % handle to subpanel selector menu item
         listener        % handle to our listener object
     end
     
@@ -143,8 +143,12 @@ classdef bdAuxiliary < bdPanel
         function InitSubpanel(this,control)
             % construct the subpanel
             [this.ax,cmenu] = bdPanel.Subpanel(this.tab,[0 0 1 1],[0 0 1 1]);
-            title(this.ax,'Auxiliary Functions');
             
+            % default axes for the case of no auxiliary function            
+            title(this.ax,'No Auxiliary Functions');
+            text(this.ax,0.5,0.5,'No auxiliary plotting functions are defined for this system', ...
+                'HorizontalAlignment','center');
+
             % construct the selector menu for the auxiliary functions
             naux = numel(control.sys.panels.bdAuxiliary.auxfun);
             for indx=1:naux
@@ -186,6 +190,11 @@ classdef bdAuxiliary < bdPanel
         function redraw(this,control)
             %disp('bdAuxiliary.redraw()')
             
+            % if the submenu is empty (because no auxiliary functions were defined) then break
+            if isempty(this.submenu)
+                return
+            end
+            
             % if 'hold' menu is checked then ...
             switch this.holdmenu.Checked
                 case 'off'
@@ -193,7 +202,7 @@ classdef bdAuxiliary < bdPanel
                     cla(this.ax);
             end
 
-            % init the title with thr name of the auxiliary function   
+            % init the title with the name of the auxiliary function   
             title(this.ax,this.submenu.UserData.label);
 
             % get the details of the currently selected plot function
@@ -216,7 +225,7 @@ classdef bdAuxiliary < bdPanel
             %syspanel.points = false;
             %syspanel.grid = false;
             syspanel.hold = false;
-            syspanel.auxfun = {@bdAuxiliary.auxdefault};
+            syspanel.auxfun = []; %{@bdAuxiliary.auxdefault};
             
             % Nothing more to do if sys.panels.bdAuxiliary is undefined
             if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdAuxiliary')
@@ -239,9 +248,10 @@ classdef bdAuxiliary < bdPanel
             end
         end
         
-        function auxdefault(ax,vargargin)
+        function auxdefault(ax,varargin)
             text(ax,0.5,0.5,'No auxiliary plotting functions are defined for this system', ...
                 'HorizontalAlignment','center');
+            title(ax,'No Auxiliary Functions');
         end
     end
     
