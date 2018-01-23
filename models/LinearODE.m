@@ -25,7 +25,7 @@ function sys = LinearODE()
     %   xlabel('time'); ylabel('x,y');
     %
     % Authors
-    %   Stewart Heitmann (2017a)
+    %   Stewart Heitmann (2017a,2018a)
 
     % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -97,10 +97,6 @@ function sys = LinearODE()
     % ODE solver options (optional)
     sys.odeoption.RelTol = 1e-6;        % Relative Tolerance
     sys.odeoption.Jacobian = @jacfun;   % Handle to Jacobian function 
-    
-    % Handle to this function (optional). 
-    sys.self = str2func(mfilename);     % bdGUI calls this to contruct 
-                                        % a new instance of the model.
 end
 
 % The ODE function.

@@ -45,9 +45,9 @@
 %   std(sol1.y - sol2.y)                          % results are identical
 %
 % Authors
-%   Stewart Heitmann (2016a,2017a)
+%   Stewart Heitmann (2016a,2017a,2018a)
 
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -109,9 +109,6 @@ function sys = BrownianMotion()
 
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = [];
-    
-    % Handle to this function. The GUI uses it to construct a new system. 
-    sys.self = str2func(mfilename);
 end
 
 % The deterministic coefficient function.

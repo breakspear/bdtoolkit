@@ -50,9 +50,9 @@ function sys = VanDerPolOscillators(Kij)
     %   plot(tsol,V); xlabel('time'); ylabel('V');   % plot the V solution
     %
     % Authors
-    %   Stewart Heitmann (2016a,2017a)
+    %   Stewart Heitmann (2016a,2017a,2018a)
 
-    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -87,13 +87,13 @@ function sys = VanDerPolOscillators(Kij)
     sys.odefun = @odefun;
     
     % ODE parameters
-    sys.pardef = [ struct('name','Kij', 'value',Kij);
-                   struct('name','a',   'value',  1);
-                   struct('name','b',   'value',0.2) ];
+    sys.pardef = [ struct('name','Kij', 'value',Kij,  'lim',[0 2]);
+                   struct('name','a',   'value',  1,  'lim',[-1 2]);
+                   struct('name','b',   'value',0.2,  'lim',[0 1]) ];
     
     % ODE variables           
-    sys.vardef = [ struct('name','U',   'value',rand(n,1));
-                   struct('name','V',   'value',rand(n,1)) ];
+    sys.vardef = [ struct('name','U',   'value',rand(n,1), 'lim',[-2.5 2.5]);
+                   struct('name','V',   'value',rand(n,1), 'lim',[-2.5 2.5]) ];
                
     % Default time span
     sys.tspan = [0 100];
@@ -132,9 +132,6 @@ function sys = VanDerPolOscillators(Kij)
 
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = [];   
-    
-    % Handle to the function that the GUI calls to construct a new system. 
-    sys.self = @self;
 end
 
 % The ODE function.
@@ -152,16 +149,3 @@ function dYdt = odefun(t,Y,Kij,a,b)
     dYdt=[dU; dV];
 end
    
-% The self function is called by the GUI to spawn a new variant of the model
-function sys = self()
-    % Prompt the user to load Kij from file. 
-    info = {mfilename,'','Load the connectivity matrix, Kij'};
-    Kij = bdLoadMatrix(mfilename,info);
-    if isempty(Kij) 
-        % the user cancelled the operation
-        sys = [];  
-    else
-        % pass Kij to our main function
-        sys = VanDerPolOscillators(Kij);
-    end
-end

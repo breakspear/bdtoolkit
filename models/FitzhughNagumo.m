@@ -15,7 +15,7 @@
 %
 % Authors
 %   Matthew Aburn (2017a)
-%   Stewart Heitmann (2017a)
+%   Stewart Heitmann (2017a,2018a)
 %
 % See Also:
 % Sanz-Leon et al. (2015) Mathematical framework for large-scale brain network
@@ -24,7 +24,7 @@
 %   membrane. Bull. Math. Biophysics, 17:257--278
 
 
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -76,8 +76,8 @@ function sys = FitzhughNagumo(Kij)
                    struct('name','theta', 'value',0.0) ];
                
     % Our ODE variables        
-    sys.vardef = [ struct('name','V', 'value',5.0*rand(n,1)-2.5);
-                   struct('name','W', 'value',3.0*rand(n,1)-0.5) ];
+    sys.vardef = [ struct('name','V', 'value',4*rand(n,1)-2, 'lim',[-2.5 2.5]);
+                   struct('name','W', 'value',2.6*rand(n,1)-0.8, 'lim',[-0.8 1.8]) ];
     
     % Default time span
     sys.tspan = [0 1000];
@@ -122,9 +122,6 @@ function sys = FitzhughNagumo(Kij)
     
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = [];                 
-    
-    % Function hook for the GUI System-New menu
-    sys.self = @self;
 end
 
 % The ODE function for the generalized FitzHugh-Nagumo model.
@@ -147,18 +144,4 @@ end
 % Sigmoid function
 function y=F(x)
     y = 1./(1+exp(-x));
-end
-
-% The self function is called by the GUI to spawn a new variant of the model
-function sys = self()
-    % Prompt the user to load Kij from file. 
-    info = {mfilename,'','Load the connectivity matrix, Kij'};
-    Kij = bdLoadMatrix(mfilename,info);
-    if isempty(Kij) 
-        % the user cancelled the operation
-        sys = [];  
-    else
-        % pass Kij to our main function
-        sys = FitzhughNagumo(Kij);
-    end
 end

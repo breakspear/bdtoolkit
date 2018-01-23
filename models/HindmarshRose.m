@@ -17,10 +17,10 @@
 %   gui = bdGUI(sys);                 % Open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2016a,2017a)
+%   Stewart Heitmann (2016a,2017a,2018a)
 
 
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -69,9 +69,9 @@ function sys = HindmarshRose(Kij)
                    struct('name','theta', 'value',-0.25) ];
                    
     % Our ODE variables
-    sys.vardef = [ struct('name','x', 'value',rand(n,1));
-                   struct('name','y', 'value',rand(n,1));
-                   struct('name','z', 'value',rand(n,1)) ];
+    sys.vardef = [ struct('name','x', 'value',rand(n,1), 'lim',[-2.5 2.5]);
+                   struct('name','y', 'value',rand(n,1), 'lim',[ -21   3]);
+                   struct('name','z', 'value',rand(n,1), 'lim',[   0   4]) ];
 
     % Default time span
     sys.tspan = [0 1000];
@@ -109,9 +109,6 @@ function sys = HindmarshRose(Kij)
 
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = [];                 
-    
-    % Function hook for the GUI System-New menu
-    sys.self = @self;
 end
 
 % The ODE function for the Hindmarsh Rose model.
@@ -138,17 +135,4 @@ end
 % Sigmoid function
 function y=F(x)
     y = 1./(1+exp(-x));
-end
-
-% This function is called by the GUI System-New menu
-function sys = self()
-    % open a dialog box prompting the user for the value of n
-    n = bdEditScalars({100,'number of neurons'}, ...
-        'New System', 'Hindmarsh-Rose Model');
-    % if the user cancelled then...
-    if isempty(n)
-        sys = [];                       % return empty sys
-    else
-        sys = HindmarshRose(round(n));  % generate a new sys
-    end
 end
