@@ -172,7 +172,7 @@ classdef bdTimePortrait < bdPanel
             end
         end
         
-        % Initiliase the TRANISENTS menu item
+        % Initiliase the TRANSIENTS menu item
         function InitTransientsMenu(this,control)
             % get the default transient menu setting from sys.panels
             if control.sys.panels.bdTimePortrait.transients
@@ -486,8 +486,8 @@ classdef bdTimePortrait < bdPanel
                     plot(this.ax2, this.t, [y2a',y2b'], 'color',[0.75 0.75 0.75], 'HitTest','off');
 
                     % (re)plot the non-transient part of the variable of interest as a heavy black line
-                    plot(this.ax1, this.t(tindx), [y1a(valindx1,tindx); y1b(valindx1,tindx)], 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5, 'Tag','Fgnd');
-                    plot(this.ax2, this.t(tindx), [y2a(valindx2,tindx); y2b(valindx2,tindx)], 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5, 'Tag','Fgnd');
+                    plot(this.ax1, this.t(tindx), [y1a(valindx1,tindx); y1b(valindx1,tindx)], 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
+                    plot(this.ax2, this.t(tindx), [y2a(valindx2,tindx); y2b(valindx2,tindx)], 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
                     
                     % plot the pentagram marker (upper plot)
                     plot(this.ax1, this.t(1), mod1band(this.y1(valindx1,1),ylim1), ...
@@ -529,15 +529,13 @@ classdef bdTimePortrait < bdPanel
                         'color','k', ...
                         'Marker',markerstyle, ...
                         'LineStyle',linestyle, ...
-                        'Linewidth',1.5, ...
-                        'Tag','Fgnd');
+                        'Linewidth',1.5);
                     modplot(this.ax2, this.t(tindx)', this.y2(valindx2,tindx)', ...
                         control.sys.tspan, ylim2, ...
                         'color','k', ...
                         'Marker',markerstyle, ...
                         'LineStyle',linestyle, ...
-                        'Linewidth',1.5, ...
-                        'Tag','Fgnd');
+                        'Linewidth',1.5);
                     
                     % plot the pentagram marker (upper plot)
                     modplot(this.ax1, ...
@@ -589,8 +587,8 @@ classdef bdTimePortrait < bdPanel
                     plot(this.ax2, this.t, this.y2', 'color',[0.75 0.75 0.75], 'HitTest','off');
 
                     % (re)plot the non-transient part of the variable of interest as a heavy black line
-                    plot(this.ax1, this.t(tindx), this.y1(valindx1,tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5, 'Tag','Fgnd');
-                    plot(this.ax2, this.t(tindx), this.y2(valindx2,tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5, 'Tag','Fgnd');
+                    plot(this.ax1, this.t(tindx), this.y1(valindx1,tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
+                    plot(this.ax2, this.t(tindx), this.y2(valindx2,tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
  
                    % plot the pentagram marker (upper plot)
                     plot(this.ax1, this.t(1), this.y1(valindx1,1), ...
