@@ -105,14 +105,12 @@ classdef bdSolverPanel < bdPanel
             % Menu callback function
             function CalibrateMenuCallback(~,~)
                 % find the limits of the upper and lower plots
-                lo1 = min(this.plt1.YData);
-                lo2 = min(this.plt2.YData);
                 hi1 = max(this.plt1.YData);
                 hi2 = max(this.plt2.YData);
                 
                 % adjust the y-limits of the upper and lower plots
-                this.ax1.YLim = bdPanel.RoundLim(lo1 - 1e-4, hi1 + 1e-4);
-                this.ax2.YLim = bdPanel.RoundLim(lo2 - 1e-4, hi2 + 1e-4);
+                this.ax1.YLim = bdPanel.RoundLim(-1e-4, hi1 + 1e-4);
+                this.ax2.YLim = bdPanel.RoundLim(-1e-4, hi2 + 1e-4);
             end
 
         end       
@@ -358,27 +356,15 @@ classdef bdSolverPanel < bdPanel
                     this.RelTol.String = num2str(odeget(control.sys.odeoption,'RelTol'),'%g');
                     this.InitialStep.String = num2str(odeget(control.sys.odeoption,'InitialStep'),'%g');
                     this.MaxStep.String = num2str(odeget(control.sys.odeoption,'MaxStep'),'%g');
-                    %AbsTol.Enable = 'on';
-                    %RelTol.Enable = 'on';
-                    %InitialStep.Enable = 'on';
-                    %MaxStep.Enable = 'on';
                 case 'ddesolver'
                     this.AbsTol.String = num2str(ddeget(control.sys.ddeoption,'AbsTol'),'%g');
                     this.RelTol.String = num2str(ddeget(control.sys.ddeoption,'RelTol'),'%g');
                     this.InitialStep.String = num2str(ddeget(control.sys.ddeoption,'InitialStep'),'%g');
                     this.MaxStep.String = num2str(ddeget(control.sys.ddeoption,'MaxStep'),'%g');
-                    %AbsTol.Enable = 'on';
-                    %RelTol.Enable = 'on';
-                    %InitialStep.Enable = 'on';
-                    %MaxStep.Enable = 'on';
                 case 'sdesolver'
                     if isfield(control.sys.sdeoption,'InitialStep')
                         this.InitialStep.String = num2str(control.sys.sdeoption.InitialStep,'%g');
                     end
-                    %AbsTol.Enable = 'off';
-                    %RelTol.Enable = 'off';
-                    %InitialStep.Enable = 'on';
-                    %MaxStep.Enable = 'off';
             end
             
         end
@@ -435,7 +421,7 @@ classdef bdSolverPanel < bdPanel
           
         % Callback for panel resizing.
         function SizeChanged(this)
-            disp('bdSolverPanel.SizeChanged()')
+            %disp('bdSolverPanel.SizeChanged()')
             
             % get new parent geometry
             tabw = this.tab.Position(3);
