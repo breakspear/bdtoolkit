@@ -361,7 +361,7 @@ classdef (Abstract) bdPanel < handle
         function PanelSelectionChangedFcn(~,evnt)
             % Callback executed by the parent tabgroup when the selected tab changes.
 
-            disp('bdPanel.PanelSelectionChangedFcn');
+            %disp('bdPanel.PanelSelectionChangedFcn');
             % Hide the panel menu associated with the old tab
             evnt.OldValue.UserData.menu.Visible = 'off';
             % Reveal the panel menu associated with the new tab
