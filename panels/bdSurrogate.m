@@ -1,19 +1,14 @@
-classdef bdSurrogate < handle
-    %bdSurrogate  Brain Dynamics Toolbox panel for Surrogate data transform.
-    %   This class constructs phase-randomized surrogate data from
+classdef bdSurrogate < bdPanel
+    %bdSurrogate  Display panel for the Surrogate data transform.
+    %   This display panel constructs phase-randomized surrogate data from
     %   simulated data by adding random numbers to the phase component of
     %   the data using an amplitude-adjusted algorithm. 
     %   
-    %SYS OPTIONS
-    %   sys.panels.bdSurrogate.title = 'Surrogate'
-    %   sys.panels.bdSurrogate.grid = false
-    %   sys.panels.bdSurrogate.hold = false
-    %
     %AUTHORS
-    %  Stewart Heitmann (2017b,2017c)
-    %  Incorporates original code from Michael Breakspear.
+    %  Stewart Heitmann (2017b,2017c,2018a)
+    %  Incorporating original code from Michael Breakspear.
 
-    % Copyright (C) 2017 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2017-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -40,309 +35,398 @@ classdef bdSurrogate < handle
     % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
+    
+    properties (Constant)
+        title = 'Surrogate';
+    end    
+    
     properties (Access=public)
-        t               % time scale of phase plot
+        ax1             % handle to plot 1 axes
+        ax2             % handle to plot 2 axes
+        t               % equi-spaced time points
         y               % time series of selected variable(s)
         ysurr           % surrogate version of y
     end
     
     properties (Access=private) 
-        fig             % handle to parent figure
-        tab             % handle to uitab object
-        ax1             % handle to plot 1 axes
-        ax2             % handle to plot 2 axes
-        popup1          % handle to popup selector 1
-        varMap          % maps entries in vardef to rows in sol.y
-        auxMap          % maps entries in auxdef to rows in sal
-        solMap          % maps rows in sol.y to entries in vardef
-        soxMap          % maps rows in sox.y to entries in auxdef
-        listener        % handle to listener
-        gridflag        % grid menu flag
-        holdflag        % hold menu flag
-        autolimflag     % auto limits menu flag        
+        tranmenu        % handle to TRANSIENTS menu item
+        markmenu        % handle to MARKERS menu item        
+        gridmenu        % handle to GRID menu item
+%        holdmenu        % handle to HOLD menu item
+        submenu         % handle to subpanel selector menu item
+        listener        % handle to our listener object
     end
     
     methods
         function this = bdSurrogate(tabgroup,control)
-            % Construct a new tab panel in the parent tabgroup.
-            % Usage:
-            %    bdSurrogate(tabgroup,control)
-            % where 
-            %    tabgroup is a handle to the parent uitabgroup object.
-            %    control is a handle to the GUI control panel.
+             % Construct a new Surrogate Panel in the given tabgroup
 
-            % apply default settings to sys.panels.bdSurrogate
+            % initialise the base class (specifically this.menu and this.tab)
+            this@bdPanel(tabgroup);
+            
+            % assign default values to missing options in sys.panels.bdSurrogate
             control.sys.panels.bdSurrogate = bdSurrogate.syscheck(control.sys);
             
-            % get handle to parent figure
-            this.fig = ancestor(tabgroup,'figure');
+            % configure the pull-down menu
+            this.menu.Text = control.sys.panels.bdSurrogate.title;
+            this.InitCalibrateMenu(control);
+            this.InitTransientsMenu(control);
+            this.InitMarkerMenu(control);
+            this.InitGridMenu(control);
+            %this.InitHoldMenu(control);
+            this.InitExportMenu(control);
+            this.InitCloseMenu(control);
             
-            % map vardef entries to rows in sol
-            this.varMap = bd.varMap(control.sys.vardef);
-            this.solMap = bd.solMap(control.sys.vardef);
-            if isfield(control.sys,'auxdef')
-                % map auxdef entries to rows in sal
-                this.auxMap = bd.varMap(control.sys.auxdef);
-                this.soxMap = bd.solMap(control.sys.auxdef);
-            else
-                % construct empty maps
-                this.auxMap = bd.varMap([]);
-                this.soxMap = bd.solMap([]);
-            end
-            
-            % number of entries in vardef
-            nvardef = numel(control.sys.vardef);
-                        
-            % construct the uitab
-            this.tab = uitab(tabgroup, ...
-                'title',control.sys.panels.bdSurrogate.title, ...
-                'Tag','bdSurrogateTab', ...
-                'Units','pixels', ...
-                'TooltipString','Right click for menu');
-            
-            % get tab geometry
-            parentw = this.tab.Position(3);
-            parenth = this.tab.Position(4);
+            % configure the panel graphics
+            this.tab.Title = control.sys.panels.bdSurrogate.title;
+            this.InitSubpanel(control);
 
-            % plot axes 1
-            posw = parentw-65;
-            posh = (parenth-120)/2;
-            posx = 50;
-            posy = 100 + posh;
-            this.ax1 = axes('Parent',this.tab, 'Units','pixels', 'Position',[posx posy posw posh]);           
-            hold(this.ax1,'on');
-      
-            % plot axes 2
-            posw = parentw-65;
-            posh = (parenth-120)/2;
-            posx = 50;
-            posy = 80;
-            this.ax2 = axes('Parent',this.tab, 'Units','pixels', 'Position',[posx posy posw posh]);           
-            hold(this.ax2,'on');
-            
-            % plot var selector 1
-            posx = 10;
-            posy = 10;
-            posw = 100;
-            posh = 20;
-            popupval = 1;  
-            popuplist = {this.solMap.name, this.soxMap.name};
-            this.popup1 = uicontrol('Style','popup', ...
-                'String', popuplist, ...
-                'Value', popupval, ...
-                'Callback', @(~,~) this.selectorCallback(control), ...
-                'HorizontalAlignment','left', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'Parent', this.tab, ...
-                'Position',[posx posy posw posh]);
-            
-            % construct the tab context menu
-            this.contextMenu(control);
-            
-            % register a callback for resizing the panel
-            set(this.tab,'SizeChangedFcn', @(~,~) SizeChanged(this,this.tab));
-            
             % listen to the control panel for redraw events
-            this.listener = addlistener(control,'redraw',@(~,~) this.render(control));    
+            this.listener = listener(control,'redraw',@(~,~) this.redraw(control));    
         end
         
-        % Destructor
-        function delete(this)
-            delete(this.listener);
-            delete(this.tab);          
-        end
-        
-        function render(this,control)
-            %disp('bdSurrogate.render()')
+        function redraw(this,control)
+            %disp('bdSurrogate.redraw()')
             
-            % number of entries in sol
-            nvardef = numel(this.solMap);
-                
-            % read the main popup variable selector
-            popindx1 = this.popup1.Value;
+            % get the details of the variable currently selected variable
+            varname  = this.submenu.UserData.xxxname;          % generic name of variable
+            varlabel = this.submenu.UserData.label;            % plot label for selected variable
+            varindx  = this.submenu.UserData.xxxindx;          % index of selected variable in sys.vardef
+            valindx  = this.submenu.UserData.valindx;          % indices of selected entries in sys.vardef.value
+            solindx  = control.sys.vardef(varindx).solindx;    % indices of selected entries in sol
+            ylim     = control.sys.vardef(varindx).lim;        % axis limits of the selected variable
+           % tval     = control.sys.tval;                       % current time slider value
             
-            % if the user selected a variable from vardef then ...
-            if popindx1 <= nvardef
-                % the popup index corresponds to the row index of sol
-                solindx = popindx1; 
+            % clear the axes
+            cla(this.ax1);
+            cla(this.ax2);
+            
+            % set the y-axes limits
+            this.ax1.YLim = ylim + [-1e-4 +1e-4];
+            this.ax2.YLim = ylim + [-1e-4 +1e-4];
 
-                % get detail of the selected variable
-                name    = this.solMap(solindx).name;        % name string
-                varindx = this.solMap(solindx).varindx;     % index in vardef{}
+            % if the TRANSIENT menu is enabled then  ...
+            switch this.tranmenu.Checked
+                case 'on'
+                    % set the x-axes limits to the full time span
+                    this.ax1.XLim = control.sys.tspan + [-1e-4 0];
+                    this.ax2.XLim = control.sys.tspan + [-1e-4 0];
 
-                % find all rows of sol.y that are related to this vardef entry
-                solrows = this.varMap(varindx).solindx;
-
-                % extract the values needed for analysis
-                this.t = control.sol.x;
-                this.y = control.sol.y(solrows,:);
-                
-                % index of the variable of interest
-                yrow = solindx - solrows(1) + 1;
-            else
-                % the popup index refers to an entry of sox
-                solindx = popindx1 - nvardef;
-
-                % get detail of the selected variable
-                name    = this.soxMap(solindx).name;        % name string
-                auxindx = this.soxMap(solindx).varindx;     % auxdef index
-
-                % find all rows of aux that are related to this auxdef entry
-                solrows = this.auxMap(auxindx).solindx;
-
-                % extract the values needed for analysis
-                this.t = control.sox.x;
-                this.y = control.sox.y(solrows,:);
-
-                % index of the variable of interest
-                yrow = solindx - solrows(1) + 1;
+                    % use all time steps in sol.x
+                    tindx = true(size(control.tindx));  % logical indices of all time steps in this.t
+                    
+                case 'off'
+                    % limit the x-axes to the non-transient part of the time domain
+                    this.ax1.XLim = [control.sys.tval control.sys.tspan(2)] + [-1e-4 0];
+                    this.ax2.XLim = [control.sys.tval control.sys.tspan(2)] + [-1e-4 0];
+                    
+                    % use only the non-transient time steps in sol.x
+                    tindx = control.tindx;              % logical indices of the non-transient time steps
             end
- 
+            
+            % Our method asumes equi-spaced time steps but many of our
+            % solvers generate variable time steps.  So we interpolate
+            % the time-series to ensure equi-spaced time steps.
+            % How we interpolate depends on the type of solver.
+            switch control.solvertype
+                case 'sde'
+                    % The current SDE solvers only used fixed time steps
+                    % so we can avoid interpolation altogether and simply
+                    % use the solver's own time steps.
+                    this.t = control.sol.x(tindx);
+
+                otherwise
+                    % We use interpolation for all other solvers to ensure
+                    % that our correlation used fixed-size time steps.
+                    % We choose the number of time steps of the interpolant
+                    % to be similar to the number of steps chosen by the
+                    % solver. This avoids over-sampling and under-sampling.
+                    tt = control.sol.x(tindx);
+                    this.t = linspace(tt(1),tt(end),numel(tt));                        
+            end
+            
+            % interpolate the trajectory onto  equi-spaced time points 
+            this.y = bdEval(control.sol,this.t,solindx);
+
             % compute the surrogate data
             this.ysurr = bdSurrogate.ampsurr(this.y);
-                        
-            % isolate the non-negative time entries
-            tindx = find(this.t>=0);
-            tt = this.t(tindx);
-            yy = this.y(:,tindx);
-            ys = this.ysurr(:,tindx);
 
-            % if 'hold' menu is checked then ...
-            if this.holdflag
-                % Change existing plots on ax1 to thin lines 
-                objs = findobj(this.ax1);
-                set(objs,'LineWidth',0.5);               
-                % Change existing plots on ax2 to thin lines 
-                objs = findobj(this.ax2);
-                set(objs,'LineWidth',0.5);               
-            else
-                % Clear the plot axis
-                cla(this.ax1);
-                cla(this.ax2);
-            end
-            
-            % show gridlines (or not)
-            if this.gridflag
-                grid(this.ax1,'on');
-                grid(this.ax2,'on');
-            else
-                grid(this.ax1,'off')
-                grid(this.ax2,'off')
-            end
-            
+            % update the ylabels
+            ylabel(this.ax1, varlabel);
+            ylabel(this.ax2, varlabel);
+
             % Plot the original signal in ax1
             % ... with the background traces in grey
-            plot(this.ax1, tt, yy, 'color',[0.75 0.75 0.75], 'HitTest','off');              
+            plot(this.ax1, this.t, this.y, 'color',[0.75 0.75 0.75], 'HitTest','off');              
             % ... and variable of interest in black
-            plot(this.ax1, tt, yy(yrow,:), 'color','k', 'Linewidth',1.5);
-            ylabel(this.ax1,name, 'FontSize',16,'FontWeight','normal');
-
+            plot(this.ax1, this.t, this.y(valindx,:), 'color','k', 'Linewidth',1.5);
+            
             % Plot the surrogate signal in ax2
             % ... with the background traces in grey
-            plot(this.ax2, tt, ys, 'color',[0.75 0.75 0.75], 'HitTest','off');              
+            plot(this.ax2, this.t, this.ysurr, 'color',[0.75 0.75 0.75], 'HitTest','off');              
             % ... and variable of interest in black
-            plot(this.ax2, tt, ys(yrow,:), 'color','k', 'Linewidth',1.5);
-            ylabel(this.ax2,['Surrogate ' name], 'FontSize',16,'FontWeight','normal');
-        end        
+            plot(this.ax2, this.t, this.ysurr(valindx,:), 'color','k', 'Linewidth',1.5);
+            
+            % if the TRANSIENT menu is enabled then  ...
+            switch this.tranmenu.Checked
+                case 'on'
+                   % plot the pentagram marker (upper plot)
+                    plot(this.ax1, this.t(1), this.y(valindx,1), ...
+                        'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
+                        'Visible',this.markmenu.Checked);
+
+                    % plot the pentagram marker (lower plot)
+                    plot(this.ax2, this.t(1), this.ysurr(valindx,1), ...
+                        'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
+                        'Visible',this.markmenu.Checked);
+
+                case 'off'
+                    % plot the circle marker (upper plot)
+                    plot(this.ax1, this.t(1), this.y(valindx,1), ...
+                        'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6, ...
+                        'Visible',this.markmenu.Checked);
+
+                    % plot the circle marker (lower plot)
+                    plot(this.ax2, this.t(1), this.ysurr(valindx,1), ...
+                        'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6, ...
+                        'Visible',this.markmenu.Checked);
+            end
+            
+        end
     end
     
     
     methods (Access=private)
 
-        function contextMenu(this,control)            
-            % init the menu flags from the sys.panels options     
-            this.gridflag = control.sys.panels.bdSurrogate.grid;
-            this.holdflag = control.sys.panels.bdSurrogate.hold;
+        % Initialise the CALIBRATE menu item
+        function InitCalibrateMenu(this,control)
+            % construct the menu item
+            uimenu(this.menu, ...
+               'Text','Calibrate Axes', ...
+                'Callback', @CalibrateMenuCallback );
             
-            % grid menu check string
-            if this.gridflag
+            % Menu callback function
+            function CalibrateMenuCallback(~,~)
+                % if the TRANSIENT menu is checked then ...
+                switch this.tranmenu.Checked
+                    case 'on'
+                        % adjust the limits to fit all of the data
+                        tindx = true(size(control.tindx));
+                    case 'off'
+                        % adjust the limits to fit the non-transient data only
+                        tindx = control.tindx;
+                end
+
+                % find the limits of the original data
+                lo = min(min(this.y));
+                hi = max(max(this.y));
+                
+                % get the index of the plot variable in sys.vardef
+                varindx = this.submenu.UserData.xxxindx;
+                
+                % adjust the limits of the plot variables
+                control.sys.vardef(varindx).lim = bdPanel.RoundLim(lo,hi);
+
+                % refresh the vardef control widgets
+                notify(control,'vardef');
+                
+                % redraw all panels (because the new limits apply to all panels)
+                notify(control,'redraw');
+            end
+
+        end
+        
+        % Initiliase the TRANISENTS menu item
+        function InitTransientsMenu(this,control)
+            % get the default transient menu setting from sys.panels
+            if control.sys.panels.bdSurrogate.transients
+                checkflag = 'on';
+            else
+                checkflag = 'off';
+            end
+
+            % construct the menu item
+            this.tranmenu = uimenu(this.menu, ...
+                'Text','Transients', ...
+                'Checked',checkflag, ...
+                'Callback', @TranMenuCallback);
+
+            % Menu callback function
+            function TranMenuCallback(menuitem,~)
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                    case 'off'
+                        menuitem.Checked='on';
+                end
+                % redraw this panel only
+                this.redraw(control);
+            end
+        end
+        
+        % Initiliase the MARKERS menu item
+        function InitMarkerMenu(this,control)
+            % get the marker menu setting from sys.panels
+            if control.sys.panels.bdSurrogate.markers
+                checkflag = 'on';
+            else
+                checkflag = 'off';
+            end
+
+            % construct the menu item
+            this.markmenu = uimenu(this.menu, ...
+                'Text','Markers', ...
+                'Checked',checkflag, ...
+                'Callback', @MarkMenuCallback);
+
+            % Menu callback function
+            function MarkMenuCallback(menuitem,~)
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                    case 'off'
+                        menuitem.Checked='on';
+                end
+                % redraw this panel only
+                this.redraw(control);
+            end
+        end       
+
+        % Initiliase the GRID menu item
+        function InitGridMenu(this,control)
+            % get the default grid menu setting from sys.panels
+            if control.sys.panels.bdSurrogate.grid
                 gridcheck = 'on';
             else
                 gridcheck = 'off';
             end
-            
-            % hold menu check string
-            if this.holdflag
+
+            % construct the menu item
+            this.gridmenu = uimenu(this.menu, ...
+                'Text','Grid', ...
+                'Checked',gridcheck, ...
+                'Callback', @GridMenuCallback);
+
+            % Menu callback function
+            function GridMenuCallback(menuitem,~)
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                        grid(this.ax1,'off');
+                        grid(this.ax2,'off');
+                    case 'off'
+                        menuitem.Checked='on';
+                        grid(this.ax1,'on');
+                        grid(this.ax2,'on');
+                end
+            end
+        end
+        
+        % Initialise the HOLD menu item
+        function InitHoldMenu(this,control)
+             % get the hold menu setting from sys.panels options
+            if control.sys.panels.bdSurrogate.hold
                 holdcheck = 'on';
             else
                 holdcheck = 'off';
             end
             
-            % construct the tab context menu
-            this.tab.UIContextMenu = uicontextmenu;
+            % construct the menu item
+            this.holdmenu = uimenu(this.menu, ...
+                'Text','Hold', ...
+                'Checked',holdcheck, ...
+                'Callback', @HoldMenuCallback );
 
-            % construct menu items
-            uimenu(this.tab.UIContextMenu, ...
-                   'Label','Grid', ...
-                   'Checked',gridcheck, ...
-                   'Callback', @(menuitem,~) ContextCallback(menuitem) );
-            uimenu(this.tab.UIContextMenu, ...
-                   'Label','Hold', ...
-                   'Checked',holdcheck, ...
-                   'Callback', @(menuitem,~) ContextCallback(menuitem) );
-            uimenu(this.tab.UIContextMenu, ...
-                   'Label','Close', ...
-                   'Callback',@(~,~) this.delete());
-        
-            % Context Menu Item Callback
-            function ContextCallback(menuitem)
-                switch menuitem.Label
-                    case 'Grid'
-                        switch menuitem.Checked
-                            case 'on'
-                                this.gridflag = false;
-                                menuitem.Checked='off';
-                            case 'off'
-                                this.gridflag = true;
-                                menuitem.Checked='on';
-                        end
-                    case 'Hold'
-                        switch menuitem.Checked
-                            case 'on'
-                                this.holdflag = false;
-                                menuitem.Checked='off';
-                            case 'off'
-                                this.holdflag = true;
-                                menuitem.Checked='on';
-                        end
-                end 
+            % Menu callback function
+            function HoldMenuCallback(menuitem,~)
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                    case 'off'
+                        menuitem.Checked='on';
+                end
                 % redraw this panel
-                this.render(control);
+                this.redraw(control);
             end
         end
         
-        % Callback for the "relative phase" checkbox
-        function checkboxCallback(this,control)
-            if this.checkbox.Value
-                set(this.popup2,'Enable','on');
-            else
-                set(this.popup2,'Enable','off');
-            end
-            this.render(control);           
-        end
+        % Initialise the EXPORT menu item
+        function InitExportMenu(this,~)
+            % construct the menu item
+            uimenu(this.menu, ...
+               'Text','Export Figure', ...
+               'Callback',@callback);
+           
+            function callback(~,~)
+                % Construct a new figure
+                fig = figure();    
                 
-        % Callback for panel resizing. 
-        function SizeChanged(this,parent)
-            % get new parent geometry
-            parentw = parent.Position(3);
-            parenth = parent.Position(4);
-            
-            % new width, height of each axis
-            w = parentw - 65;
-            h = (parenth - 110)/2;
-            
-            % adjust position of ax1
-            this.ax1.Position = [50, 100+h, w-15, h];
+                % Change mouse cursor to hourglass
+                set(fig,'Pointer','watch');
+                drawnow;
+                
+                % Copy the plot data to the new figure
+                ax1new = copyobj(this.ax1,fig);
+                ax1new.OuterPosition = [0 0.51 1 0.47];
+                ax2new = copyobj(this.ax2,fig);
+                ax2new.OuterPosition = [0 0.03 1 0.47];
 
-            % adjust position of ax2
-            this.ax2.Position = [50, 50, w-15, h];
+                % Allow the user to hit everything in ax1new
+                objs = findobj(ax1new,'-property', 'HitTest');
+                set(objs,'HitTest','on');
+                
+                % Allow the user to hit everything in ax2new
+                objs = findobj(ax2new,'-property', 'HitTest');
+                set(objs,'HitTest','on');
+                
+                % Change mouse cursor to arrow
+                set(fig,'Pointer','arrow');
+                drawnow;
+            end
+        end
+
+        % Initialise the CLOSE menu item
+        function InitCloseMenu(this,~)
+            % construct the menu item
+            uimenu(this.menu, ...
+                   'Text','Close', ...
+                   'Callback',@(~,~) this.close());
         end
         
-        % Callback for the plot variable selectors
-        function selectorCallback(this,control)
-            this.render(control);
+        % Initialise the subpanel
+        function InitSubpanel(this,control)
+            % construct the subpanel
+            [this.ax1,cmenu,spanel] = bdPanel.Subpanel(this.tab,[0 0 1 1],[0 0.51 1 0.47]);
+            xlabel(this.ax1,'time');
+            title(this.ax1,'Original');
+
+            % construct the second axis
+            this.ax2 = axes('Parent',spanel, ...
+                'Units','normal', ...
+                'OuterPosition',[0 0.03 1 0.47], ...
+                'NextPlot','add', ...
+                'FontSize',12, ...
+                'Box','on');
+            xlabel(this.ax2,'time');
+            title(this.ax2,'Surrogate');
+
+            % construct a selector menu comprising items from sys.vardef
+            this.submenu = bdPanel.SelectorMenuFull(cmenu, ...
+                control.sys.vardef, ...
+                @callback, ...
+                'off', 'mb1',1,1);
+            
+            % Callback function for the subpanel selector menu
+            function callback(menuitem,~)
+                % check 'on' the selected menu item and check 'off' all others
+                bdPanel.SelectorCheckItem(menuitem);
+                % update our handle to the selected menu item
+                this.submenu = menuitem;
+                % redraw the panel
+                this.redraw(control);
+            end
         end
+        
         
     end
     
@@ -353,9 +437,10 @@ classdef bdSurrogate < handle
         function syspanel = syscheck(sys)
             % Default panel settings
             syspanel.title = 'Surrogate';
+            syspanel.transients = false;            
+            syspanel.markers = true;
             syspanel.grid = false;
-            syspanel.hold = false;
-            syspanel.autolim = true;
+            %syspanel.hold = false;
             
             % Nothing more to do if sys.panels.bdSurrogate is undefined
             if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdSurrogate')
@@ -367,15 +452,25 @@ classdef bdSurrogate < handle
                 syspanel.title = sys.panels.bdSurrogate.title;
             end
             
+            % sys.panels.bdSurrogate.transients
+            if isfield(sys.panels.bdSurrogate,'transients')
+                syspanel.transients = sys.panels.bdSurrogate.transients;
+            end
+            
+            % sys.panels.bdSurrogate.markers
+            if isfield(sys.panels.bdSurrogate,'markers')
+                syspanel.markers = sys.panels.bdSurrogate.markers;
+            end
+            
             % sys.panels.bdSurrogate.grid
             if isfield(sys.panels.bdSurrogate,'grid')
                 syspanel.grid = sys.panels.bdSurrogate.grid;
             end
             
-            % sys.panels.bdSurrogate.hold
-            if isfield(sys.panels.bdSurrogate,'hold')
-                syspanel.hold = sys.panels.bdSurrogate.hold;
-            end
+          %  % sys.panels.bdSurrogate.hold
+          %  if isfield(sys.panels.bdSurrogate,'hold')
+          %      syspanel.hold = sys.panels.bdSurrogate.hold;
+          %  end
         end
         
         
