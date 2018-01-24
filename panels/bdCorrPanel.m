@@ -62,7 +62,7 @@ classdef bdCorrPanel < bdPanel
             control.sys.panels.bdCorrPanel = bdCorrPanel.syscheck(control.sys);
 
             % configure the pull-down menu
-            this.menu.Text = control.sys.panels.bdCorrPanel.title;
+            this.menu.Label = control.sys.panels.bdCorrPanel.title;
             this.InitCalibrateMenu(control);
             this.InitTransientsMenu(control);
             this.InitExportMenu(control);
@@ -73,7 +73,12 @@ classdef bdCorrPanel < bdPanel
             this.InitSubpanel(control);
 
             % listen to the control panel for redraw events
-            this.listener = listener(control,'redraw',@(~,~) this.redraw(control));    
+            this.listener = addlistener(control,'redraw',@(~,~) this.redraw(control));    
+        end
+        
+        function delete(this)
+            % Destructor
+            delete(this.listener)
         end
         
         function redraw(this,control)
@@ -151,7 +156,7 @@ classdef bdCorrPanel < bdPanel
         function InitCalibrateMenu(this,control)
             % construct the menu item
             uimenu(this.menu, ...
-               'Text','Calibrate Axes', ...
+               'Label','Calibrate Axes', ...
                 'Callback', @CalibrateMenuCallback );
             
             % Menu callback function
@@ -176,7 +181,7 @@ classdef bdCorrPanel < bdPanel
 
             % construct the menu item
             this.tranmenu = uimenu(this.menu, ...
-                'Text','Transients', ...
+                'Label','Transients', ...
                 'Checked',checkflag, ...
                 'Callback', @TranMenuCallback);
 
@@ -197,7 +202,7 @@ classdef bdCorrPanel < bdPanel
         function InitExportMenu(this,~)
             % construct the menu item
             uimenu(this.menu, ...
-               'Text','Export Figure', ...
+               'Label','Export Figure', ...
                'Callback',@callback);
            
             function callback(~,~)
@@ -226,7 +231,7 @@ classdef bdCorrPanel < bdPanel
         function InitCloseMenu(this,~)
             % construct the menu item
             uimenu(this.menu, ...
-                   'Text','Close', ...
+                   'Label','Close', ...
                    'Callback',@(~,~) this.close());
         end
     

@@ -152,10 +152,16 @@ classdef bdControlScalar < handle
                 'ToolTipString',['more options for ''',xxxname,'''']);
        
             % Listen for widget refresh events from the control panel.
-            this.listener1 = listener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
-            this.listener2 = listener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
+            this.listener1 = addlistener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
+            this.listener2 = addlistener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
         end
         
+       % Destructor
+        function delete(this)
+            delete(this.listener2);
+            delete(this.listener1);
+        end
+
         function mode(this,flag)            
             %disp('bdControlScalar.mode()');
             if flag

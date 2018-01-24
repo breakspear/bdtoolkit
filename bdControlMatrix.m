@@ -128,10 +128,16 @@ classdef bdControlMatrix < handle
                 'ToolTipString','Click to edit');
             
             % listen for widget refresh events from the control panel 
-            this.listener1 = listener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx));
-            this.listener2 = listener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx));
+            this.listener1 = addlistener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx));
+            this.listener2 = addlistener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx));
         end
         
+        % Destructor
+        function delete(this)
+            delete(this.listener2);
+            delete(this.listener1);
+        end
+
         function mode(this,flag)            
             %disp('bdControlMatrix.mode()');
             if flag

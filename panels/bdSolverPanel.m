@@ -68,7 +68,7 @@ classdef bdSolverPanel < bdPanel
             control.sys.panels.bdSolverPanel = bdSolverPanel.syscheck(control.sys);
 
             % configure the pull-down menu
-            this.menu.Text = control.sys.panels.bdSolverPanel.title;
+            this.menu.Label = control.sys.panels.bdSolverPanel.title;
             this.InitCalibrateMenu(control);
             this.InitGridMenu(control);
             this.InitExportMenu(control);
@@ -82,7 +82,7 @@ classdef bdSolverPanel < bdPanel
             set(this.tab,'SizeChangedFcn', @(~,~) this.SizeChanged());
 
             % listen to the control panel for redraw events
-            this.listener = listener(control,'redraw',@(~,~) this.redraw(control));    
+            this.listener = addlistener(control,'redraw',@(~,~) this.redraw(control));    
         end
         
         % Destructor
@@ -99,7 +99,7 @@ classdef bdSolverPanel < bdPanel
         function InitCalibrateMenu(this,control)
             % construct the menu item
             uimenu(this.menu, ...
-               'Text','Calibrate Axes', ...
+               'Label','Calibrate Axes', ...
                 'Callback', @CalibrateMenuCallback );
             
             % Menu callback function
@@ -126,7 +126,7 @@ classdef bdSolverPanel < bdPanel
 
             % construct the menu item
             this.gridmenu = uimenu(this.menu, ...
-                'Text','Grid', ...
+                'Label','Grid', ...
                 'Checked',gridcheck, ...
                 'Callback', @GridMenuCallback);
 
@@ -149,7 +149,7 @@ classdef bdSolverPanel < bdPanel
         function InitExportMenu(this,control)
             % construct the menu item
             uimenu(this.menu, ...
-               'Text','Export Figure', ...
+               'Label','Export Figure', ...
                'Callback',@callback);
            
             function callback(~,~)
@@ -189,7 +189,7 @@ classdef bdSolverPanel < bdPanel
         function InitCloseMenu(this,control)
             % construct the menu item
             uimenu(this.menu, ...
-                   'Text','Close', ...
+                   'Label','Close', ...
                    'Callback',@(~,~) this.close());
         end
         

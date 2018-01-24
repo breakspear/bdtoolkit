@@ -44,7 +44,8 @@ classdef bdControlVectorDialog < handle
         minbox          % handle to minbox
         maxbox          % handle to maxbox
         haltbutton      % handle to halt button
-        listener        % handle to listener(s)
+        listener1       % handle to listener1
+        listener2       % handle to listener2
     end
     
     methods
@@ -193,14 +194,14 @@ classdef bdControlVectorDialog < handle
                 'ToolTipString','Close the dialog box');
  
             % listen to the control panel for widget refresh events (incuding those generate by this dialog box)
-            this.listener = event.listener.empty(0);
-            this.listener(1) = listener(control,'refresh',@(~,~) this.refreshListener(xxxdef,xxxindx));   
-            this.listener(2) = listener(control,xxxdef,@(~,~) this.refreshListener(xxxdef,xxxindx));   
+            this.listener1 = addlistener(control,'refresh',@(~,~) this.refreshListener(xxxdef,xxxindx));   
+            this.listener2 = addlistener(control,xxxdef,@(~,~) this.refreshListener(xxxdef,xxxindx));   
         end
         
         % Destructor (called when this object is no longer referenced)
         function delete(this)
-            delete(this.listener);
+            delete(this.listener2);
+            delete(this.listener1);
             delete(this.dialogfig);
         end
         

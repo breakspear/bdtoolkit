@@ -58,7 +58,7 @@ classdef bdAuxiliary < bdPanel
             control.sys.panels.bdAuxiliary = bdAuxiliary.syscheck(control.sys);
 
             % configure the pull-down menu
-            this.menu.Text = control.sys.panels.bdAuxiliary.title;
+            this.menu.Label = control.sys.panels.bdAuxiliary.title;
             this.InitHoldMenu(control);
             this.InitExportMenu(control);
             this.InitCloseMenu(control);
@@ -68,9 +68,14 @@ classdef bdAuxiliary < bdPanel
             this.InitSubpanel(control);
             
             % listen to the control panel for redraw events
-            this.listener = listener(control,'redraw',@(~,~) this.redraw(control));    
+            this.listener = addlistener(control,'redraw',@(~,~) this.redraw(control));    
         end
         
+        function delete(this)
+            % Destructor
+            delete(this.listener)
+        end
+         
     end
     
     methods (Access=private)
@@ -86,7 +91,7 @@ classdef bdAuxiliary < bdPanel
             
             % construct the menu item
             this.holdmenu = uimenu(this.menu, ...
-                'Text','Hold', ...
+                'Label','Hold', ...
                 'Checked',holdcheck, ...
                 'Callback', @HoldMenuCallback );
 
@@ -107,7 +112,7 @@ classdef bdAuxiliary < bdPanel
         function InitExportMenu(this,~)
             % construct the menu item
             uimenu(this.menu, ...
-               'Text','Export Figure', ...
+               'Label','Export Figure', ...
                'Callback',@callback);
            
             function callback(~,~)
@@ -135,7 +140,7 @@ classdef bdAuxiliary < bdPanel
         function InitCloseMenu(this,~)
             % construct the menu item
             uimenu(this.menu, ...
-                   'Text','Close', ...
+                   'Label','Close', ...
                    'Callback',@(~,~) this.close());
         end
         
@@ -156,7 +161,7 @@ classdef bdAuxiliary < bdPanel
                 UserData.label = func2str(UserData.auxfun);
                 UserData.rootmenu = cmenu;
                 menuitem = uimenu('Parent',cmenu, ...
-                    'Text',UserData.label, ...
+                    'Label',UserData.label, ...
                     'Checked','off', ...
                     'Tag','auxmenu', ...
                     'UserData',UserData, ...

@@ -66,7 +66,7 @@ classdef bdHilbert < bdPanel
             control.sys.panels.bdHilbert = bdHilbert.syscheck(control.sys);
             
             % configure the pull-down menu
-            this.menu.Text = control.sys.panels.bdHilbert.title;
+            this.menu.Label = control.sys.panels.bdHilbert.title;
             this.InitCalibrateMenu(control);
             this.InitTransientsMenu(control);
             this.InitMarkerMenu(control);
@@ -79,7 +79,7 @@ classdef bdHilbert < bdPanel
             this.InitSubpanel(control);
 
             % listen to the control panel for redraw events
-            this.listener = listener(control,'redraw',@(~,~) this.redraw(control));    
+            this.listener = addlistener(control,'redraw',@(~,~) this.redraw(control));    
 
             return
 
@@ -98,6 +98,11 @@ classdef bdHilbert < bdPanel
 %                     'Position',[posx posy posw posh]);
         end
         
+        function delete(this)
+            % Destructor
+            delete(this.listener)
+        end
+         
         function redraw(this,control)
             disp('bdHilbert.redraw()')
 
@@ -225,7 +230,7 @@ classdef bdHilbert < bdPanel
         function InitCalibrateMenu(this,control)
             % construct the menu item
             uimenu(this.menu, ...
-               'Text','Calibrate Axes', ...
+               'Label','Calibrate Axes', ...
                 'Callback', @CalibrateMenuCallback );
             
             % Menu callback function
@@ -270,7 +275,7 @@ classdef bdHilbert < bdPanel
 
             % construct the menu item
             this.tranmenu = uimenu(this.menu, ...
-                'Text','Transients', ...
+                'Label','Transients', ...
                 'Checked',checkflag, ...
                 'Callback', @TranMenuCallback);
 
@@ -298,7 +303,7 @@ classdef bdHilbert < bdPanel
 
             % construct the menu item
             this.markmenu = uimenu(this.menu, ...
-                'Text','Markers', ...
+                'Label','Markers', ...
                 'Checked',checkflag, ...
                 'Callback', @MarkMenuCallback);
 
@@ -326,7 +331,7 @@ classdef bdHilbert < bdPanel
 
             % construct the menu item
             this.relmenu = uimenu(this.menu, ...
-                'Text','Relative Phase', ...
+                'Label','Relative Phase', ...
                 'Checked',checkflag, ...
                 'Callback', @RelMenuCallback);
 
@@ -347,7 +352,7 @@ classdef bdHilbert < bdPanel
         function InitExportMenu(this,~)
             % construct the menu item
             uimenu(this.menu, ...
-               'Text','Export Figure', ...
+               'Label','Export Figure', ...
                'Callback',@callback);
            
             function callback(~,~)
@@ -382,7 +387,7 @@ classdef bdHilbert < bdPanel
         function InitCloseMenu(this,~)
             % construct the menu item
             uimenu(this.menu, ...
-                   'Text','Close', ...
+                   'Label','Close', ...
                    'Callback',@(~,~) this.close());
         end
 

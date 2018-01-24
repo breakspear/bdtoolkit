@@ -66,7 +66,7 @@ classdef bdSpaceTime < bdPanel
             control.sys.panels.bdSpaceTime = bdSpaceTime.syscheck(control.sys);
 
             % configure the pull-down menu
-            this.menu.Text = control.sys.panels.bdSpaceTime.title;
+            this.menu.Label = control.sys.panels.bdSpaceTime.title;
             this.InitCalibrateMenu(control);
             this.InitViewMenu(control);
             this.InitTransientsMenu(control);
@@ -81,9 +81,14 @@ classdef bdSpaceTime < bdPanel
             this.InitSubpanel(control);
             
             % listen to the control panel for redraw events
-            this.listener = listener(control,'redraw',@(~,~) this.redraw(control));    
+            this.listener = addlistener(control,'redraw',@(~,~) this.redraw(control));    
         end
         
+        function delete(this)
+            % Destructor
+            delete(this.listener)
+        end
+         
     end
     
     methods (Access=private)
@@ -92,7 +97,7 @@ classdef bdSpaceTime < bdPanel
         function InitCalibrateMenu(this,control)
             % construct the menu item
             uimenu(this.menu, ...
-               'Text','Calibrate Axes', ...
+               'Label','Calibrate Axes', ...
                 'Callback', @CalibrateMenuCallback );
             
             % Menu callback function
@@ -126,7 +131,7 @@ classdef bdSpaceTime < bdPanel
         function InitViewMenu(this,control)
             % construct the menu item
             uimenu(this.menu, ...
-                'Text','3D View', ...
+                'Label','3D View', ...
                 'Checked','off', ...
                 'Callback', @ViewMenuCallback);
 
@@ -156,7 +161,7 @@ classdef bdSpaceTime < bdPanel
 
             % construct the menu item
             this.tranmenu = uimenu(this.menu, ...
-                'Text','Transients', ...
+                'Label','Transients', ...
                 'Checked',checkflag, ...
                 'Callback', @TranMenuCallback);
 
@@ -184,7 +189,7 @@ classdef bdSpaceTime < bdPanel
 
             % construct the menu item
             this.markmenu = uimenu(this.menu, ...
-                'Text','Markers', ...
+                'Label','Markers', ...
                 'Checked',checkflag, ...
                 'Callback', @MarkMenuCallback);
 
@@ -212,7 +217,7 @@ classdef bdSpaceTime < bdPanel
 
             % construct the menu item
             this.blendmenu = uimenu(this.menu, ...
-                'Text','Blend', ...
+                'Label','Blend', ...
                 'Checked',blendcheck, ...
                 'Callback', @BlendMenuCallback);
 
@@ -241,7 +246,7 @@ classdef bdSpaceTime < bdPanel
 
             % construct the menu item
             this.blendmenu = uimenu(this.menu, ...
-                'Text','Clipping', ...
+                'Label','Clipping', ...
                 'Checked',clipcheck, ...
                 'Callback', @ClipMenuCallback);
 
@@ -263,7 +268,7 @@ classdef bdSpaceTime < bdPanel
         function InitExportMenu(this,~)
             % construct the menu item
             uimenu(this.menu, ...
-               'Text','Export Figure', ...
+               'Label','Export Figure', ...
                'Callback',@callback);
            
             function callback(~,~)
@@ -295,7 +300,7 @@ classdef bdSpaceTime < bdPanel
         function InitCloseMenu(this,~)
             % construct the menu item
             uimenu(this.menu, ...
-                   'Text','Close', ...
+                   'Label','Close', ...
                    'Callback',@(~,~) this.close());
         end
         

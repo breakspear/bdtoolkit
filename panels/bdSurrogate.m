@@ -68,7 +68,7 @@ classdef bdSurrogate < bdPanel
             control.sys.panels.bdSurrogate = bdSurrogate.syscheck(control.sys);
             
             % configure the pull-down menu
-            this.menu.Text = control.sys.panels.bdSurrogate.title;
+            this.menu.Label = control.sys.panels.bdSurrogate.title;
             this.InitCalibrateMenu(control);
             this.InitTransientsMenu(control);
             this.InitMarkerMenu(control);
@@ -82,9 +82,14 @@ classdef bdSurrogate < bdPanel
             this.InitSubpanel(control);
 
             % listen to the control panel for redraw events
-            this.listener = listener(control,'redraw',@(~,~) this.redraw(control));    
+            this.listener = addlistener(control,'redraw',@(~,~) this.redraw(control));    
         end
         
+        function delete(this)
+            % Destructor
+            delete(this.listener)
+        end
+         
         function redraw(this,control)
             %disp('bdSurrogate.redraw()')
             
@@ -202,8 +207,8 @@ classdef bdSurrogate < bdPanel
         function InitCalibrateMenu(this,control)
             % construct the menu item
             uimenu(this.menu, ...
-               'Text','Calibrate Axes', ...
-                'Callback', @CalibrateMenuCallback );
+               'Label','Calibrate Axes', ...
+               'Callback', @CalibrateMenuCallback );
             
             % Menu callback function
             function CalibrateMenuCallback(~,~)
@@ -247,7 +252,7 @@ classdef bdSurrogate < bdPanel
 
             % construct the menu item
             this.tranmenu = uimenu(this.menu, ...
-                'Text','Transients', ...
+                'Label','Transients', ...
                 'Checked',checkflag, ...
                 'Callback', @TranMenuCallback);
 
@@ -275,7 +280,7 @@ classdef bdSurrogate < bdPanel
 
             % construct the menu item
             this.markmenu = uimenu(this.menu, ...
-                'Text','Markers', ...
+                'Label','Markers', ...
                 'Checked',checkflag, ...
                 'Callback', @MarkMenuCallback);
 
@@ -303,7 +308,7 @@ classdef bdSurrogate < bdPanel
 
             % construct the menu item
             this.gridmenu = uimenu(this.menu, ...
-                'Text','Grid', ...
+                'Label','Grid', ...
                 'Checked',gridcheck, ...
                 'Callback', @GridMenuCallback);
 
@@ -333,7 +338,7 @@ classdef bdSurrogate < bdPanel
             
             % construct the menu item
             this.holdmenu = uimenu(this.menu, ...
-                'Text','Hold', ...
+                'Label','Hold', ...
                 'Checked',holdcheck, ...
                 'Callback', @HoldMenuCallback );
 
@@ -354,7 +359,7 @@ classdef bdSurrogate < bdPanel
         function InitExportMenu(this,~)
             % construct the menu item
             uimenu(this.menu, ...
-               'Text','Export Figure', ...
+               'Label','Export Figure', ...
                'Callback',@callback);
            
             function callback(~,~)
@@ -389,7 +394,7 @@ classdef bdSurrogate < bdPanel
         function InitCloseMenu(this,~)
             % construct the menu item
             uimenu(this.menu, ...
-                   'Text','Close', ...
+                   'Label','Close', ...
                    'Callback',@(~,~) this.close());
         end
         

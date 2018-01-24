@@ -59,7 +59,7 @@ classdef bdTrapPanel < bdPanel
             control.sys.panels.bdTrapPanel = bdTrapPanel.syscheck(control.sys);
 
             % configure the pull-down menu
-            this.menu.Text = control.sys.panels.bdTrapPanel.title;
+            this.menu.Label = control.sys.panels.bdTrapPanel.title;
             this.InitCloseMenu(control);
 
             % configure the panel graphics
@@ -67,11 +67,17 @@ classdef bdTrapPanel < bdPanel
             this.InitSubpanel(control);
 
             % listen to the control panel for redraw events
-            this.listener = listener(control,'redraw',@(~,~) this.redraw(control));
+            this.listener = addlistener(control,'redraw',@(~,~) this.redraw(control));
             
             % Set the current axis to this.ax. This is the honey in the trap.
             axes(this.ax);
         end
+        
+        function delete(this)
+            % Destructor
+            delete(this.listener)
+        end
+         
     end
     
     methods (Access = private)
@@ -80,7 +86,7 @@ classdef bdTrapPanel < bdPanel
         function InitCloseMenu(this,~)
             % construct the menu item
             uimenu(this.menu, ...
-                   'Text','Close', ...
+                   'Label','Close', ...
                    'Callback',@(~,~) this.close());
         end
         
@@ -98,7 +104,7 @@ classdef bdTrapPanel < bdPanel
                    'It detects errant drawing commands in other panels by monitoring ' ...
                    'the decoy axis (above). The decoy axis should always appear blank. ' ...
                    'Any wayward drawing commands will trigger a warning dialog. ' ];
-            uicontrol('Style','Text', ...
+            uicontrol('Style','Label', ...
                 'String',msg, ...
                 'Parent',spanel, ...
                 'Units','normal', ...
