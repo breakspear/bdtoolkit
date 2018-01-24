@@ -740,10 +740,11 @@ classdef bdGUI < handle
 
             % Clean the panelmgr of any stale handles to panel classes
             % that have since been destroyed.
-            this.CleanPanelMgr();
+            %this.CleanPanelMgr();
 
-            % for each class in panelmgr
-            classnames = fieldnames(this.panelmgr);
+            % for each class in panelmgr (FIX ME)
+            %classnames = fieldnames(this.panelmgr);
+            classnames = [];
             for cindx = 1:numel(classnames)
                 classname = classnames{cindx};
 
@@ -797,7 +798,7 @@ classdef bdGUI < handle
                 
             % Clean the panelmgr of any stale handles to panel classes
             % that have since been destroyed.
-            this.CleanPanelMgr();
+            %this.CleanPanelMgr();
             
             % find the sys checkbox widget in the scroll panel
             objs = findobj(panel,'Tag','bdExportSys');
@@ -868,8 +869,9 @@ classdef bdGUI < handle
                 data.t = this.control.sol.x;
             end
 
-            % for each class in panelmgr
-            classnames = fieldnames(this.panelmgr);
+            % for each class in panelmgr (FIX ME)
+            %classnames = fieldnames(this.panelmgr);
+            classnames = [];
             for cindx = 1:numel(classnames)
                 classname = classnames{cindx};
                 classcount = numel(this.panelmgr.(classname));
