@@ -96,16 +96,16 @@ function sol = bdSolve(sys,tspan,solverfun,solvertype)
                 tspan = sys.tspan;
                 
                 % Get solverfun and solvertype from sys 
-                if isfield(this.sys,'odesolver')
-                    solverfun = this.sys.odesolver{1};
+                if isfield(sys,'odesolver')
+                    solverfun = sys.odesolver{1};
                     solvertype = 'odesolver';
                 end
-                if isfield(this.sys,'ddesolver')
-                    solverfun = this.sys.ddesolver{1};
+                if isfield(sys,'ddesolver')
+                    solverfun = sys.ddesolver{1};
                     solvertype = 'ddesolver';
                 end
-                if isfield(this.sys,'sdesolver')
-                    solverfun = this.sys.sdesolver{1};
+                if isfield(sys,'sdesolver')
+                    solverfun = sys.sdesolver{1};
                     solvertype = 'sdesolver';
                 end
 
@@ -113,16 +113,16 @@ function sol = bdSolve(sys,tspan,solverfun,solvertype)
                 % Caller specified bdSolve(sys,tspan).
                 
                 % Get solverfun and solvertype from sys 
-                if isfield(this.sys,'odesolver')
-                    solverfun = this.sys.odesolver{1};
+                if isfield(sys,'odesolver')
+                    solverfun = sys.odesolver{1};
                     solvertype = 'odesolver';
                 end
-                if isfield(this.sys,'ddesolver')
-                    solverfun = this.sys.ddesolver{1};
+                if isfield(sys,'ddesolver')
+                    solverfun = sys.ddesolver{1};
                     solvertype = 'ddesolver';
                 end
-                if isfield(this.sys,'sdesolver')
-                    solverfun = this.sys.sdesolver{1};
+                if isfield(sys,'sdesolver')
+                    solverfun = sys.sdesolver{1};
                     solvertype = 'sdesolver';
                 end
                 
@@ -130,13 +130,13 @@ function sol = bdSolve(sys,tspan,solverfun,solvertype)
                 % Caller specified bdSolve(sys,tspan,solverfun).
                 
                 % Get solvertype from sys 
-                if isfield(this.sys,'odesolver')
+                if isfield(sys,'odesolver')
                     solvertype = 'odesolver';
                 end
-                if isfield(this.sys,'ddesolver')
+                if isfield(sys,'ddesolver')
                     solvertype = 'ddesolver';
                 end
-                if isfield(this.sys,'sdesolver')
+                if isfield(sys,'sdesolver')
                     solvertype = 'sdesolver';
                 end
         end
