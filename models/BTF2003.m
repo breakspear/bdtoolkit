@@ -17,9 +17,9 @@
 %
 % Authors
 %   Michael Breakspear (2017b)
-%   Stewart Heitmann (2017b,2017c)
+%   Stewart Heitmann (2017b,2017c,2018a)
 
-% Copyright (C) 2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2017-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -63,8 +63,12 @@ function sys = BTF2003(Kij)
         % Connection Matrix (nxn) 
         struct('name','Kij',   'value',  Kij);            
                    
-        % Connection weights [aee, aei, aie, ane, ani]
-        struct('name','a',    'value', [0.4, 2.0, 2.0, 1.0, 0.4]);
+        % Connection weights
+        struct('name','aee',    'value', 0.4);
+        struct('name','aei',    'value', 2.0);
+        struct('name','aie',    'value', 2.0);
+        struct('name','ane',    'value', 1.0);
+        struct('name','ani',    'value', 0.4);
         
         % Time constant of inhibition
         struct('name','b',    'value',  0.10);
@@ -79,10 +83,10 @@ function sys = BTF2003(Kij)
         struct('name','phi',  'value',  0.7);
 
         % Ion channel parameters
-        struct('name','ion',  'value', [ 1.10,  2.00, 6.70,  0.5 ;      % Ion Conductances [gCa, gK, gNa, gL]
-                                         1.00, -0.70, 0.53, -0.5 ;      % Nernst Potential [VCa, VK, VNa, VL]
-                                        -0.01,  0.00, 0.30,  NaN ;      % Firing threshold [TCa, TK, TNa, unused]
-                                         0.15,  0.30, 0.15,  NaN ] );   % Firing fun slope [deltaCa, deltaK, deltaNa, unused]
+        struct('name','Gion', 'value', [ 1.10,  2.00, 6.70,  0.5 ]);    % Ion Conductances [gCa, gK, gNa, gL]
+        struct('name','Vion', 'value', [ 1.00, -0.70, 0.53, -0.5 ]);    % Nernst Potential [VCa, VK, VNa, VL]
+        struct('name','thrsh', 'value', [-0.01,  0.00, 0.30] );         % Firing threshold [TCa, TK, TNa]
+        struct('name','delta', 'value', [ 0.15,  0.30, 0.15] );         % Firing fun slope [deltaCa, deltaK, deltaNa]
                    
         % Gain parameters
         struct('name','VT',    'value', zeros(n,1));               % [VT_1,...,VT_n]
@@ -95,9 +99,9 @@ function sys = BTF2003(Kij)
         ];
                
     % ODE state variables
-    sys.vardef = [ struct('name','V', 'value',rand(n,1)./2.3 - 0.1670);    % Mean firing rate of excitatory cells
-                   struct('name','W', 'value',rand(n,1)./2.6 + 0.27);      % Proportion of open K channels
-                   struct('name','Z', 'value',rand(n,1)./10) ];            % Mean firing rate of inhibitory cells
+    sys.vardef = [ struct('name','V', 'value',rand(n,1)./2.3 - 0.1670, 'lim',[-0.6 0.6]);    % Mean firing rate of excitatory cells
+                   struct('name','W', 'value',rand(n,1)./2.6 + 0.27, 'lim',[0 0.9]);         % Proportion of open K channels
+                   struct('name','Z', 'value',rand(n,1)./10, 'lim',[0 0.3]) ];               % Mean firing rate of inhibitory cells
                
     % Integration time span
     sys.tspan = [0 1000]; 
@@ -132,16 +136,19 @@ function sys = BTF2003(Kij)
         '\qquad $\langle Q \rangle^{(j)} = \sum_i Q_V^{(i)} K_{ij} / k^{(j)}$, is the connectivity-weighted input to the $j^{th}$ ensemble,';
         '\qquad $K_{ij}$ is the network connection weight from ensemble $i$ to ensemble $j$ (diagonals should be zero),';
         '\qquad $k^{(j)} = \sum_i K_{ij}$ is the sum of incoming connection weights to ensemble $j$,';
-        '\qquad a $= [a_{ee},a_{ei},a_{ie},a_{ne},a_{ni}]$ are the connection weights ($a_{ei}$ denotes excitatory-to-inhibitory),';
+        '\qquad $a_{ee},a_{ei},a_{ie},a_{ne},a_{ni}$ are the connection weights ($a_{ei}$ denotes excitatory-to-inhibitory),';
         '\qquad b is the time constant of inhibition,';
         '\qquad C is the relative coupling between (versus within) ensembles,';
         '\qquad r is the number of NMDA receptors relative to the number of AMPA receptors,';
         '\qquad phi $=\frac{\phi}{\tau}$ is the temperature scaling factor,';
-        '\qquad ion $= [g_{Ca},g_{K},g_{Na},g_L ; \enskip V_{Ca},V_{K},V_{Na},V_L; \enskip  T_{Ca},T_K,T_{Na},{-}; \enskip  \delta_{Ca},\delta_K,\delta_{Na},{-}]$,';
+        '\qquad Gion $= [g_{Ca},g_{K},g_{Na},g_L]$,';
+        '\qquad Vion $= [V_{Ca},V_{K},V_{Na},V_L]$,';
+        '\qquad thrsh $= [T_{Ca},T_K,T_{Na}]$,';
+        '\qquad delta $= [\delta_{Ca},\delta_K,\delta_{Na}]$,';
         '\qquad VT $= [V_T^{(1)},\dots,V_T^{(n)}]$';
         '\qquad ZT $= [Z_T^{(1)},\dots,Z_T^{(n)}]$';
         '\qquad deltaV $= [\delta_V^{(1)},\dots,\delta_V^{(n)}]$,';
-        '\qquad deltaZ $= [\delta_V^{(1)},\dots,\delta_V^{(n)}]$,';
+        '\qquad deltaZ $= [\delta_Z^{(1)},\dots,\delta_Z^{(n)}]$,';
         '\qquad $I$ is the strength of the subcortical input.';
         };
     
@@ -159,12 +166,9 @@ function sys = BTF2003(Kij)
 
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = []; 
-    
-    % Handle to the user-defined function that GUI calls to construct a new system. 
-    sys.self = @self;
 end
 
-function dYdt = odefun(~,Y,Kij,a,b,C,r,phi,ion,VT,ZT,deltaV,deltaZ,I)  
+function dYdt = odefun(~,Y,Kij,aee,aei,aie,ane,ani,b,C,r,phi,Gion,Vion,thrsh,delta,VT,ZT,deltaV,deltaZ,I)  
     % Extract incoming values from Y
     Y = reshape(Y,[],3);        % reshape Y to 3 columns
     V = Y(:,1);                 % 1st column of Y contains vector V
@@ -172,33 +176,26 @@ function dYdt = odefun(~,Y,Kij,a,b,C,r,phi,ion,VT,ZT,deltaV,deltaZ,I)
     Z = Y(:,3);                 % 3rd column of Y contains vector Z
 
     % Extract conductance parameters
-    gCa = ion(1,1);
-    gK  = ion(1,2);
-    gNa = ion(1,3);
-    gL  = ion(1,4);
+    gCa = Gion(1);
+    gK  = Gion(2);
+    gNa = Gion(3);
+    gL  = Gion(4);
     
     % Extract Nerst potentials
-    VCa = ion(2,1);
-    VK  = ion(2,2);
-    VNa = ion(2,3);
-    VL  = ion(2,4);
+    VCa = Vion(1);
+    VK  = Vion(2);
+    VNa = Vion(3);
+    VL  = Vion(4);
     
     % Extract Gain threshold parameters
-    TCa = ion(3,1);
-    TK  = ion(3,2);
-    TNa = ion(3,3);
+    TCa = thrsh(1);
+    TK  = thrsh(2);
+    TNa = thrsh(3);
     
     % Extract Gain slope parameters
-    deltaCa = ion(4,1);
-    deltaK  = ion(4,2);
-    deltaNa = ion(4,3);
-    
-    % Extract connection weights
-    aee = a(1);     % E to E synaptic strength
-    aei = a(2);     % E to I synaptic strength
-    aie = a(3);     % I to E synaptic strength
-    ane = a(4);     % any to E synaptic strength
-    ani = a(5);     % any to I synaptic strength
+    deltaCa = delta(1);
+    deltaK  = delta(2);
+    deltaNa = delta(3);
     
     % Compute Firing-rate functions
     Qv = gain(V, VT, deltaV);       % (nx1) vector
@@ -235,19 +232,4 @@ end
 % Non-linear gain function
 function f = gain(VAR,C1,C2)
     f = 0.5*(1+tanh((VAR-C1)./C2));
-end
-
-% The self function is called by bdGUI to reconfigure the model
-function sys = self()
-    % Prompt the user to load Kij from file. 
-    info = {mfilename,'','Load the connectivity matrix, Kij'};
-    Kij = bdLoadMatrix(mfilename,info);
-    if isempty(Kij) 
-        % the user cancelled the operation
-        sys = [];  
-    else
-        % pass Kij to our main function
-        mainfunc = str2func(mfilename);
-        sys = mainfunc(Kij);
-    end
 end

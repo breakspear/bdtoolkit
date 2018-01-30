@@ -19,9 +19,9 @@
 %
 % Authors
 %   Michael Breakspear (2017b)
-%   Stewart Heitmann (2017b,2017c)
+%   Stewart Heitmann (2017b,2017c,2018a)
 
-% Copyright (C) 2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2017-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -65,9 +65,13 @@ function sys = BTF2003DDE(Kij)
         % Connection Matrix (nxn) 
         struct('name','Kij',   'value',  Kij);            
                    
-        % Connection weights [aee, aei, aie, ane, ani]
-        struct('name','a',    'value', [0.4, 2.0, 2.0, 1.0, 0.4]);
-        
+        % Connection weights
+        struct('name','aee',    'value', 0.4);
+        struct('name','aei',    'value', 2.0);
+        struct('name','aie',    'value', 2.0);
+        struct('name','ane',    'value', 1.0);
+        struct('name','ani',    'value', 0.4);
+
         % Time constant of inhibition
         struct('name','b',    'value',  0.10);
 
@@ -81,7 +85,7 @@ function sys = BTF2003DDE(Kij)
         struct('name','phi',  'value',  0.7);
 
         % Ion channel parameters
-        struct('name','gion', 'value', [1.1, 2.0, 6.70, 0.5]);     % Ion Conductances [gCa, gK, gNa, gL]
+        struct('name','Gion', 'value', [1.1, 2.0, 6.70, 0.5]);     % Ion Conductances [gCa, gK, gNa, gL]
         struct('name','Vion', 'value', [1.0,-0.7, 0.53,-0.5]);     % Nernst Potential [VCa, VK, VNa, VL]
                    
         % Gain parameters
@@ -134,13 +138,13 @@ function sys = BTF2003DDE(Kij)
         '\qquad $Q_{Z}^{(j)} = \frac{1}{2} \big(1 + \tanh((Z^{(j)}{-}Z_{T})/\delta_{Z})\big)$ is the mean firing rate of \textit{inhibitory} cells in the $j^{th}$ ensemble,';
         '\qquad $K_{ij}$ is the network connection weight from ensemble $i$ to ensemble $j$ (diagonals should be zero),';
         '\qquad $k^{(j)} = \sum_i K_{ij}$ for $i \neq j$ is the sum of incoming connection weights to ensemble $j$,';
-        '\qquad a $= [a_{ee},a_{ei},a_{ie},a_{ne},a_{ni}]$ are the connection weights ($a_{ei}$ denotes \textit{excitatory-to-inhibitory}),';
+        '\qquad $a_{ee},a_{ei},a_{ie},a_{ne},a_{ni}$ are the connection weights ($a_{ei}$ denotes excitatory-to-inhibitory),';
         '\qquad $b$ is the time constant of inhibition,';
         '\qquad $C$ is the relative contribution of excitatory connections within-ensembles versus between-ensembles,'; 
         '\qquad $d$ is the transmission delay between ensembles,';
         '\qquad $r$ is the number of NMDA receptors relative to the number of AMPA receptors,';
         '\qquad phi $=\frac{\phi}{\tau}$ is the temperature scaling factor,';
-        '\qquad gion $= [g_{Ca},g_{K},g_{Na},g_L]$ are the ion conducances,';
+        '\qquad Gion $= [g_{Ca},g_{K},g_{Na},g_L]$ are the ion conducances,';
         '\qquad Vion $= [V_{Ca},V_{K},V_{Na},V_L]$ are the Nernst potentials,';
         '\qquad thrsh $= [V_T,Z_T,T_{Ca},T_K,T_{Na}]$ are the gain thresholds,';
         '\qquad delta $= [\delta_V,\delta_Z,\delta_{Ca},\delta_K,\delta_{Na}]$ are the gain slopes,';
@@ -161,12 +165,9 @@ function sys = BTF2003DDE(Kij)
 
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = []; 
-    
-    % Handle to the user-defined function that GUI calls to construct a new system. 
-    sys.self = @self;
 end
 
-function dYdt = ddefun(~,Y,Ylag,Kij,a,b,C,r,phi,gion,Vion,thrsh,delta,I)  
+function dYdt = ddefun(~,Y,Ylag,Kij,aee,aei,aie,ane,ani,b,C,r,phi,Gion,Vion,thrsh,delta,I)  
     % Extract incoming values from Y
     Y = reshape(Y,[],3);        % reshape Y to 3 columns
     V = Y(:,1);                 % 1st column of Y contains vector V
@@ -180,10 +181,10 @@ function dYdt = ddefun(~,Y,Ylag,Kij,a,b,C,r,phi,gion,Vion,thrsh,delta,I)
     Vlag = Ylag(1:n);
     
     % Extract conductance parameters
-    gCa = gion(1);
-    gK  = gion(2);
-    gNa = gion(3);
-    gL  = gion(4);
+    gCa = Gion(1);
+    gK  = Gion(2);
+    gNa = Gion(3);
+    gL  = Gion(4);
     
     % Extract Nerst potentials
     VCa = Vion(1);
@@ -204,13 +205,6 @@ function dYdt = ddefun(~,Y,Ylag,Kij,a,b,C,r,phi,gion,Vion,thrsh,delta,I)
     deltaCa = delta(3);
     deltaK  = delta(4);
     deltaNa = delta(5);
-    
-    % extract connection weights
-    aee = a(1);     % E to E synaptic strength
-    aei = a(2);     % E to I synaptic strength
-    aie = a(3);     % I to E synaptic strength
-    ane = a(4);     % any to E synaptic strength
-    ani = a(5);     % any to I synaptic strength
     
     % firing-rate functions
     Qvlag = gain(Vlag, VT, deltaV); % (nx1) vector
@@ -248,19 +242,4 @@ end
 % Non-linear gain function
 function f = gain(VAR,C1,C2)
     f = 0.5*(1+tanh((VAR-C1)./C2));
-end
-
-% The self function is called by bdGUI to reconfigure the model
-function sys = self()
-    % Prompt the user to load Kij from file. 
-    info = {mfilename,'','Load the connectivity matrix, Kij'};
-    Kij = bdLoadMatrix(mfilename,info);
-    if isempty(Kij) 
-        % the user cancelled the operation
-        sys = [];  
-    else
-        % pass Kij to our main function
-        mainfunc = str2func(mfilename);
-        sys = mainfunc(Kij);
-    end
 end

@@ -10,14 +10,14 @@
 %   and column j is the weight of the connection from node i to node j.
 %
 % Example:
-%   load cocomac242 MacCrtx     % Load a connectivity matrix. 
-%   sys = BTF2003SDE(MacCrtx);  % Construct the system struct.
+%   load cocomac047 CIJ         % Load a connectivity matrix. 
+%   sys = BTF2003SDE(CIJ);      % Construct the system struct.
 %   gui = bdGUI(sys);           % Open the Brain Dynamics GUI.
-%
-% Authors
-%   Stewart Heitmann (2017b,2017c)
 
-% Copyright (C) 2017 QIMR Berghofer Medical Research Institute
+% Authors
+%   Stewart Heitmann (2017b,2017c,2018a)
+
+% Copyright (C) 2017-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -62,9 +62,13 @@ function sys = BTF2003SDE(Kij)
         % Connection Matrix (nxn) 
         struct('name','Kij',   'value',  Kij);            
                    
-        % Connection weights [aee, aei, aie, ane, ani]
-        struct('name','a',    'value', [0.4, 2.0, 2.0, 1.0, 0.4]);
-        
+        % Connection weights
+        struct('name','aee',    'value', 0.4);
+        struct('name','aei',    'value', 2.0);
+        struct('name','aie',    'value', 2.0);
+        struct('name','ane',    'value', 1.0);
+        struct('name','ani',    'value', 0.4);
+
         % Time constant of inhibition
         struct('name','b',    'value',  0.10);
 
@@ -78,7 +82,7 @@ function sys = BTF2003SDE(Kij)
         struct('name','phi',  'value',  0.7);
 
         % Ion channel parameters
-        struct('name','gion', 'value', [1.1, 2.0, 6.70, 0.5]);     % Ion Conductances [gCa, gK, gNa, gL]
+        struct('name','Gion', 'value', [1.1, 2.0, 6.70, 0.5]);     % Ion Conductances [gCa, gK, gNa, gL]
         struct('name','Vion', 'value', [1.0,-0.7, 0.53,-0.5]);     % Nernst Potential [VCa, VK, VNa, VL]
                    
         % Gain parameters
@@ -94,9 +98,9 @@ function sys = BTF2003SDE(Kij)
         ];
                
     % System state variables
-    sys.vardef = [ struct('name','V', 'value',rand(n,1)./2.3 - 0.1670);    % Mean firing rate of excitatory cells
-                   struct('name','W', 'value',rand(n,1)./2.6 + 0.27);      % Proportion of open K channels
-                   struct('name','Z', 'value',rand(n,1)./10) ];            % Mean firing rate of inhibitory cells
+    sys.vardef = [ struct('name','V', 'value',rand(n,1)./2.3 - 0.1670, 'lim',[-0.6 0.6]);  % Mean firing rate of excitatory cells
+                   struct('name','W', 'value',rand(n,1)./2.6 + 0.27, 'lim',[0 0.9]);       % Proportion of open K channels
+                   struct('name','Z', 'value',rand(n,1)./10, 'lim',[0 0.3]) ];             % Mean firing rate of inhibitory cells
                
     % Integration time span
     sys.tspan = [0 1000]; 
@@ -135,11 +139,11 @@ function sys = BTF2003SDE(Kij)
         '\qquad $\langle Q \rangle^{(j)} = \sum_i Q_V^{(i)} K_{ij} / k^{(j)}$ is the connectivity-weighted input to the $j^{th}$ ensemble,';
         '\qquad $K_{ij}$ is the network connection weight from ensemble $i$ to ensemble $j$ (diagonals should be zero),';
         '\qquad $k^{(j)} = \sum_i K_{ij}$ is the sum of incoming connection weights to ensemble $j$,';
-        '\qquad a $= [a_{ee},a_{ei},a_{ie},a_{ne},a_{ni}]$ are the connection weights ($a_{ei}$ denotes $e$ to $i$),';
+        '\qquad $a_{ee},a_{ei},a_{ie},a_{ne},a_{ni}$ are the connection weights ($a_{ei}$ denotes excitatory-to-inhibitory),';
         '\qquad b is the time constant of inhibition, ';
         '\qquad r is the number of NMDA receptors relative to the number of AMPA receptors,';
         '\qquad phi $=\frac{\phi}{\tau}$ is the temperature scaling factor,';
-        '\qquad gion $= [g_{Ca},g_{K},g_{Na},g_L]$ are the ion conducances,';
+        '\qquad Gion $= [g_{Ca},g_{K},g_{Na},g_L]$ are the ion conducances,';
         '\qquad Vion $= [V_{Ca},V_{K},V_{Na},V_L]$ are the Nernst potentials,';
         '\qquad thrsh $= [V_T,Z_T,T_{Ca},T_K,T_{Na}]$ are the gain thresholds,';
         '\qquad delta $= [\delta_V,\delta_Z,\delta_{Ca},\delta_K,\delta_{Na}]$ are the gain slopes,';
@@ -161,15 +165,12 @@ function sys = BTF2003SDE(Kij)
 
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = []; 
-    
-    % Handle to the user-defined function that GUI calls to construct a new system. 
-    sys.self = @self;
 end
 
 % The deterministic part of the model
 %   dY = sdeF(t,Y,Kij,a,b,r,phi,gion,Vion,thrsh,delta,I,alpha,beta) 
 % is from Breakspear, Terry & Friston (2003) Network: Comp Neural Syst (14).
-function dY = sdeF(~,Y,Kij,a,b,C,r,phi,gion,Vion,thrsh,delta,I,~,~)  
+function dY = sdeF(~,Y,Kij,aee,aei,aie,ane,ani,b,C,r,phi,Gion,Vion,thrsh,delta,I,~,~)  
     % Extract incoming values from Y
     Y = reshape(Y,[],3);        % reshape Y to 3 columns
     V = Y(:,1);                 % 1st column of Y contains vector V
@@ -177,10 +178,10 @@ function dY = sdeF(~,Y,Kij,a,b,C,r,phi,gion,Vion,thrsh,delta,I,~,~)
     Z = Y(:,3);                 % 3rd column of Y contains vector Z
 
     % Extract conductance parameters
-    gCa = gion(1);
-    gK  = gion(2);
-    gNa = gion(3);
-    gL  = gion(4);
+    gCa = Gion(1);
+    gK  = Gion(2);
+    gNa = Gion(3);
+    gL  = Gion(4);
     
     % Extract Nerst potentials
     VCa = Vion(1);
@@ -201,13 +202,6 @@ function dY = sdeF(~,Y,Kij,a,b,C,r,phi,gion,Vion,thrsh,delta,I,~,~)
     deltaCa = delta(3);
     deltaK  = delta(4);
     deltaNa = delta(5);
-    
-    % extract connection weights
-    aee = a(1);     % E to E synaptic strength
-    aei = a(2);     % E to I synaptic strength
-    aie = a(3);     % I to E synaptic strength
-    ane = a(4);     % any to E synaptic strength
-    ani = a(5);     % any to I synaptic strength
     
     % firing-rate functions
     Qv = gain(V, VT, deltaV);       % (nx1) vector
@@ -246,15 +240,12 @@ end
 % returns the (Nxm) noise coefficients where N=3n is the number of state
 % variables and m=n is the number of noise sources. In this case
 % noise is only applied to the first state variable (which is V).
-function G = sdeG(~,Y,~,a,~,~,~,~,~,~,~,~,~,alpha,beta)
+function G = sdeG(~,Y,~,~,~,~,ane,~,~,~,~,~,~,~,~,~,~,alpha,beta)
     % Extract incoming values from Y
     Y = reshape(Y,[],3);        % reshape Y to 3 columns
     V = Y(:,1);                 % 1st column of Y contains vector V
     n = numel(V);               % number of network nodes (neural masses)
 
-    % Extract the ane connection weight from vector a 
-    ane = a(4);
-    
     % Construct the noise coefficient matrix (3n x n).
     % Each network node has an independent noise source. There are no
     % common noise sources. Hence all non-diagonal entries of the matrix
@@ -268,19 +259,4 @@ end
 % Non-linear gain function
 function f = gain(VAR,C1,C2)
     f = 0.5*(1+tanh((VAR-C1)./C2));
-end
-
-% The self function is called by bdGUI to reconfigure the model
-function sys = self()
-    % Prompt the user to load Kij from file. 
-    info = {mfilename,'','Load the connectivity matrix, Kij'};
-    Kij = bdLoadMatrix(mfilename,info);
-    if isempty(Kij) 
-        % the user cancelled the operation
-        sys = [];  
-    else
-        % pass Kij to our main function
-        mainfunc = str2func(mfilename);
-        sys = mainfunc(Kij);
-    end
 end
