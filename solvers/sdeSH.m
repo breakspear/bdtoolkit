@@ -74,14 +74,11 @@
 %  Y = sol.y;                       % solution values y(t)
 %  plot(T,Y);                       % plot the results
 %
-%SEE ALSO
-%  SDEdemo1, SDEdemo2 and SDEdemo3
-%
 %AUTHORS
-%  Stewart Heitmann (2016a,2017a)
+%  Stewart Heitmann (2016a,2017a,2018a)
 %  Matthew Aburn (2016a)
 
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -213,6 +210,17 @@ function sol = sdeSH(odefun,sdefun,tspan,y0,options,varargin)
         Gnbar = sdefun(tnp1, ybar, varargin{:});
         sol.yp(:,indx) = 0.5*(fn + fnbar)*dt + 0.5*(Gn + Gnbar)*dWn;
         sol.y(:,indx+1) = yn + sol.yp(:,indx);
+        
+        % Check the Stratonovish-Heun step for overflow
+        if any(~isfinite(sol.y(:,indx+1)))
+            msg = num2str(sol.x(indx),'Failure at t=%g. The numerical values are no longer finite.');
+            warning('sdeSH:Overflow',msg);
+            sol.stats.nsteps = indx;
+            sol.stats.nfailed = 1;
+            sol.stats.nfevals = tcount;
+            return
+        end
+
     end
 
     % Complete the final Stratonovich-Heun step
@@ -227,6 +235,16 @@ function sol = sdeSH(odefun,sdefun,tspan,y0,options,varargin)
     Gnbar = sdefun(tnp1, ybar, varargin{:});
     sol.yp(:,end) = 0.5*(fn + fnbar)*dt + 0.5*(Gn + Gnbar)*dWn;
     
+    % Check the final Stratonovich-Heun step for overflow
+    if any(~isfinite(sol.y(:,end)))
+        msg = num2str(sol.x(end),'Failure at t=%g. The numerical values are no longer finite.');
+        warning('sdeSH:Overflow',msg);
+        sol.stats.nsteps = tcount;
+        sol.stats.nfailed = 1;
+        sol.stats.nfevals = tcount;
+        return
+    end
+
     % Execute the OutputFcn for the final entry in tspan.
     if ~isempty(OutputFcn)
         % call the output function

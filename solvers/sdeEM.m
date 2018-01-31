@@ -74,14 +74,11 @@
 %  Y = sol.y;                       % solution values y(t)
 %  plot(T,Y);                       % plot the results
 %
-%SEE ALSO
-%  SDEdemo1, SDEdemo2 and SDEdemo3
-%
 %AUTHORS
-%  Stewart Heitmann (2016a,2017a)
+%  Stewart Heitmann (2016a,2017a,2018a)
 %  Matthew Aburn (2016a)
 
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -207,7 +204,17 @@ function sol = sdeEM(sdefun,sdegun,tspan,y0,options,varargin)
 
         % Euler step
         sol.yp(:,indx) = F*dt + G*sol.dW(:,indx);            % dy(t) = F(t,y(t))*dt + G(t,y(t))*dW(t)
-        sol.y(:,indx+1) = sol.y(:,indx) + sol.yp(:,indx);    % y(t+1) = y(t) + dy(t)       
+        sol.y(:,indx+1) = sol.y(:,indx) + sol.yp(:,indx);    % y(t+1) = y(t) + dy(t)
+        
+        % Check the Euler step for overflow
+        if any(~isfinite(sol.y(:,indx+1)))
+            msg = num2str(sol.x(indx),'Failure at t=%g. The numerical values are no longer finite.');
+            warning('sdeEM:Overflow',msg);
+            sol.stats.nsteps = indx;
+            sol.stats.nfailed = 1;
+            sol.stats.nfevals = tcount;
+            return
+        end        
     end
     
     % Complete the final Euler step
@@ -215,6 +222,16 @@ function sol = sdeEM(sdefun,sdegun,tspan,y0,options,varargin)
     G = sdegun(sol.x(end), sol.y(:,end), varargin{:});
     sol.yp(:,end) = F*dt + G*sol.dW(:,end);
 
+    % Check the final Euler step for overflow
+    if any(~isfinite(sol.y(:,end)))
+        msg = num2str(sol.x(end),'Failure at t=%g. The numerical values are no longer finite.');
+        warning('sdeEM:Overflow',msg);
+        sol.stats.nsteps = tcount;
+        sol.stats.nfailed = 1;
+        sol.stats.nfevals = tcount;
+        return
+    end
+    
     % Execute the OutputFcn for the final entry in tspan.
     if ~isempty(OutputFcn)
         % call the output function

@@ -41,13 +41,10 @@
 %  Y = bdEval(sol,T);               % interpolate
 %  plot(T,Y);                       % plot the results
 %
-%SEE ALSO
-%  ODEdemo1, ODEdemo2 and ODEdemo3
-%
 %AUTHORS
-%  Stewart Heitmann (2016a,2017a)
+%  Stewart Heitmann (2016a,2017a,2018a)
 
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -135,10 +132,30 @@ function sol = odeEul(ode,tspan,y0,options,varargin)
         % Euler step
         sol.yp(:,indx) = ode(sol.x(indx), sol.y(:,indx), varargin{:});     % y'(t) = F(t,y(t))
         sol.y(:,indx+1) = sol.y(:,indx) + sol.yp(:,indx) * dt;             % y(t+1) = y(t) + y'(t)*dt       
+        
+        % Check the Euler step for overflow
+        if any(~isfinite(sol.y(:,indx+1)))
+            msg = num2str(sol.x(indx),'Failure at t=%g. The numerical values are no longer finite.');
+            warning('odeEul:Overflow',msg);
+            sol.stats.nsteps = indx;
+            sol.stats.nfailed = 1;
+            sol.stats.nfevals = tcount;
+            return
+        end
     end
     
     % Complete the final Euler step
     sol.yp(:,end) = ode(sol.x(end), sol.y(:,end), varargin{:});            % y'(t) = F(t,y(t))
+
+    % Check the final Euler step for overflow
+    if any(~isfinite(sol.y(:,end)))
+        msg = num2str(sol.x(end),'Failure at t=%g. The numerical values are no longer finite.');
+        warning('odeEul:Overflow',msg);
+        sol.stats.nsteps = tcount;
+        sol.stats.nfailed = 1;
+        sol.stats.nfevals = tcount;
+        return
+    end
     
     % Execute the OutputFcn for the final entry in tspan.
     if ~isempty(OutputFcn)
