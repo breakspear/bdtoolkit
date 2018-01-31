@@ -353,9 +353,16 @@ classdef (Abstract) bdPanel < handle
             % lim = RoundLim(lo,hi)
             %
             % Returns a [lo hi] limit that brackets the specified range.
-            
+            % As a safety precaution, the span of the returned limit will
+            % not be larger than 2.4e100 and no smaller than 2e-4. 
+            if lo < -1e100
+                lo = -1e100;
+            end
+            if hi > 1e100
+                hi = 1e100;
+            end
             d = hi-lo;
-            lim = round([lo-0.1*d-1e-6, hi+0.1*d+1e-6],2,'significant');
+            lim = round([lo-0.1*d, hi+0.1*d],2,'significant') + [-1e-4 1e-4];
         end
 
         function PanelSelectionChangedFcn(~,evnt)

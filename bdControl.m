@@ -60,14 +60,16 @@ classdef bdControl < handle
         
         % Widgets in the solver panel
         ui_solver       % handle to the SOLVER popup menu
+        ui_halt         % handle to the HALT button
         ui_nsteps       % handle to the NSTEPS counter
         ui_nfailed      % handle to the NFAILED counter
         ui_nfevals      % handle to the NFEVALS counter
         ui_cputime      % handle to the CPU counter
         ui_progress     % handle to the PROGRESS counter
-        ui_halt         % handle to the HALT button
+        ui_warning      % handle to the WARNING text
 
         % internal states
+        recomputeflag   % flag for recompute events
         cpustart        % cpu start time
         timer           % handle to timer object
     end
@@ -97,6 +99,9 @@ classdef bdControl < handle
             catch ME
                 throwAsCaller(MException('bdtoolkit:bdControl',ME.message));
             end
+            
+            % init the recompute flag
+            this.recomputeflag = false;
             
             % remember the parent figure
             this.fig = fig;
@@ -139,7 +144,7 @@ classdef bdControl < handle
             %addlistener(this,'redraw',@(~,~) this.RedrawListener());    
             
             % listen for recompute events
-            addlistener(this,'recompute',@(~,~) this.RecomputeListener(fig));
+            addlistener(this,'recompute',@(~,~) this.RecomputeListener());
 
             % init the timer object but do not start it.
             
@@ -270,6 +275,7 @@ classdef bdControl < handle
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
                 'Parent', scroll.panel, ...
+            ... 'Callback', @(src,~) set(src,'ForegroundColor','k'), ...
                 'ToolTipString', 'Replace initial conditions with final values', ...
                 'Position',[col1+3 ypos col3-col1 boxh]);
             
@@ -451,9 +457,10 @@ classdef bdControl < handle
             col2 = col1 + 100;
             col3 = col2 + 55;
             col4 = col3 + 55;
-            col5 = col4 + 55;
-            col6 = col5 + 80;
+            col5 = col4 + 60;
+            col6 = col5 + 55;
             col7 = col6 + 60;
+            col8 = col7 + 70;
             
             % construct the container uipanel
             x = 5;
@@ -592,6 +599,28 @@ classdef bdControl < handle
                 'Parent', this.spanel, ...
                 'ToolTipString','CPU time (secs)', ...
                 'Position',[col6 row1 col7-col6 row2-row1]);
+            
+            % Warning Heading
+            uicontrol('Style','text', ...
+                'String','Warning', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'FontWeight','normal', ...
+                'Parent', this.spanel, ...
+                'Position',[col7 row2 col8-col7 20]);
+
+            % WARNING text
+            this.ui_warning = uicontrol('Style','text',...
+                'String','none', ...
+                'HorizontalAlignment','left', ...
+                'FontUnits','pixels', ...
+                'FontSize',14, ...
+                'FontWeight','normal', ...
+                'ForegroundColor','k', ...
+                'Parent', this.spanel, ...
+                'ToolTipString','Solver Warning Message', ...
+                'Position',[col7 row1 150 row2-row1]);
         end
         
         % Return a cell array of strings for the solver functions
@@ -660,35 +689,29 @@ classdef bdControl < handle
             end
         end
         
-        % Listener for REDRAW events
-        %function RedrawListener(this)
-        %    % refresh the solver stats (is this realy necessary?)
-        %    %this.RefreshListener();  
-        %end
-        
         % Listener for RECOMPUTE events
-        function RecomputeListener(this,fig)
+        function RecomputeListener(this)
+            % Recompute events often come faster than we can recompute the
+            % solution. So we just note the arrival of the event here and
+            % let the timer loop do the actual computation when it is ready. 
+            this.recomputeflag = true;
+        end
+        
+        % Recompute the solution (called by the timer)
+        function Recompute(this)
             % Do nothing if the HALT button is active
             if this.halt
                 return
             end
             
-            % Change mouse cursor to hourglass
-            %set(fig,'Pointer','watch');
-            %drawnow;
-
-            % We use the ODE OutputFcn to track progress in our solver
-            % and to detect halt events. 
-            %tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), 11);
-            nstops = max(11,round(this.sol.stats.nsteps/1000));
-            tspan = linspace(this.sys.tspan(1), this.sys.tspan(2), nstops);
+            % We use the ODE OutputFcn to track progress in our solver and to detect halt events. 
             switch this.solvertype
                 case 'odesolver'
-                    this.sys.odeoption = odeset(this.sys.odeoption, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                    this.sys.odeoption = odeset(this.sys.odeoption, 'OutputFcn',@this.odeOutputFcn, 'OutputSel',[]);
                 case 'ddesolver'
-                    this.sys.ddeoption = ddeset(this.sys.ddeoption, 'OutputFcn',@this.odeplot, 'OutputSel',[]);
+                    this.sys.ddeoption = ddeset(this.sys.ddeoption, 'OutputFcn',@this.odeOutputFcn, 'OutputSel',[]);
                 case 'sdesolver'
-                    this.sys.sdeoption.OutputFcn = @this.odeplot;
+                    this.sys.sdeoption.OutputFcn = @this.odeOutput;
                     this.sys.sdeoption.OutputSel = [];      
             end
 
@@ -709,6 +732,37 @@ classdef bdControl < handle
                     this.lag.(name) = value;
                 end
             end
+            
+            % evolve the initial conditions (if applicable)
+            if this.ui_evolve.Value
+                inlim = false;
+
+                % check that any initial condition is within the axis limits
+                for indx=1:numel(this.sys.vardef)
+                    val = this.sys.vardef(indx).value;        % initial value
+                    lim = this.sys.vardef(indx).lim;          % limit
+                    if any( lim(1)<=val & val<=lim(2) )
+                        inlim = true;
+                    end
+                end
+                
+                if ~inlim
+                    warning('bdGUI:outlimit','Initial Conditions were not advanced because they are already beyond the axes limits.');
+                else
+                    % for each entry in vardef
+                    for indx=1:numel(this.sys.vardef)
+                        valsize = size(this.sys.vardef(indx).value);        % size of the variable value
+                        solindx = this.sys.vardef(indx).solindx;            % corresponding indices of the variable in sol
+                        val = reshape( this.sol.y(solindx,end), valsize);   % the final value in the solution ...
+                        this.sys.vardef(indx).value = val;                  % ... replaces the initial value    
+                    end
+                    % notify the vardef widgets to refresh themselves
+                    notify(this,'vardef');
+                end
+            end            
+
+            % clear the last warning message
+            lastwarn('');            
 
             % Call the solver
             if this.ui_jitter.Value
@@ -725,11 +779,37 @@ classdef bdControl < handle
                     worksys.vardef(indx).value =  worksys.vardef(indx).value + ...
                         0.05*(hi-lo)*(rand(valsize)-0.5);
                 end
+                
                 % call the solver using the working copy of sys
-                this.sol = bd.solve(worksys,tspan,this.solver,this.solvertype);
+                oldwarn = warning('off','backtrace');                
+                this.sol = bd.solve(worksys,this.sys.tspan,this.solver,this.solvertype);
+                warning(oldwarn.state,'backtrace');                
             else
                 % call the solver using the sys 
-                this.sol = bd.solve(this.sys,tspan,this.solver,this.solvertype);
+                oldwarn = warning('off','backtrace');                
+                this.sol = bd.solve(this.sys,this.sys.tspan,this.solver,this.solvertype);
+                warning(oldwarn.state,'backtrace');                
+            end
+            
+            % Display any warnings from the solver
+            [msg,msgid] = lastwarn();
+            ix = find(msgid==':',1,'last');
+            if ~isempty(ix)
+                this.ui_warning.String = msgid((ix+1):end);
+                this.ui_warning.TooltipString = msg;
+                this.ui_warning.ForegroundColor = 'r';
+            else
+                this.ui_warning.String = 'none';
+                this.ui_warning.TooltipString = 'Solver Warning Message';
+                this.ui_warning.ForegroundColor = 'k';
+            end
+            if ~isempty(msgid) & this.ui_evolve.Value
+                % enable the HALT state
+                %this.halt=1;
+                % disable the EVOLVE state
+                this.ui_evolve.Value = 0;
+                %this.ui_evolve.ForegroundColor='r';
+                %notify(this,'refresh');
             end
             
             % Hold the SDEnoise if the HOLD button is 'on'
@@ -743,41 +823,38 @@ classdef bdControl < handle
             
             % update the indices of the non-transient steps in sol.x
             % Note: tindx can be all zeros in cases where the solver
-            % terminated early because of blow-out.
-            this.tindx = (this.sol.x >= this.sys.tval);
-
+            % terminated early because of blow-out or tolerance failures.
+            this.tindx = (this.sol.x >= this.sys.tval) & min(isfinite(this.sol.y));
+            
             % notify all listeners that a redraw is required
             notify(this,'redraw');
             
-            % evolve the initial conditions (if required)
-            if this.ui_evolve.Value
-                offset = 0;
-                % for each vardef entry ...
-                for indx=1:numel(this.sys.vardef)
-                    s = size(this.sys.vardef(indx).value);
-                    n = numel(this.sys.vardef(indx).value);
-                    val = this.sol.y([1:n]+offset,end);
-                    val = reshape(val,s);
-                    this.sys.vardef(indx).value = val; 
-                    offset = offset+n;
-                    
-%                     % Disengage the EVOLVE button if the initial conditions
-%                     % have breached the var limits. This prevents run-away blow-out.
-%                     minval = min(val(:));
-%                     maxval = max(val(:));
-%                     if minval < this.sys.vardef(indx).lim(1) || maxval > this.sys.vardef(indx).lim(2)
-%                         this.ui_evolve.Value = 0;
-%                         beep;
-%                     end
-                end
-                % notify all widgets to refresh (we only really need to refresh the initial conditions)
-                %notify(this,'refresh');
-                notify(this,'vardef');
-            end
+%             % evolve the initial conditions (if required)
+%             if this.ui_evolve.Value
+%                 offset = 0;
+%                 % for each vardef entry ...
+%                 for indx=1:numel(this.sys.vardef)
+%                     s = size(this.sys.vardef(indx).value);
+%                     n = numel(this.sys.vardef(indx).value);
+%                     val = this.sol.y([1:n]+offset,end);
+%                     val = reshape(val,s);
+%                     this.sys.vardef(indx).value = val; 
+%                     offset = offset+n;
+%                     
+% %                     % Disengage the EVOLVE button if the initial conditions
+% %                     % have breached the var limits. This prevents run-away blow-out.
+% %                     minval = min(val(:));
+% %                     maxval = max(val(:));
+% %                     if minval < this.sys.vardef(indx).lim(1) || maxval > this.sys.vardef(indx).lim(2)
+% %                         this.ui_evolve.Value = 0;
+% %                         beep;
+% %                     end
+%                 end
+%                 % notify all widgets to refresh (we only really need to refresh the initial conditions)
+%                 %notify(this,'refresh');
+%                 notify(this,'vardef');
+%             end
             
-            % Change mouse cursor to arrow
-            %set(fig,'Pointer','arrow');
-
             % refresh the solver NSTEPS counter
             this.ui_nsteps.String = num2str(this.sol.stats.nsteps,'%d');
 
@@ -802,33 +879,43 @@ classdef bdControl < handle
                 return
             end
             
-            % If either of the EVOLVE or JITTER buttons are active
-            % then initate a recompute event.
-            if (this.ui_jitter.Value || this.ui_evolve.Value)
-            %if (this.ui_jitter.Value)
-                notify(this,'recompute');
+            % recompute the solution if required
+            if this.recomputeflag
+                this.recomputeflag = false;
+                this.Recompute();
             end
+            
+%             % If either of the EVOLVE or JITTER buttons are active
+%             % then initate another recompute event.
+%             if (this.ui_jitter.Value || this.ui_evolve.Value)
+%                 this.recomputeflag = true;
+%             end
         end
         
         % Callback function for ODE solver output
-        function status = odeplot(this,tspan,~,flag,varargin)
+        function status = odeOutputFcn(this,t,~,flag,varargin)
+            persistent tictime
             switch flag
                 case 'init'
+                    tictime = tic;
                     this.cpustart = cputime;
                     this.ui_nsteps.ForegroundColor = [0.75 0.75 0.75];
                     this.ui_nfailed.ForegroundColor = [0.75 0.75 0.75];
                     this.ui_nfevals.ForegroundColor = [0.75 0.75 0.75];
-                    %this.ui_nsteps.String = '-';
-                    %this.ui_nfailed.String = '-';
-                    %this.ui_nfevals.String = '-';
-                    %this.ui_cputime.String = '-';
                     this.ui_progress.String = '  0%';
                     drawnow;
                 case ''
-                    cpu = cputime - this.cpustart;
-                    this.ui_cputime.String = num2str(cpu,'%5.2fs');
-                    this.ui_progress.String = num2str(100*tspan(1)/this.sys.tspan(2),'%3.0f%%');
-                    drawnow;
+                    % Update the solver stats whenever the elapsed time exceed 0.1 secs
+                    elapsed = toc(tictime);
+                    if elapsed>0.1
+                        % reset our start time
+                        tictime = tic;
+                        % update the solver stats
+                        cpu = cputime - this.cpustart;
+                        this.ui_cputime.String = num2str(cpu,'%5.2fs');
+                        this.ui_progress.String = num2str(100*t(1)/this.sys.tspan(2),'%3.0f%%');
+                        drawnow;
+                    end
                 case 'done'
                    if this.halt~=1
                         cpu = cputime - this.cpustart;
@@ -843,7 +930,7 @@ classdef bdControl < handle
             % return the state of the HALT button
             status = this.halt;
         end
-
+        
         % Callback for the noise HOLD button (SDE only)
         function HoldCallback(this)
             if this.hld.Value==1
@@ -865,6 +952,15 @@ classdef bdControl < handle
                 notify(this,'recompute');           % recompute the new solution
             end
         end
+    
+%         % Callback for the EVOLVE button
+%         function EvolveCallback(this,evobutton)
+%             if evobutton.Value
+%                 % EVOLVE button is now ON
+%             else
+%                 % EVOLVE button is now OFF
+%             end
+%         end
     
     end
 end

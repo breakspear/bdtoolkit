@@ -105,7 +105,7 @@ classdef bdControlScalar < handle
                 'Style', 'edit', ...
                 'Units','pixels',...
                 'Position',[col1 2 colw this.rowh-4], ...
-                'String',num2str(xxxlim(1),'%0.4g'), ...
+                'String',num2str(xxxlim(1),'%0.3g'), ...
                 'Value',xxxlim(1), ...
                 'HorizontalAlignment','center', ...
                 'ForegroundColor', 'b', ...
@@ -118,7 +118,7 @@ classdef bdControlScalar < handle
                 'Style', 'edit', ...
                 'Units','pixels',...
                 'Position',[col2 2 colw this.rowh-4], ...
-                'String',num2str(xxxlim(2),'%0.4g'), ...
+                'String',num2str(xxxlim(2),'%0.3g'), ...
                 'Value',xxxlim(2), ...
                 'HorizontalAlignment','center', ...
                 'ForegroundColor', 'b', ...
@@ -131,7 +131,7 @@ classdef bdControlScalar < handle
                 'Style', 'edit', ...
                 'Units','pixels',...
                 'Position',[col3 2 colw this.rowh-4], ...
-                'String',num2str(xxxvalue,'%0.4g'), ...
+                'String',num2str(xxxvalue,'%0.3g'), ...
                 'Value',xxxvalue, ...
                 'HorizontalAlignment','center', ...
                 'FontWeight','bold', ...
@@ -189,7 +189,7 @@ classdef bdControlScalar < handle
                 hndl = errordlg(['Invalid number: ',str], 'Invalid Number', 'modal');
                 uiwait(hndl);
                 % restore the minbox string to its previous value
-                this.minbox.String = num2str(this.minbox.Value,'%0.4g');                 
+                this.minbox.String = num2str(this.minbox.Value,'%0.3g');                 
             else           
                 % update the minbox value
                 this.minbox.Value = minval;
@@ -197,7 +197,7 @@ classdef bdControlScalar < handle
                 % update the maxbox widget if necessary
                 if this.maxbox.Value < minval
                     this.maxbox.Value = minval;
-                    this.maxbox.String = num2str(minval,'%0.4g');                
+                    this.maxbox.String = num2str(minval,'%0.3g');                
                 end
                 
                 % update the slider widget
@@ -226,7 +226,7 @@ classdef bdControlScalar < handle
                 hndl = errordlg(['Invalid number: ',str], 'Invalid Number', 'modal');
                 uiwait(hndl);
                 % restore the maxbox string to its previous value
-                this.maxbox.String = num2str(this.maxbox.Value,'%0.4g');                 
+                this.maxbox.String = num2str(this.maxbox.Value,'%0.3g');                 
             else           
                 % update the maxbox value
                 this.maxbox.Value = maxval;
@@ -234,7 +234,7 @@ classdef bdControlScalar < handle
                 % update the minbox widget if necessary
                 if this.minbox.Value > maxval
                     this.minbox.Value = maxval;
-                    this.minbox.String = num2str(maxval,'%0.4g');                
+                    this.minbox.String = num2str(maxval,'%0.3g');                
                 end
                      
                 % update the slider widget
@@ -263,7 +263,7 @@ classdef bdControlScalar < handle
                 hndl = errordlg(['Invalid number: ',str], 'Invalid Number', 'modal');
                 uiwait(hndl);
                 % restore the valbox string to its previous value
-                this.valbox.String = num2str(this.valbox.Value,'%0.4g');                 
+                this.valbox.String = num2str(this.valbox.Value,'%0.3g');                 
             else           
                 % update the valbox value
                 this.valbox.Value = val;
@@ -297,7 +297,7 @@ classdef bdControlScalar < handle
             
             % assign the new value to the edit box
             this.valbox.Value = val;
-            this.valbox.String = num2str(val,'%0.4g');
+            this.valbox.String = num2str(val,'%0.3g');
 
             % update control.sys
             control.sys.(xxxdef)(xxxindx).value = val;
@@ -346,15 +346,15 @@ classdef bdControlScalar < handle
 
             % update the min box widget
             this.minbox.Value = xxxlim(1);
-            this.minbox.String = num2str(xxxlim(1),'%0.4g');
+            this.minbox.String = num2str(xxxlim(1),'%0.3g');
             
             % update the max box widget
             this.maxbox.Value = xxxlim(2);
-            this.maxbox.String = num2str(xxxlim(2),'%0.4g');
+            this.maxbox.String = num2str(xxxlim(2),'%0.3g');
             
             % update the val box widget
             this.valbox.Value = xxxvalue;
-            this.valbox.String = num2str(xxxvalue,'%0.4g');
+            this.valbox.String = num2str(xxxvalue,'%0.3g');
 
             % update the slider widget
             this.sliderUpdate(xxxlim(1), xxxlim(2), xxxvalue);
