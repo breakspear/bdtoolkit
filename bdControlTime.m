@@ -46,6 +46,8 @@ classdef bdControlTime < handle
         maxbox
         jslider
         valbox
+        redrawflag
+        timer 
     end
     
     methods
@@ -53,6 +55,9 @@ classdef bdControlTime < handle
         function this = bdControlTime(control,parent,ypos,modecheckbox)
             %disp('bdControlTime()');
             
+            % init the redraw flag
+            this.redrawflag = false;
+
             % remeber our parent
             this.parent = parent;
             
@@ -143,6 +148,12 @@ classdef bdControlTime < handle
             % listen for widget refresh events from the control panel 
             addlistener(control,'refresh', @(~,~) this.refresh(control,modecheckbox));
             
+            % init the timer object and start it.           
+            this.timer = timer('BusyMode','drop', ...
+                'ExecutionMode','fixedSpacing', ...
+                'Period',0.05, ...
+                'TimerFcn', @(~,~) this.TimerFcn(control));
+            start(this.timer);            
         end
   
         function mode(this,flag)            
@@ -158,7 +169,12 @@ classdef bdControlTime < handle
             end                        
         end
 
-    end
+        % Destructor
+        function delete(this)
+            stop(this.timer);
+            delete(this.timer);
+        end
+  end
    
     methods (Access=private)
         
@@ -312,9 +328,10 @@ classdef bdControlTime < handle
                     
             % update the indicies of the non-tranient time steps in sol.x
             control.tindx = (control.sol.x >= control.sys.tval);
-
-            % notify all display panels to redraw themselves
-            notify(control,'redraw');            
+            
+            % have the timer function notify all display panels to redraw themselves
+            this.redrawflag = true;
+            %notify(control,'redraw');            
         end
         
         % update the jslider widget
@@ -362,6 +379,23 @@ classdef bdControlTime < handle
             this.mode(modecheckbox.Value)
         end
         
+        % Timer function. It throttles the number of redraw events issued from the slider.        
+        function TimerFcn(this,control)
+            %disp('bdControlTim.TimerFcn');
+            
+            % if the parent object (ie the control panel) is gone then... 
+            if ~ishghandle(this.parent)
+                stop(this.timer);       % stop the timer
+                return
+            end
+            
+            % issue a redraw event if required
+            if this.redrawflag
+                this.redrawflag = false;
+                notify(control,'redraw');
+            end
+        end
+
     end
     
 end
