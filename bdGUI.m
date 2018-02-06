@@ -423,7 +423,7 @@ classdef bdGUI < handle
         
         % Get panels property
         function panels = get.panels(this)
-           panels = this.display.PanelProperties(); 
+           panels = this.display.ExportPanels(); 
         end
  
     end
