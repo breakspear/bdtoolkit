@@ -411,7 +411,7 @@ classdef bdControl < handle
                     'ForegroundColor', 'k', ...
                     'Parent', scroll.panel, ...
                     'ToolTipString', 'Hold the random samples fixed', ...
-                    'Callback', @(~,~) this.HoldCallback(), ...
+                    'Callback', @(src,~) this.HoldCallback(src), ...
                     'Position',[col1 ypos col5-col1 boxh]);
                 
                 % next row
@@ -739,7 +739,7 @@ classdef bdControl < handle
                 case 'ddesolver'
                     this.sys.ddeoption = ddeset(this.sys.ddeoption, 'OutputFcn',@this.odeOutputFcn, 'OutputSel',[]);
                 case 'sdesolver'
-                    this.sys.sdeoption.OutputFcn = @this.odeOutput;
+                    this.sys.sdeoption.OutputFcn = @this.odeOutputFcn;
                     this.sys.sdeoption.OutputSel = [];      
             end
 
@@ -961,8 +961,8 @@ classdef bdControl < handle
         end
         
         % Callback for the noise HOLD button (SDE only)
-        function HoldCallback(this)
-            if this.hld.Value==1
+        function HoldCallback(this,holdbutton)
+            if holdbutton.Value==1
                 dt = this.sol.x(2) - this.sol.x(1);
                 this.sys.sdeoption.randn = this.sol.dW ./ sqrt(dt);
             else
