@@ -1,38 +1,34 @@
 classdef bdGUI < handle
-    %bdGUI - The graphical user interface for the Brain Dynamics Toolbox.
-    %The bdGUI application loads and runs a user-defined dynamical model
-    %in interactive mode. See the 'Getting Started' section of the
-    %Handbook for the Brain Dynamics Toolbox for an introduction.
+    %bdGUI - The Brain Dynamics Toolbox Graphical User Interface (GUI).
     %
-    %A dynamical model is defined by a system structure (sys) according to
-    %the conventions of the toolbox. It can be passed to bdGUI as an input
-    %parameter or loaded from a mat file. If bdGUI is invoked with no
-    %parameters then it prompts the user to load it from a mat file. The
-    %sys struct is assumed to be named 'sys' in that case. The bdGUI
-    %application will automatically compute the solution of the model
-    %unless a previously computed solution structure (sol) is provided.
-    %That solution structure can be provided as either as an input
-    %parameter or it can be included in the mat file as a struct named
-    %'sol'. The easiest way to save a model (and its solution) to a mat
-    %file is to use the System-Save menu of the bdGUI application itself.
-    %
-    %USAGE
     %   gui = bdGUI();
     %   gui = bdGUI(sys);
     %   gui = bdGUI(sys,'sol',sol);
     %
-    %The returned object (gui) is a class handle that references the
-    %internal states of the bdGUI application. The public properties of
-    %that object allow the model to be manipulated directly from the
-    %workspace. 
+    %The bdGUI application is the graphical user interface for the Brain
+    %Dynamics Toolbox. It loads and runs a dynamical model which is
+    %defined by a system structure (sys) following toolbox conventions.
+    %The sys structure may be passed to bdGUI as an input parameter or
+    %loaded from a mat file. If bdGUI is invoked with no parameters then
+    %it prompts the user to load a mat file which is assumed to contain a
+    %sys struture. A pre-computed solution (sol) for the model may also 
+    %be loaded as an input parameter. If no solution is given then bdGUI
+    %automatically computes one at start-up.
     %
-    %   gui.par    contains the model parameters (read/write)
-    %   gui.var0   contains the initial conditions (read/write)
-    %   gui.var    contains the forward solution (read-only)
-    %   gui.t      contains the time steps of the solution (read-only)
-    %   gui.sys    contains the system structure for the model (read-only).
-    %   gui.sol    contains the output of the solver (read-only).
-    %   gui.panels contains the outputs of the active display panels.
+    %The application returns a handle (gui) to the bdGUI class. That
+    %handle that can be used to access and modify the internal states of
+    %the application.
+    %   version:  version string of the toolbox (read-only)
+    %       fig:  handle to the application figure (read/write)
+    %       par:  struct containing the model parameters (read/write)
+    %      var0:  struct containing the initial conditions (read/write)
+    %       var:  struct containing the computed time-series (read-only)
+    %         t:  array of time steps for the solution (read-only)
+    %     tindx:  logical index of the non-transient time steps (read-only)
+    %       lag:  struct containing the DDE lag parameters (read/write)
+    %       sys:  the system structure for the model (read-only)
+    %       sol:  the output of the solver (read-only)
+    %    panels:  the outputs of the various display panels (read-only)
     %
     %EXAMPLE
     %   cd bdtoolkit
@@ -40,10 +36,14 @@ classdef bdGUI < handle
     %   sys = LinearODE();
     %   gui = bdGUI(sys);
     %
+    %SEE ALSO
+    %   Refer to the 'Getting Started' section of the Handbook for the Brain
+    %   Dynamics Toolbox for a detailed introduction to bdGUI.
+    %
     %AUTHORS
-    %  Stewart Heitmann (2016a-2017c)
+    %   Stewart Heitmann (2016a-2018c)
 
-    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -88,7 +88,6 @@ classdef bdGUI < handle
         lag             % DDE time lags (read/write)
         sys             % system definition structure (read only)
         sol             % current output of the solver (read only)
-        sox             % current auxiliary variables (read only)
         panels          % current panel object handles (read only)
     end
     
@@ -197,7 +196,6 @@ classdef bdGUI < handle
             else
                 % use the given sol and trigger a redraw event
                 this.control.sol = sol;
-                this.control.sox = bd.computesox(sys,sol);
                 notify(this.control,'redraw');
             end
                       
@@ -424,15 +422,10 @@ classdef bdGUI < handle
             sol = this.control.sol;
         end
         
-        % Get sox property
-        function sox = get.sox(this)
-            sox = this.control.sox;
-        end
- 
         % Get panels property
-       function panels = get.panels(this)
+        function panels = get.panels(this)
            panels = this.display.PanelProperties(); 
-       end
+        end
  
     end
        
@@ -602,6 +595,7 @@ classdef bdGUI < handle
                 'String','sys', ...
                 'Value', 1, ...
                 'Tag', 'bdExportSys', ...
+                'TooltipString', 'sys is the system structure', ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -615,6 +609,7 @@ classdef bdGUI < handle
             uicontrol('Style','checkbox', ...
                 'String','sol', ...
                 'Tag', 'bdExportSol', ...
+                'TooltipString', 'sol is the solution structure', ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -641,12 +636,14 @@ classdef bdGUI < handle
             for indx = 1:numel(this.control.sys.pardef)
                 % get name of parameter
                 name = this.control.sys.pardef(indx).name;
+                dims = size(this.control.sys.pardef(indx).value);
 
                 % parameter check box
                 uicontrol('Style','checkbox', ...
                     'String', name, ...
                     'UserData', struct('name',name,'indx',indx), ...
                     'Tag', 'bdExportPar', ...
+                    'TooltipString', num2str(dims,[name ' is %dx%d']), ...
                     'HorizontalAlignment', 'left', ...
                     'FontUnits', 'pixels', ...
                     'FontSize', 12, ...
@@ -657,12 +654,53 @@ classdef bdGUI < handle
                 yoffset = yoffset + rowh;
             end
 
+            % If our system has lag parmaters then include them in teh menu
+            if isfield(this.control.sys,'lagdef')
+                % skip quarter row
+                yoffset = yoffset + 0.25*rowh;
+
+                % TIME LAG title
+                uicontrol('Style','text', ...
+                    'String','Time Lags', ...
+                    'HorizontalAlignment','left', ...
+                    'FontUnits','pixels', ...
+                    'FontSize',12, ...
+                    'FontWeight','bold', ...
+                    'Parent', scrollpanel, ...
+                    'Position',[10 panelh-yoffset panelw boxh]);
+
+                % next row
+                yoffset = yoffset + rowh;
+
+                % for each entry in sys.lagdef
+                for indx = 1:numel(this.control.sys.lagdef)
+                    % get name of parameter
+                    name = this.control.sys.lagdef(indx).name;
+                    dims = size(this.control.sys.lagdef(indx).value);
+
+                    % parameter check box
+                    uicontrol('Style','checkbox', ...
+                        'String', name, ...
+                        'UserData', struct('name',name,'indx',indx), ...
+                        'Tag', 'bdExportLag', ...
+                        'TooltipString', num2str(dims,[name ' is %dx%d']), ...
+                        'HorizontalAlignment', 'left', ...
+                        'FontUnits', 'pixels', ...
+                        'FontSize', 12, ...
+                        'Parent', scrollpanel, ...
+                        'Position', [20 panelh-yoffset panelw boxh]);
+
+                    % next row
+                    yoffset = yoffset + rowh;
+                end
+            end
+            
             % skip quarter row
             yoffset = yoffset + 0.25*rowh;
 
-            % SOLUTION title
+            % STATE VARIABLES title
             uicontrol('Style','text', ...
-                'String','Solution Variables', ...
+                'String','State Variables', ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -674,18 +712,21 @@ classdef bdGUI < handle
             yoffset = yoffset + rowh;  
 
             % for each entry in sys.vardef
-            solindx = 0;
             for indx = 1:numel(this.control.sys.vardef)
-                % get name and length of variable
+                % get name and size of the variable
                 name = this.control.sys.vardef(indx).name;
-                len = numel(this.control.sys.vardef(indx).value);
-                % compute the index of the variable in sol.y
-                solindx = solindx(end) + (1:len);
+                vlen = numel(this.control.sys.vardef(indx).value);
+                tlen = numel(this.control.sol.x);
+                
+                % get the indexes of the variable in sol
+                solindx = this.control.sys.vardef(indx).solindx;
+                
                 % variable check box
                 uicontrol('Style','checkbox', ...
                     'String',name, ...
                     'UserData', struct('name',name,'solindx',solindx), ...
                     'Tag', 'bdExportVar', ...
+                    'TooltipString', num2str([vlen tlen],[name ' is %dx%d']), ...
                     'HorizontalAlignment','left', ...
                     'FontUnits','pixels', ...
                     'FontSize',12, ...
@@ -716,6 +757,7 @@ classdef bdGUI < handle
             uicontrol('Style','checkbox', ...
                 'String','t', ...
                 'Tag', 'bdExportTime', ...
+                'TooltipString', num2str(numel(this.sol.x),'t is 1x%d'), ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -738,19 +780,20 @@ classdef bdGUI < handle
             % next row
             yoffset = yoffset + rowh;
 
-            % Clean the panelmgr of any stale handles to panel classes
-            % that have since been destroyed.
-            %this.CleanPanelMgr();
+            % get the names of the current display panels
+            panelnames = this.display.PanelNames(); 
 
-            % for each class in panelmgr (FIX ME)
-            %classnames = fieldnames(this.panelmgr);
-            classnames = [];
-            for cindx = 1:numel(classnames)
-                classname = classnames{cindx};
+            % for each type of display panel  ...
+            for cindx = 1:numel(panelnames)
+                panelclass = panelnames(cindx).panelclass;
+                paneltitle = panelnames(cindx).paneltitle;
 
                 % Panel Name
-                uicontrol('Style','text', ...
-                'String',classname, ...
+                uicontrol('Style','checkbox', ...
+                'String',panelclass, ...
+                'UserData',panelnames(cindx), ...
+                'TooltipString', paneltitle, ...
+                'Tag', 'bdExportPanel', ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -759,25 +802,6 @@ classdef bdGUI < handle
 
                 % next row
                 yoffset = yoffset + rowh;
-
-                % for each field in the class
-                fldnames = fieldnames(this.panelmgr.(classname));
-                for findx = 1:numel(fldnames)
-                    fldname = fldnames{findx};
-
-                    % field checkbox
-                    uicontrol('Style','checkbox', ...
-                        'String',fldname, ...
-                        'Tag', [classname,'.',fldname], ...
-                        'HorizontalAlignment','left', ...
-                        'FontUnits','pixels', ...
-                        'FontSize',12, ...
-                        'Parent', scrollpanel, ...
-                        'Position',[30 panelh-yoffset panelw boxh]);      
-
-                    % next row
-                    yoffset = yoffset + rowh;
-                end
             end
             
             % Adjust the height of the scrollpanel and vertically align
@@ -796,10 +820,6 @@ classdef bdGUI < handle
             data.bdtoolbox = this.version;      % toolkit version string
             data.date = date();                 % today's date
                 
-            % Clean the panelmgr of any stale handles to panel classes
-            % that have since been destroyed.
-            %this.CleanPanelMgr();
-            
             % find the sys checkbox widget in the scroll panel
             objs = findobj(panel,'Tag','bdExportSys');
             if objs.Value>0
@@ -834,6 +854,7 @@ classdef bdGUI < handle
 
             % find all parameter checkbox widgets in the scroll panel
             objs = findobj(panel,'Tag','bdExportPar');
+            objs = objs(end:-1:1);                  % reverse the order of the found widgets (because find returns the most recently created widget first)
             for obj = objs'                         % for each checkbox widget ...
                 if obj.Value>0                      % if checkbox is enabled then ...
                     name = obj.UserData.name;       % get the parameter name
@@ -847,8 +868,25 @@ classdef bdGUI < handle
                 end
             end
 
+            % find all time lag checkbox widgets in the scroll panel
+            objs = findobj(panel,'Tag','bdExportLag');
+            objs = objs(end:-1:1);                  % reverse the order of the found widgets (because find returns the most recently created widget first)          
+            for obj = objs'                         % for each checkbox widget ...
+                if obj.Value>0                      % if checkbox is enabled then ...
+                    name = obj.UserData.name;       % get the parameter name
+                    indx = obj.UserData.indx;       % get the parameter indx
+                    % ensure data.lag exists
+                    if ~isfield(data,'lag')
+                        data.lag = [];
+                    end
+                    % include the lag parameter values in the outgoing data
+                    data.lag.(name) = this.control.sys.lagdef(indx).value;
+                end
+            end
+            
             % find all solution variable checkbox widgets in the scroll panel
             objs = findobj(panel,'Tag','bdExportVar');
+            objs = objs(end:-1:1);                  % reverse the order of the found widgets (because find returns the most recently created widget first)
             for obj = objs'                         % for each checkbox widget ...
                 if obj.Value>0                      % if checkbox is enabled then ...
                     name = obj.UserData.name;       % get the variable name
@@ -869,40 +907,19 @@ classdef bdGUI < handle
                 data.t = this.control.sol.x;
             end
 
-            % for each class in panelmgr (FIX ME)
-            %classnames = fieldnames(this.panelmgr);
-            classnames = [];
-            for cindx = 1:numel(classnames)
-                classname = classnames{cindx};
-                classcount = numel(this.panelmgr.(classname));
-               
-                % for each instance of the class
-                for iindx = 1:classcount                    
-                    % for each field in the class
-                    fldnames = fieldnames(this.panelmgr.(classname));
-                    for findx = 1:numel(fldnames)
-                        fldname = fldnames{findx};
-
-                        % find the matching checkbox widget
-                        objs = findobj(panel,'Tag',[classname,'.',fldname]);
-                        if objs.Value>0        % if the checkbox is enabled then ...
-                            % ensure data.panels exists
-                            if ~isfield(data,'panels')
-                                data.panels = [];
-                            end
-                            % ensure data.panels.(classname) exists
-                            if ~isfield(data.panels,classname)
-                                data.panels.(classname) = [];
-                            end
-                            % ensure data.panels.(classname).(fldname) exists
-                            if ~isfield(data.panels.(classname),fldname)
-                                data.panels.(classname).(fldname) = [];
-                            end
-                            % include the field values in the outgoing data
-                            data.panels.(classname)(iindx).(fldname) = this.panelmgr.(classname)(iindx).(fldname);
-                        end
+            % find all panel-related checkbox widgets in the scroll panel
+            objs = findobj(panel,'Tag','bdExportPanel');
+            objs = objs(end:-1:1);                          % reverse the order of the found widgets (because find returns the most recently created widget first)
+            for obj = objs'                                 % for each checkbox widget ...
+                if obj.Value>0                              % if checkbox is enabled then ...
+                    % ensure data.panels exists
+                    if ~isfield(data,'panels')
+                        data.panels = [];
                     end
-               
+                    % get the name of the panel class from the widget UserData
+                    panelclass = obj.UserData.panelclass;
+                    % copy the panel data to the outgoing data
+                    data.panels.(panelclass) = this.display.ExportPanel(panelclass);
                 end
             end
             
@@ -1025,8 +1042,8 @@ function [sys,sol] = loadsys()
                 uiwait( warndlg(msg,'Missing Function') );
             
             otherwise
-                msg = {ME.message,
-                       '',
+                msg = {ME.message
+                       ''
                        'Explanation: The model could not be loaded because its ''sys'' structure is invalid. Use the ''bdSysCheck'' command-line tool to diagnose the exact problem. Refer to the Handbook for the Brain Dynamics Toolbox for a comprehensive description of the format of the ''sys'' structure.'
                        ''
                        };

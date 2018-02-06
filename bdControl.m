@@ -146,8 +146,7 @@ classdef bdControl < handle
             % listen for recompute events
             addlistener(this,'recompute',@(~,~) this.RecomputeListener());
 
-            % init the timer object but do not start it.
-            
+            % init the timer object and start it.           
             this.timer = timer('BusyMode','drop', ...
                 'ExecutionMode','fixedSpacing', ...
                 'Period',0.05, ...
@@ -747,7 +746,9 @@ classdef bdControl < handle
                 end
                 
                 if ~inlim
-                    warning('bdGUI:outlimit','Initial Conditions were not advanced because they are already beyond the axes limits.');
+                    oldwarn = warning('off','backtrace');                
+                    warning('bdGUI:outlimit','Initial Conditions were not advanced because they are beyond the axes limits.');
+                    warning(oldwarn.state,'backtrace');                
                 else
                     % for each entry in vardef
                     for indx=1:numel(this.sys.vardef)
@@ -875,7 +876,6 @@ classdef bdControl < handle
             % if the application figure is gone then... 
             if ~ishghandle(this.fig)
                 stop(this.timer);       % stop the timer
-                %delete(this.timer);     % delete the timer object
                 return
             end
             

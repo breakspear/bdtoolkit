@@ -139,8 +139,46 @@ classdef bdDisplay < handle
             
         end
         
-        % Get panels property
-        function panels = PanelProperties(this) 
+        % Get a list of the currently loaded panels. Returns an array of
+        % structs where names(i).panelclass is the name of the panel
+        % class and names(i).paneltitle is the title of the panel tab.
+        function names = PanelNames(this) 
+            names = [];
+            
+            % Clean the panelmgr of any stale handles to panel classes
+            % that have since been destroyed.
+            this.CleanPanelMgr();
+
+            % for each class in panelmgr
+            classnames = fieldnames(this.panelmgr);
+            for cindx = 1:numel(classnames)
+                panelclass = classnames{cindx};
+                paneltitle = this.panelmgr.(panelclass).title;
+                names(cindx).panelclass = panelclass;
+                names(cindx).paneltitle = paneltitle;
+            end
+        end
+
+        % Export a deep copy of the public properties of the named panel class
+        function panel = ExportPanel(this,classname)
+            % init outgoing data
+            panel = [];
+            
+            % for each instance of the class
+            classcount = numel(this.panelmgr.(classname));
+            for indx = 1:classcount
+                % for each field in the class
+                fldnames = fieldnames(this.panelmgr.(classname));
+                for findx = 1:numel(fldnames)
+                    fname = fldnames{findx};
+                    % deep copy of class properties to output
+                    panel(indx).(fname) = this.panelmgr.(classname)(indx).(fname);
+                end                    
+            end
+        end
+        
+        % Export a deep copy of the public properties of all panel classes
+        function panels = ExportPanels(this) 
             % Returns a deep copy of the class properties in panelmgr
             panels = [];
 
@@ -167,7 +205,7 @@ classdef bdDisplay < handle
                 end
             end    
         end
-        
+
         % Construct the Panel menu
         function menuobj = PanelsMenu(this,fig,control)
             % find all panel classes in the bdtoolkit/panels directory
@@ -281,107 +319,9 @@ classdef bdDisplay < handle
             
         end
   
-        % Construct the Panel menu (Old version)
-        function menuobj = PanelsMenuOld(this,fig,control)
-            classnames = {'bdLatexPanel','bdTimePortrait','bdPhasePortrait','bdBifurcation','bdSpaceTime','bdCorrPanel','bdHilbert','bdSurrogate','bdSolverPanel','bdTrapPanel'};
-            menuobj = uimenu('Parent',fig, 'Label','New Panel');
-            uimenu('Parent',menuobj, ...
-                    'Label','Equations', ...
-                    'Callback', @(~,~) NewPanel(control,'bdLatexPanel'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Time Portrait', ...
-                    'Callback', @(~,~) NewPanel(control,'bdTimePortrait'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Phase Portrait', ...
-                    'Callback', @(~,~) NewPanel(control,'bdPhasePortrait'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Bifurcation Diagram', ...
-                    'Callback', @(~,~) NewPanel(control,'bdBifurcation'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Space-Time', ...
-                    'Callback', @(~,~) NewPanel(control,'bdSpaceTime'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Correlations', ...
-                    'Callback', @(~,~) NewPanel(control,'bdCorrPanel'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Hilbert Transform', ...
-                    'Callback', @(~,~) NewPanel(control,'bdHilbert'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Surrogate Signal', ...
-                    'Callback', @(~,~) NewPanel(control,'bdSurrogate'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Solver Panel', ...
-                    'Callback', @(~,~) NewPanel(control,'bdSolverPanel'));
-            uimenu('Parent',menuobj, ...
-                    'Label','Trap Panel', ...
-                    'Callback', @(~,~) NewPanel(control,'bdTrapPanel'));
-      
-            % add any custom gui panels to the menu and also to this.panelclasses
-            if isfield(control.sys,'panels')
-                panelnames = fieldnames(control.sys.panels);
-                for indx = 1:numel(panelnames)
-                    classname = panelnames{indx};
-                    if exist(classname,'class')
-                        switch classname
-                            case classnames
-                                % Nothing to do. We have this one already.
-                            otherwise
-                                % Add a menu item for the novel panel
-                                uimenu('Parent',menuobj, ...
-                                       'Label',classname, ...
-                                       'Callback', @(~,~) NewPanel(control,classname));
-                                % Remember the name of the novel panel class
-                                classnames{end} = classname;
-                        end
-                    end
-                end
-            end 
-            
-            % Menu Callback function
-            function NewPanel(control,classname)
-               if exist(classname,'class')
-                    % construct the panel, keep a handle to it.
-                    classhndl = feval(classname,this.tabgroup,control);
-                    if ~isfield(this.panelmgr,classname)
-                        this.panelmgr.(classname) = classhndl;
-                    else
-                        this.panelmgr.(classname)(end+1) = classhndl;
-                    end
-                    
-                    % force a redraw event
-                    notify(control,'redraw');
-                else
-                    dlg = warndlg({['''', classname, '.m'' not found'],'That panel will not be displayed'},'Missing file','modal');
-                    uiwait(dlg);
-                end          
-            end
-            
-        end
-  
-
     end
     
     methods (Static)
-        
-%         % Callback for revelaing the next panel menu when a tab is deleted 
-%         function TabDeleteFcn(tab,evnt)
-%             disp('bdDisplay.TabDeleteFcn');
-%             tab
-%             evnt
-%             
-%             % get the tabgroup handle
-%             tabgroup = tab.Parent;
-%             tabgroup.SelectedTab
-% 
-%             % Reveal the menu of the newly selected tab (if it exists)
-%             if ~isempty(tabgroup.SelectedTab)
-%                 newmenu = tabgroup.SelectedTab.UserData;
-%                 newmenu.Visible = 'on';
-%             end
-%         end
-        
-
-
     end
     
 end
