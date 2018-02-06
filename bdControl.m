@@ -153,7 +153,36 @@ classdef bdControl < handle
                 'TimerFcn', @(~,~) this.TimerFcn());
             start(this.timer);
         end
-        
+       
+        % Load a user-supplied sol structure.
+        function LoadSol(this,sol)
+            % Load the solution structure
+            this.sol = sol;
+
+            % Replicate some of the post-compute operations normally done by this.Recompute()
+            
+            % 1. Remember the parameters of the (to be computed) solution in the control.par struct.
+            for indx = 1:numel(this.sys.pardef)
+                name = this.sys.pardef(indx).name;
+                value = this.sys.pardef(indx).value;
+                this.par.(name) = value;
+            end
+
+            % 2. Remember the lag parameters too (if applicable)
+            if isfield(this.sys,'lagdef')
+                for indx = 1:numel(this.sys.lagdef)
+                    name = this.sys.lagdef(indx).name;
+                    value = this.sys.lagdef(indx).value;
+                    this.lag.(name) = value;
+                end
+            end
+            
+            % 3. Update the indices of the non-transient steps in sol.x
+            this.tindx = (this.sol.x >= this.sys.tval) & min(isfinite(this.sol.y));
+            
+            % notify all listeners that a redraw is required
+            notify(this,'redraw');
+        end
         
         function pos = CanvasPosition(this)
             % get parent figure geometry

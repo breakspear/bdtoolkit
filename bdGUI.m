@@ -194,9 +194,8 @@ classdef bdGUI < handle
                 % force a recompute
                 notify(this.control,'recompute');
             else
-                % use the given sol and trigger a redraw event
-                this.control.sol = sol;
-                notify(this.control,'redraw');
+                % load the given sol and issue a redraw event
+                this.control.LoadSol(sol);
             end
                       
         end
