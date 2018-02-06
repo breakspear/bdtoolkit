@@ -40,13 +40,13 @@ classdef bdSolverPanel < bdPanel
     end    
 
     properties
-        ax1             % Handle to the upper plot axes
-        ax2             % Handle to the lower plot axes
         dt              % Time steps of the solution (1 x t-1)
         dy              % Increments of the solution (1 x t-1)
     end
     
     properties (Access=private) 
+        ax1             % Handle to the upper plot axes
+        ax2             % Handle to the lower plot axes
         gridmenu        % handle to GRID menu item
         plt1            % handle to plot line (axis 1)
         plt2            % handle to plot line (axis 2)     

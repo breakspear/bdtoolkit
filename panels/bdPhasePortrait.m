@@ -39,13 +39,13 @@ classdef bdPhasePortrait < bdPanel
     end    
      
     properties
-        ax              % Handle to the plot axes
         y1              % x-values of the trajectory (1 x t)
         y2              % y-values of the trajectory (1 x t)
         y3              % z-values of the trajectory (1 x t)
     end
     
     properties (Access=private)
+        ax              % Handle to the plot axes
         nvar            % the number of system variables (elements in vardef)
         modmenu         % handle to MODULO AXES menu item
         viewmenu        % handle to 3D VIEW menu item

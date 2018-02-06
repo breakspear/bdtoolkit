@@ -41,14 +41,14 @@ classdef bdSurrogate < bdPanel
     end    
     
     properties (Access=public)
-        ax1             % handle to plot 1 axes
-        ax2             % handle to plot 2 axes
         t               % equi-spaced time points
         y               % time series of selected variable(s)
         ysurr           % surrogate version of y
     end
     
     properties (Access=private) 
+        ax1             % handle to plot 1 axes
+        ax2             % handle to plot 2 axes
         tranmenu        % handle to TRANSIENTS menu item
         markmenu        % handle to MARKERS menu item        
         gridmenu        % handle to GRID menu item

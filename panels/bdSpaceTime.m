@@ -39,12 +39,12 @@ classdef bdSpaceTime < bdPanel
     end    
 
     properties
-        ax              % Handle to the plot axes
         t               % Time steps of the solution (1 x t)
         y               % Matrix of space-time trajectories (n x t)
     end
     
     properties (Access=private)
+        ax              % Handle to the plot axes
         pc              % handle to the pcolor surface object
         mk              % handle to the vertical time marker
         tranmenu        % handle to TRANSIENTS menu item

@@ -38,13 +38,13 @@ classdef bdCorrPanel < bdPanel
     end    
 
     properties
-        ax              % Handle to the plot axes
         t               % Time points at which the data was sampled (1 x t)
         Y               % The sampled data points (n x t)
         R               % Matrix of correlation cooefficients (n x n)
     end
     
     properties (Access=private) 
+        ax              % Handle to the plot axes
         tranmenu        % handle to TRANSIENTS menu item
         submenu         % handle to subpanel selector menu item
         img             % handle to the image object

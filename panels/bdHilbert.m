@@ -39,8 +39,6 @@ classdef bdHilbert < bdPanel
     end    
 
     properties (Access=public)
-        ax1             % handle to the upper axes
-        ax2             % handle to the lower axes
         t               % equi-spaced time points
         y               % time series of the selected variable(s)
         h               % Hilbert transform of the time series
@@ -48,6 +46,8 @@ classdef bdHilbert < bdPanel
     end
     
     properties (Access=private)
+        ax1             % handle to the upper axes
+        ax2             % handle to the lower axes
         tranmenu        % handle to TRANSIENTS menu item
         markmenu        % handle to MARKERS menu item        
         relmenu         % handle to RELATIVE PHASE menu item        
