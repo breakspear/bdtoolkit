@@ -6,42 +6,60 @@ classdef bdGUI < handle
     %   gui = bdGUI(sys,'sol',sol);
     %
     %The bdGUI application is the graphical user interface for the Brain
-    %Dynamics Toolbox. It loads and runs a dynamical model which is
-    %defined by a system structure (sys) following toolbox conventions.
-    %The sys structure may be passed to bdGUI as an input parameter or
-    %loaded from a mat file. If bdGUI is invoked with no parameters then
-    %it prompts the user to load a mat file which is assumed to contain a
-    %sys struture. A pre-computed solution (sol) for the model may also 
-    %be loaded as an input parameter. If no solution is given then bdGUI
-    %automatically computes one at start-up.
-    %
-    %The application returns a handle (gui) to the bdGUI class. That
-    %handle that can be used to access and modify the internal states of
-    %the application.
-    %   version:  version string of the toolbox (read-only)
-    %       fig:  handle to the application figure (read/write)
-    %       par:  struct containing the model parameters (read/write)
-    %      var0:  struct containing the initial conditions (read/write)
-    %       var:  struct containing the computed time-series (read-only)
-    %         t:  array of time steps for the solution (read-only)
-    %     tindx:  logical index of the non-transient time steps (read-only)
-    %       lag:  struct containing the DDE lag parameters (read/write)
-    %       sys:  the system structure for the model (read-only)
-    %       sol:  the output of the solver (read-only)
-    %    panels:  the outputs of the various display panels (read-only)
+    %Dynamics Toolbox. It loads and runs the dynamical model defined by
+    %the system structure (sys). The system structure defines the names
+    %and initial values of the model's parameters and state variables.
+    %It also contains a handle to the model-specific function which defines
+    %the dynamical equation to be solved. The system structure may be
+    %passed to bdGUI as an input parameter or loaded from a mat file.
+    %If bdGUI is invoked with no parameters then it prompts the user to
+    %load a mat file which is assumed to contain a valid sys. 
+    %A previously computed solution (sol) for the model can be loaded in
+    %tandem with the model's system structure. If no solution is provided
+    %then bdGUI automatically computes one at start-up.
     %
     %EXAMPLE
-    %   cd bdtoolkit
-    %   addpath models
-    %   sys = LinearODE();
-    %   gui = bdGUI(sys);
+    %   >> cd bdtoolkit
+    %   >> addpath models
+    %   >> sys = LinearODE();
+    %   >> gui = bdGUI(sys);
+    %
+    %The call to bdGUI returns a handle (gui) to the bdGUI class. That
+    %handle can be used to control the graphical user interface from the
+    %matlab workspace.
+    %
+    %   gui = bdGUI with properties:
+    %       version: '2018a'
+    %           fig: [1×1 Figure]
+    %           par: [1×1 struct]
+    %          var0: [1×1 struct]
+    %           var: [1×1 struct]
+    %             t: [1×612 double]
+    %         tindx: [1×612 logical]
+    %           lag: [1×1 struct]
+    %           sys: [1×1 struct]
+    %           sol: [1×1 struct]
+    %        panels: [1×1 struct]
+    %
+    % Where
+    %   gui.version is the version string of the toolbox (read-only)
+    %   gui.fig is a handle to the application figure (read/write)
+    %   gui.par is a struct containing the model parameters (read/write)
+    %   gui.var0 is a struct containing the initial conditions (read/write)
+    %   gui.var is a struct containing the computed time-series (read-only)
+    %   gui.t contains the time steps for the computed solution (read-only)
+    %   gui.tindx contains the indices of the non-transient time steps (read-only)
+    %   gui.lag is a struct containing the DDE lag parameters (read/write)
+    %   gui.sys is a copy of the model's system structure (read-only)
+    %   gui.sol is the output of the solver (read-only)
+    %   gui.panels contains the outputs of the display panels (read-only)
     %
     %SEE ALSO
-    %   Refer to the 'Getting Started' section of the Handbook for the Brain
-    %   Dynamics Toolbox for a detailed introduction to bdGUI.
+    %   The 'Getting Started' section of the 'Handbook for the Brain
+    %   Dynamics Toolbox'.
     %
     %AUTHORS
-    %   Stewart Heitmann (2016a-2018c)
+    %   Stewart Heitmann (2016a-2018a)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
