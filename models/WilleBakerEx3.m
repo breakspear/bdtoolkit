@@ -1,57 +1,24 @@
-% WilleBaker Delay Differential Equations with constant delays 
-%   This is based on the example of Wille' and Baker for DDE23.
-%   Extra parameters (a,b,c,d) have been included for demonstration.
+% WilleBakerEx3 Delay Differential Equations with constant delays 
+%   This is based on example 3 by Wille' and Baker (1992).
+%   Extra parameters (a,b,c) have been included for demonstration.
 %   
 %   The differential equations
 %
-%        y'_1(t) = a*y_1(t-1)
-%        y'_2(t) = b*y_1(t-1) + c*y_2(t-0.2)
-%        y'_3(t) = d*y_2(t)
+%        a y'_1(t) = y_1(t-1)
+%        b y'_2(t) = y_1(t-1) + y_2(t-0.2)
+%        c y'_3(t) = y_2(t)
 %
 %   are solved on [0,5] with constant history y_1(t)=1, y_2(t)=1, y_3(t)=1
 %   for t<=0.
 %
-% Example 1: Using the Brain Dynamics GUI
-%   sys = WilleBaker();     % construct the system struct
-%   gui = bdGUI(sys);       % open the Brain Dynamics GUI
-% 
-% Example 2: Using the Brain Dynamics command-line solver
-%   sys = WilleBaker();                             % get system struct
-%   sys.pardef = bdSetValue(sys.pardef,'a',-1);     % set 'a' parameter
-%   sys.pardef = bdSetValue(sys.pardef,'b', 1);     % set 'b' parameter
-%   sys.pardef = bdSetValue(sys.pardef,'c',-1);     % set 'c' parameter
-%   sys.pardef = bdSetValue(sys.pardef,'d', 1);     % set 'd' parameter
-%   sys.lagdef = bdSetValue(sys.lagdef,'tau1',  1); % set 'tau1' lag value
-%   sys.lagdef = bdSetValue(sys.lagdef,'tau2',0.2); % set 'tau2' lag value
-%   sys.vardef = bdSetValue(sys.vardef,'y1',rand);  % 'y1' initial value
-%   sys.vardef = bdSetValue(sys.vardef,'y2',rand);  % 'y2' initial value
-%   sys.vardef = bdSetValue(sys.vardef,'y3',rand);  % 'y3' initial value
-%   sys.tspan = [0 10];                             % set time domain
-%   sol = bdSolve(sys);                             % solve
-%   tplot = 0:0.1:10;                               % plot time domain
-%   Y = bdEval(sol,tplot);                          % extract solution
-%   plot(tplot,Y);                                  % plot the result
-%   xlabel('time'); ylabel('y');
-%
-% Example 3: Calling DDE23 manually
-%   sys = WilleBaker();                     % construct the system struct
-%   ddefun = sys.ddefun;                    % get DDE function handle
-%   [a,b,c,d] = deal(sys.pardef{:,2});      % default parameter values
-%   [tau1,tau2] = deal(sys.lagdef{:,2});    % default lag values
-%   [y1,y2,y3] = deal(sys.vardef{:,2});     % default initial conditions
-%   ddeopt = sys.ddeoption;                 % default DDE options
-%   tspan = sys.tspan;                      % default time span
-%   sol = dde23(ddefun,[tau1;tau2],[y1;y2;y3],tspan,ddeopt,a,b,c,d);
-%   t = linspace(tspan(1),tspan(2),1000);   % time domain of interest
-%   Y = deval(sol,t);                       % interpolate the results
-%   plot(t,Y);                              % plot the results
-%   xlabel('time');
-%   legend('y1','y2','y3');
+% EXAMPLE
+%   >> sys = WilleBakerEx3();  % construct the system struct
+%   >> gui = bdGUI(sys);       % open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2016a-2017c)
+%   Stewart Heitmann (2016a-2018a)
 
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -78,10 +45,9 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function sys = WilleBaker()
-    % Handle to our DDE and auxiliary functions
+function sys = WilleBakerEx3()
+    % Handle to our DDE function
     sys.ddefun = @ddefun;
-    sys.auxfun = @auxfun;
     
     % DDE parameters
     sys.pardef = [ struct('name','a', 'value', 1);
@@ -119,12 +85,12 @@ function sys = WilleBaker()
         'where';
         '\qquad $y_1(t), y_2(t), y_3(t)$ are state variables,';
         '\qquad $\tau_1,\tau_2$ are constant time delays.';
-        '\qquad $a,b,c$ are time scale constants,';
-        '\qquad Initial conditions are assumed constant for $t{<}0$';
+        '\qquad $a,b,c$ are time scale constants.';
         '';
         'References';
         '\qquad 1. Will\''e and Baker (1992) DELSOL. Appl Num Math (9) 3-5.' ;   
-        '\qquad 2. Matlab example code DDEX1.m.' };   
+        '\qquad 2. Matlab example code DDEX1.m.' ;
+        '\qquad 3. Shampine and Thompson (2001) Solving DDEs in MATLAB.' };   
     
     % Include the Time Portrait panel in the GUI
     sys.panels.bdTimePortrait = [];
@@ -134,9 +100,6 @@ function sys = WilleBaker()
 
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = []; 
-    
-    % Handle to this function. The GUI uses it to construct a new system. 
-    sys.self = str2func(mfilename);
 end
 
 % The DDE function where Y and dYdt are (3x1) and Z is (3x2).
@@ -147,11 +110,4 @@ function dYdt = ddefun(t,Y,Z,a,b,c)
     dy2dt = (Ylag1(1) + Ylag2(2)) ./ b;  % b * y'_2(t) = y_1(t-tau1) + y_2(t-tau2)
     dy3dt = Y(2) ./ c;                   % c * y'_3(t) = y_2(t)
     dYdt = [dy1dt; dy2dt; dy3dt];        % return a column vector
-end
-
-% The toolbox applies this auxillary function to the solution returned by
-% the solver. The DDE parameters are the same as ddefun. In this case the
-% auxiliary variable is the Euclidiean length of the state variables.
-function aux = auxfun(sol,a,b,c,d)
-    aux = sqrt(sol.y(1,:).^2 + sol.y(2,:).^2 + sol.y(3,:).^2);
 end
