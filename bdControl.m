@@ -42,7 +42,6 @@ classdef bdControl < handle
         tindx           % indices of the non-transient time steps in sol.x 
         solver          % the active solver function
         solvertype      % solver type string ('odesolver' or 'ddesolver' or 'sdesolver')
-        reverse = 0     % state of the REVERSE button
         halt = 0        % state of the HALT button
     end
     
@@ -55,7 +54,7 @@ classdef bdControl < handle
         ui_hold         % handle to the noise HOLD button (SDE only)
         ui_evolve       % handle to the EVOLVE button
         ui_jitter       % handle to the JITTER button
-        ui_transient    % handle to the TRANSIENT button
+        ui_rand         % handle to the RAND button
         ui_reverse      % handle to the REVERSE button
         
         % Widgets in the solver panel
@@ -257,19 +256,19 @@ classdef bdControl < handle
             % It makes it easier to resizie the scroll panel to its final height.
             ypos = 0.5*rowh;
             
-            % REVERSE button
-            this.ui_reverse = uicontrol('Style','radio', ...
-                'String','Reverse', ...
-                'Value',this.reverse, ...
-                'HorizontalAlignment','left', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'Parent', scroll.panel, ...
-                'ToolTipString', 'Run the simulation backwards in time', ...
-                'Position',[col3 ypos col5-col3 boxh]);
-                        
-            % next row
-            ypos = ypos + 1.25*boxh;                        
+%             % REVERSE button
+%             this.ui_reverse = uicontrol('Style','radio', ...
+%                 'String','Reverse', ...
+%                 'Value',this.reverse, ...
+%                 'HorizontalAlignment','left', ...
+%                 'FontUnits','pixels', ...
+%                 'FontSize',12, ...
+%                 'Parent', scroll.panel, ...
+%                 'ToolTipString', 'Run the simulation backwards in time', ...
+%                 'Position',[col3 ypos col5-col3 boxh]);
+%                         
+%             % next row
+%             ypos = ypos + 1.25*boxh;                        
 
             % Time Domain" checkbox (drawn in the wrong place but we need it now)
             timecheckbox = uicontrol('Style','checkbox',...
@@ -303,21 +302,34 @@ classdef bdControl < handle
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
                 'Parent', scroll.panel, ...
-            ... 'Callback', @(src,~) set(src,'ForegroundColor','k'), ...
-                'ToolTipString', 'Replace initial conditions with final values', ...
+                'Callback', @(src,~) this.EvolveCallback(src), ...
+                'ToolTipString', 'Replace the Initial Conditions with the final state before each run', ...
                 'Position',[col1+3 ypos col3-col1 boxh]);
             
             % JITTER button
             this.ui_jitter = uicontrol('Style','radio', ...
-                'String','Jitter', ...
+                'String','Perturb', ...
                 'Value',0, ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
                 'Parent', scroll.panel, ...
-                'ToolTipString', 'Add jitter (5%) to the initial conditions', ...
-                'Position',[col3 ypos col5-col3 boxh]);
+                'Callback', @(src,~) this.JitterCallback(src), ...
+                'ToolTipString', 'Perturb the Initial Conditions (5%) before each run', ...
+                'Position',[85 ypos 70 boxh]);
             
+            % RAND button
+            this.ui_rand = uicontrol('Style','pushbutton', ...
+                'String','RAND', ...
+                'Value',0, ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', scroll.panel, ...
+                'Callback', @(src,~) this.RandCallback(src), ...
+                'ToolTipString', 'Apply Uniform Random Initial Conditions', ...
+                'Position',[col4-1 ypos col5-col4-5 boxh]);
+
             % next row
             ypos = ypos + 1.25*boxh;   
             
@@ -412,7 +424,7 @@ classdef bdControl < handle
                     'Parent', scroll.panel, ...
                     'ToolTipString', 'Hold the random samples fixed', ...
                     'Callback', @(src,~) this.HoldCallback(src), ...
-                    'Position',[col1 ypos col5-col1 boxh]);
+                    'Position',[col1+3 ypos col5-col1 boxh]);
                 
                 % next row
                 ypos = ypos + boxh;                        
@@ -732,17 +744,6 @@ classdef bdControl < handle
                 return
             end
             
-            % We use the ODE OutputFcn to track progress in our solver and to detect halt events. 
-            switch this.solvertype
-                case 'odesolver'
-                    this.sys.odeoption = odeset(this.sys.odeoption, 'OutputFcn',@this.odeOutputFcn, 'OutputSel',[]);
-                case 'ddesolver'
-                    this.sys.ddeoption = ddeset(this.sys.ddeoption, 'OutputFcn',@this.odeOutputFcn, 'OutputSel',[]);
-                case 'sdesolver'
-                    this.sys.sdeoption.OutputFcn = @this.odeOutputFcn;
-                    this.sys.sdeoption.OutputSel = [];      
-            end
-
             % Remember the parameters of the (to be computed) solution in the control.par struct.
             % We do this because the controls can change the values in sys.pardef
             % faster than the solver can keep up.
@@ -760,67 +761,19 @@ classdef bdControl < handle
                     this.lag.(name) = value;
                 end
             end
-            
-            % evolve the initial conditions (if applicable)
-            if this.ui_evolve.Value
-                inlim = false;
-
-                % check that any initial condition is within the axis limits
-                for indx=1:numel(this.sys.vardef)
-                    val = this.sys.vardef(indx).value;        % initial value
-                    lim = this.sys.vardef(indx).lim;          % limit
-                    if any( lim(1)<=val & val<=lim(2) )
-                        inlim = true;
-                    end
-                end
-                
-                if ~inlim
-                    oldwarn = warning('off','backtrace');                
-                    warning('bdGUI:outlimit','Initial Conditions were not advanced because they are beyond the axes limits.');
-                    warning(oldwarn.state,'backtrace');                
-                else
-                    % for each entry in vardef
-                    for indx=1:numel(this.sys.vardef)
-                        valsize = size(this.sys.vardef(indx).value);        % size of the variable value
-                        solindx = this.sys.vardef(indx).solindx;            % corresponding indices of the variable in sol
-                        val = reshape( this.sol.y(solindx,end), valsize);   % the final value in the solution ...
-                        this.sys.vardef(indx).value = val;                  % ... replaces the initial value    
-                    end
-                    % notify the vardef widgets to refresh themselves
-                    notify(this,'vardef');
-                end
-            end            
-
+                        
             % clear the last warning message
             lastwarn('');            
 
-            % Call the solver
-            if this.ui_jitter.Value
-                % Make a working copy of the sys
-                worksys = this.sys;
-                % Apply a small jitter to each variable
-                for indx = 1:numel(worksys.vardef)
-                    % determine the limits of the variable
-                    lo = worksys.vardef(indx).lim(1);
-                    hi = worksys.vardef(indx).lim(2);
-                    % determine the size of the variable
-                    valsize = size(worksys.vardef(indx).value);
-                    % perturb the variable by 5% uniform random
-                    worksys.vardef(indx).value =  worksys.vardef(indx).value + ...
-                        0.05*(hi-lo)*(rand(valsize)-0.5);
-                end
-                
-                % call the solver using the working copy of sys
-                oldwarn = warning('off','backtrace');                
-                this.sol = bd.solve(worksys,this.sys.tspan,this.solver,this.solvertype);
-                warning(oldwarn.state,'backtrace');                
+            % if the EVOLVE button is active then ....
+            if this.ui_evolve.Value
+                % Update the initial conditions and compute thr new solution
+                this.Evolve();
             else
-                % call the solver using the sys 
-                oldwarn = warning('off','backtrace');                
-                this.sol = bd.solve(this.sys,this.sys.tspan,this.solver,this.solvertype);
-                warning(oldwarn.state,'backtrace');                
+                % Compute the solution without altering the initial conditions
+                this.Solve();
             end
-            
+
             % Display any warnings from the solver
             [msg,msgid] = lastwarn();
             ix = find(msgid==':',1,'last');
@@ -833,14 +786,6 @@ classdef bdControl < handle
                 this.ui_warning.TooltipString = 'Solver Warning Message';
                 this.ui_warning.ForegroundColor = 'k';
             end
-            if ~isempty(msgid) & this.ui_evolve.Value
-                % enable the HALT state
-                %this.halt=1;
-                % disable the EVOLVE state
-                this.ui_evolve.Value = 0;
-                %this.ui_evolve.ForegroundColor='r';
-                %notify(this,'refresh');
-            end
             
             % Hold the SDEnoise if the HOLD button is 'on'
             switch this.solvertype
@@ -851,39 +796,8 @@ classdef bdControl < handle
                     end
             end
             
-            % update the indices of the non-transient steps in sol.x
-            % Note: tindx can be all zeros in cases where the solver
-            % terminated early because of blow-out or tolerance failures.
-            this.tindx = (this.sol.x >= this.sys.tval) & min(isfinite(this.sol.y));
-            
             % notify all listeners that a redraw is required
             notify(this,'redraw');
-            
-%             % evolve the initial conditions (if required)
-%             if this.ui_evolve.Value
-%                 offset = 0;
-%                 % for each vardef entry ...
-%                 for indx=1:numel(this.sys.vardef)
-%                     s = size(this.sys.vardef(indx).value);
-%                     n = numel(this.sys.vardef(indx).value);
-%                     val = this.sol.y([1:n]+offset,end);
-%                     val = reshape(val,s);
-%                     this.sys.vardef(indx).value = val; 
-%                     offset = offset+n;
-%                     
-% %                     % Disengage the EVOLVE button if the initial conditions
-% %                     % have breached the var limits. This prevents run-away blow-out.
-% %                     minval = min(val(:));
-% %                     maxval = max(val(:));
-% %                     if minval < this.sys.vardef(indx).lim(1) || maxval > this.sys.vardef(indx).lim(2)
-% %                         this.ui_evolve.Value = 0;
-% %                         beep;
-% %                     end
-%                 end
-%                 % notify all widgets to refresh (we only really need to refresh the initial conditions)
-%                 %notify(this,'refresh');
-%                 notify(this,'vardef');
-%             end
             
             % refresh the solver NSTEPS counter
             this.ui_nsteps.String = num2str(this.sol.stats.nsteps,'%d');
@@ -898,7 +812,216 @@ classdef bdControl < handle
             cpu = cputime - this.cpustart;
             this.ui_cputime.String = num2str(cpu,'%5.2fs');
         end
-   
+        
+        % Returned jittered versions of the initial conditions 
+        function Y0 = JitterValues(this,amp)
+            % Get teh initial conditions as they stand
+            Y0 = bdGetValues(this.sys.vardef);
+            
+            % for each entry in sys.vardef
+            for indx = 1:numel(this.sys.vardef)
+                % determine the limits of the variable
+                lo = this.sys.vardef(indx).lim(1);
+                hi = this.sys.vardef(indx).lim(2);
+                
+                % get the indices of the variable in Y0
+                solindx = this.sys.vardef(indx).solindx;
+
+                % determine the size of the variable in Y0
+                solsize = [numel(solindx) 1];
+
+                % perturb the variable with a uniform random value scaled by 'amp'
+                Y0(solindx) = Y0(solindx) + amp*(hi-lo)*(rand(solsize)-0.5);
+            end            
+        end
+
+        % Call the solver 
+        function Solve(this)
+            % Get the initial conditions
+            if this.ui_jitter.Value
+                % Add 5 percent jitter to the initial conditions
+                Y0 = this.JitterValues(0.05);
+            else
+                % Use the initial conditions as they are
+                Y0 = bdGetValues(this.sys.vardef);
+            end
+            
+            % Get the system parameters as a cell array
+            parcell = {this.sys.pardef.value};
+            
+            % The type of the solver function determines how we apply it 
+            switch this.solvertype
+                case 'odesolver'
+                    % case of an ODE solver (eg ode45)
+                    odeoption = odeset(this.sys.odeoption, 'OutputFcn',@this.odeOutputFcn, 'OutputSel',[]);
+                    this.sol = this.solver(this.sys.odefun, ...
+                        this.sys.tspan, ...
+                        Y0, ...
+                        odeoption, ...
+                        parcell{:});
+
+                case 'ddesolver'
+                    % case of a DDE solver (eg dde23)
+                    ddeoption = ddeset(this.sys.ddeoption, 'OutputFcn',@this.odeOutputFcn, 'OutputSel',[]);
+                    lags = bdGetValues(this.sys.lagdef); 
+                    this.sol = this.solver(this.sys.ddefun, ...
+                        lags, ...
+                        Y0, ...
+                        this.sys.tspan, ...
+                        ddeoption, ...
+                        parcell{:});
+
+                case 'sdesolver'
+                    % case of an SDE solver
+                    sdeoption = this.sys.sdeoption;
+                    sdeoption.OutputFcn = @this.odeOutputFcn;
+                    sdeoption.OutputSel = [];      
+                    this.sol = this.solver(this.sys.sdeF, ...
+                        this.sys.sdeG, ...
+                        this.sys.tspan, ...
+                        Y0, ...
+                        sdeoption, ...
+                        parcell{:});
+            end
+            
+            % Update the indices of the non-transient steps of sol.x
+            % Note: tindx can be all zeros in cases where the solver
+            % terminated early because of blow-out or tolerance failures.
+            this.tindx = (this.sol.x >= this.sys.tval) & min(isfinite(this.sol.y));
+        end
+
+        % Call the solver using the final state of the previous run
+        % as the initial conditions for the current run
+        function Evolve(this)
+            % copy the final states in sol.y to the initial conditions in sys.vardef
+            if ~isempty(this.sol.y)
+                if all(isfinite(this.sol.y(:,end)))
+                    for indx=1:numel(this.sys.vardef)
+                        valsize = size(this.sys.vardef(indx).value);        % size of the variable value
+                        solindx = this.sys.vardef(indx).solindx;            % corresponding indices of the variable in sol
+                        val = reshape( this.sol.y(solindx,end), valsize);   % the final value in the solution ...
+                        this.sys.vardef(indx).value = val;                  % ... replaces the initial value    
+                    end                
+                    % notify the vardef widgets to refresh themselves
+                    notify(this,'vardef');
+                else
+                    % warn about Infs and NaNs
+                    oldwarn = warning('off','backtrace');                
+                    warning('bdGUI:Overflow','The computed solution exceeds machine limits.');
+                    warning(oldwarn.state,'backtrace'); 
+                    
+                    % turn the EVOLVE button off
+                    this.ui_evolve.Value = 0;
+                    
+                    % turn the HALT button on
+                    this.ui_halt.Value = 1;
+                end
+            end
+            
+            % Get the system parameters as a cell array
+            parcell = {this.sys.pardef.value};
+
+            % The type of the solver function determines how we apply it 
+            switch this.solvertype
+                case 'odesolver'
+                    % Case of an ODE solver (eg ode45)
+                    odeoption = odeset(this.sys.odeoption, 'OutputFcn',@this.odeOutputFcn, 'OutputSel',[]);
+
+                    % Get the initial conditions from sys.vardef
+                    if this.ui_jitter.Value
+                        % Add 5 percent jitter to the initial conditions
+                        Y0 = this.JitterValues(0.05);
+                    else
+                        % Use the initial conditions as they are
+                        Y0 = bdGetValues(this.sys.vardef);
+                    end
+
+                    % Call the solver
+                    this.sol = this.solver(this.sys.odefun, ...
+                        this.sys.tspan, ...
+                        Y0, ...
+                        odeoption, ...
+                        parcell{:});
+
+                case 'ddesolver'
+                    % Case of a DDE solver (eg dde23)
+                    ddeoption = ddeset(this.sys.ddeoption, 'OutputFcn',@this.odeOutputFcn, 'OutputSel',[]);
+
+                    % Get the time lag parameters
+                    lags = bdGetValues(this.sys.lagdef); 
+                    
+                    % Call the solver using the values of the previous run as history.
+                    % Notice we do not support JITTER for evolving DDEs. At least not for this build.
+                    this.sol = this.solver(this.sys.ddefun, ...
+                        lags, ...
+                        @(t,varargin) this.History(t), ...
+                        this.sys.tspan, ...
+                        ddeoption, ...
+                        parcell{:});
+
+                case 'sdesolver'
+                    % Case of an SDE solver (eg sdeEM)
+                    sdeoption = this.sys.sdeoption;
+                    sdeoption.OutputFcn = @this.odeOutputFcn;
+                    sdeoption.OutputSel = [];      
+
+                    % Get the initial conditions from sys.vardef
+                    if this.ui_jitter.Value
+                        % Add 5 percent jitter to the initial conditions
+                        Y0 = this.JitterValues(0.05);
+                    else
+                        % Use the initial conditions as they are
+                        Y0 = bdGetValues(this.sys.vardef);
+                    end
+
+                    % Call the solver
+                    this.sol = this.solver(this.sys.sdeF, ...
+                        this.sys.sdeG, ...
+                        this.sys.tspan, ...
+                        Y0, ...
+                        sdeoption, ...
+                        parcell{:});
+            end
+            
+            % Update the indices of the non-transient steps of sol.x
+            % Note: tindx can be all zeros in cases where the solver
+            % terminated early because of blow-out or tolerance failures.
+            this.tindx = (this.sol.x >= this.sys.tval) & min(isfinite(this.sol.y));
+        end
+                
+        % History function used by dde23 solver when the EVOLVE button is active
+        function Y0 = History(this,t)
+            %disp('bdControl.History');
+            
+            % if there is no previous solution then ...
+            if ~isfield(this.sol,'solver')
+                % Use the initial conditions from sys.vardef as constant history
+                if this.ui_jitter.Value
+                    % Add 5 percent jitter to the initial conditions
+                    Y0 = this.JitterValues(0.05);
+                else
+                    % Use the initial conditions as they are
+                    Y0 = bdGetValues(this.sys.vardef);
+                end
+            else
+                % Use the previous solution as history for the current solution.
+
+                % Shift historical time for this run into the time span of the previous run
+                t = t + this.sol.x(end) - this.sol.x(1);
+
+                % Truncate time lags that lie beyond the time domain of the current solution
+                if t < this.sol.x(1)
+                    oldwarn = warning('off','backtrace');                
+                    warning('bdGUI:HistoryTruncation','Time span is too small to accomodate all time lags.');
+                    warning(oldwarn.state,'backtrace');                
+                    t = this.sol.x(1);
+                end
+            
+                % interpolate the historical value
+                Y0 = deval(this.sol,t);
+            end
+        end
+
         function TimerFcn(this)
             %disp('TimerFcn');
             
@@ -982,15 +1105,58 @@ classdef bdControl < handle
             end
         end
     
-%         % Callback for the EVOLVE button
-%         function EvolveCallback(this,evobutton)
-%             if evobutton.Value
-%                 % EVOLVE button is now ON
-%             else
-%                 % EVOLVE button is now OFF
-%             end
-%         end
+        % Callback for the EVOLVE button
+        function EvolveCallback(this,evobutton)
+            if evobutton.Value
+                % EVOLVE button is now ON
+                this.recomputeflag = true;
+                
+                % DDEs currently dont support JITTER when they are evolving
+                switch this.solvertype
+                    case 'ddesolver'
+                        % Ensure the JITTER button is off
+                        this.ui_jitter.Value = 0;
+                        this.ui_jitter.Enable = 'off';
+                end
+             else
+                % EVOLVE button is now OFF
+                % Ensure the JITTER button is enabled
+                this.ui_jitter.Enable = 'on';
+             end
+         end
     
+        % Callback for the JITTER button
+        function JitterCallback(this,button)
+            if button.Value
+                % JITTER button is now ON
+                this.recomputeflag = true;
+             else
+                % JITTER button is now OFF
+             end
+         end
+    
+        % Callback for the RAND button
+        function RandCallback(this,button)
+            disp('bdControl.RandCallback()');
+            
+            % for each entry in sys.vardef
+            for indx = 1:numel(this.sys.vardef)
+                % determine the limits of the random values
+                lo = this.sys.vardef(indx).lim(1);
+                hi = this.sys.vardef(indx).lim(2);
+
+                % update the control panel.
+                valsize = size(this.sys.vardef(indx).value);
+                this.sys.vardef(indx).value = (hi-lo)*rand(valsize) + lo;
+            end
+
+            % notify all widgets sys.vardef has changed
+            notify(this,'vardef');
+
+            % tell the solver to recompute the solution
+            this.recomputeflag = true;
+        end
+        
     end
 end
 
