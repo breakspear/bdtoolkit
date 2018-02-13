@@ -44,6 +44,8 @@ classdef bdControlVector < handle
         panel
         minbox
         maxbox
+        perbbtn
+        randbtn        
         baxes
         bgraph
         labelbtn
@@ -53,7 +55,7 @@ classdef bdControlVector < handle
     end
     
     methods
-        function this = bdControlVector(control,xxxdef,xxxindx,parent,ypos)
+        function this = bdControlVector(control,xxxdef,xxxindx,parent,ypos,modecheckbox)
             %disp('bdControlVector()');
 
             % init empty handle to dialog box
@@ -90,7 +92,7 @@ classdef bdControlVector < handle
                 'String',num2str(xxxlim(1),'%0.4g'), ...
                 'Value',xxxlim(1), ...
                 'HorizontalAlignment','center', ...
-                'Visible','on', ...
+                'Visible','off', ...
                 'Callback', @(~,~) this.minboxCallback(control,xxxdef,xxxindx), ...
                 'ToolTipString',['lower limit for ''' xxxname '''']);
 
@@ -102,10 +104,34 @@ classdef bdControlVector < handle
                 'String',num2str(xxxlim(2),'%0.4g'), ...
                 'Value',xxxlim(2), ...
                 'HorizontalAlignment','center', ...
-                'Visible','on', ...
+                'Visible','off', ...
                 'Callback', @(~,~) this.maxboxCallback(control,xxxdef,xxxindx), ...
                 'ToolTipString',['upper limit for ''' xxxname '''']);
                         
+            % Construct the PERB button
+            this.perbbtn = uicontrol('Parent',this.panel, ...
+                'Style','pushbutton', ...
+                'Units','pixels', ...
+                'Position',[col1 2 colw this.rowh-4], ...
+                'String','PERB', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Callback', @(~,~) this.PerbCallback(control,xxxdef,xxxindx), ...
+                'ToolTipString',['Perturb the values of ''' xxxname ''' by 5% of axis limits']);            
+
+            % Construct the RAND button
+            this.randbtn = uicontrol('Parent',this.panel, ...
+                'Style','pushbutton', ...
+                'Units','pixels', ...
+                'Position',[col2 2 colw this.rowh-4], ...
+                'String','RAND', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Callback', @(~,~) this.RandCallback(control,xxxdef,xxxindx), ...
+                'ToolTipString',['Apply Uniform Random values to ''' xxxname '''']);            
+
             % construct bar graph widget for the vector
             this.baxes = axes('Parent', this.panel, ...
                 'Units','pixels', ...
@@ -127,11 +153,11 @@ classdef bdControlVector < handle
             ...    'BackgroundColor','g', ...
                 'FontWeight','bold', ...
                 'Callback', @(~,~) this.labelbtnCallback(control,xxxdef,xxxindx,xxxname), ...
-                'ToolTipString','Click to edit');
+                'ToolTipString',['more options for ''',xxxname,'''']);
 
             % listen for widget refresh events from the control panel 
-            this.listener1 = addlistener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx));
-            this.listener2 = addlistener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx));           
+            this.listener1 = addlistener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
+            this.listener2 = addlistener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));           
         end
         
         % Destructor
@@ -141,13 +167,17 @@ classdef bdControlVector < handle
         end
         
         function mode(this,flag)            
-            %disp('bdControlVector.mode()');
+            disp('bdControlVector.mode()');
             if flag
-                set(this.minbox,'Visible','off');
-                set(this.maxbox,'Visible','off');
+                this.minbox.Visible = 'off';
+                this.maxbox.Visible = 'off';
+                this.perbbtn.Visible = 'on';
+                this.randbtn.Visible = 'on';
             else
-                set(this.minbox,'Visible','on');
-                set(this.maxbox,'Visible','on');
+                this.minbox.Visible = 'on';
+                this.maxbox.Visible = 'on';
+                this.perbbtn.Visible = 'off';
+                this.randbtn.Visible = 'off';
             end                        
         end
 
@@ -209,6 +239,49 @@ classdef bdControlVector < handle
             end
         end
         
+        % PERB button callback. Applies a random perturbation to
+        % the current value. The perturbation is drawn from a uniform
+        % distribution that spans 5% of the limits specified in xxxdef.
+        function PerbCallback(this,control,xxxdef,xxxindx)
+            % determine the limits of the random values
+            xxxlim = control.sys.(xxxdef)(xxxindx).lim;
+            lo = xxxlim(1);
+            hi = xxxlim(2);
+            
+            % update the control panel with a perturned version of the data
+            valsize = size(control.sys.(xxxdef)(xxxindx).value);
+            control.sys.(xxxdef)(xxxindx).value =  ...
+                control.sys.(xxxdef)(xxxindx).value + ...
+                0.05*(hi-lo)*(rand(valsize)-0.5);
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            notify(control,xxxdef);
+            
+            % tell the solver to recompute the solution
+            notify(control,'recompute');
+        end
+
+        
+        % RAND button callback. Replaces the current value with a uniform
+        % random number drawn from the limits specified in xxxdef.
+        function RandCallback(this,control,xxxdef,xxxindx)
+            % determine the limits of the random values
+            xxxlim = control.sys.(xxxdef)(xxxindx).lim;
+            lo = xxxlim(1);
+            hi = xxxlim(2);
+            
+            % update the control panel.
+            valsize = size(control.sys.(xxxdef)(xxxindx).value);
+            control.sys.(xxxdef)(xxxindx).value = (hi-lo)*rand(valsize) + lo;
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            notify(control,xxxdef);
+
+            % tell the solver to recompute the solution
+            notify(control,'recompute');
+        end
+
+        
         % label button callback function
         function labelbtnCallback(this,control,xxxdef,xxxindx,xxxname)
             if isvalid(this.dialog)
@@ -221,7 +294,7 @@ classdef bdControlVector < handle
         end
 
         % Update the widgets according to the values in control.sys.xxxdef
-        function refresh(this,control,xxxdef,xxxindx) 
+        function refresh(this,control,xxxdef,xxxindx,modecheckbox) 
             disp(['bdControlVector.refresh:' xxxdef]);
             
             % extract the relevant fields from control.sys.xxxdef
@@ -239,6 +312,9 @@ classdef bdControlVector < handle
             % update the bar graph
             this.bgraph.YData = xxxvalue;
             this.baxes.YLim = xxxlim + [-1e-6 1e-6];
+            
+            % show/hide the slider widget according to the state of the caller's modecheckbox
+            this.mode(modecheckbox.Value)
         end
         
     end

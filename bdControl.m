@@ -327,7 +327,7 @@ classdef bdControl < handle
                 'FontSize',12, ...
                 'Parent', scroll.panel, ...
                 'Callback', @(src,~) this.RandCallback(src), ...
-                'ToolTipString', 'Apply Uniform Random Initial Conditions', ...
+                'ToolTipString', 'Apply Uniform Random values to all Initial Conditions', ...
                 'Position',[col4-1 ypos col5-col4-5 boxh]);
 
             % next row
@@ -355,7 +355,7 @@ classdef bdControl < handle
                         ypos = ypos + bdControlScalar.rowh; 
                     case 2
                         % construct a vector widget
-                        bdControlVector(this,'vardef',varindx,scroll.panel,ypos);
+                        bdControlVector(this,'vardef',varindx,scroll.panel,ypos,varcheckbox);
                         ypos = ypos + bdControlVector.rowh; 
                     case 3
                         % construct a matrix widget
@@ -394,7 +394,7 @@ classdef bdControl < handle
                             ypos = ypos + bdControlScalar.rowh; 
                         case 2
                             % construct a vector widget
-                            bdControlVector(this,'lagdef',lagindx,scroll.panel,ypos);
+                            bdControlVector(this,'lagdef',lagindx,scroll.panel,ypos,lagcheckbox);
                             ypos = ypos + bdControlVector.rowh; 
                         case 3
                             % construct a matrix widget
@@ -465,7 +465,7 @@ classdef bdControl < handle
                         ypos = ypos + bdControlScalar.rowh; 
                     case 2
                         % construct a vector widget
-                        bdControlVector(this,'pardef',parindx,scroll.panel,ypos);
+                        bdControlVector(this,'pardef',parindx,scroll.panel,ypos,parcheckbox);
                         ypos = ypos + bdControlVector.rowh; 
                     case 3
                         % construct a matrix widget

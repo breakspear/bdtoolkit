@@ -209,7 +209,6 @@ classdef bdControlScalarDialog < handle
             this.control.sys.(xxxdef)(xxxindx).value = (hi-lo)*rand(valsize) + lo;
             
             % notify all widgets (which includes ourself) that sys.xxxdef has changed
-            %notify(this.control,'refresh');
             notify(this.control,xxxdef);
 
             % tell the solver to recompute the solution
@@ -234,7 +233,6 @@ classdef bdControlScalarDialog < handle
                 0.05*(hi-lo)*(rand(valsize)-0.5);
             
             % notify all widgets (which includes ourself) that sys.xxxdef has changed
-            %notify(this.control,'refresh');
             notify(this.control,xxxdef);
             
             % tell the solver to recompute the solution
