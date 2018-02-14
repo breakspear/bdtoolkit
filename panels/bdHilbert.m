@@ -104,7 +104,7 @@ classdef bdHilbert < bdPanel
         end
          
         function redraw(this,control)
-            disp('bdHilbert.redraw()')
+            %disp('bdHilbert.redraw()')
 
             % get the details of the variable currently selected variable
             varname  = this.submenu.UserData.xxxname;          % generic name of variable

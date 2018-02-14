@@ -479,8 +479,8 @@ classdef bdGUI < handle
                        ''
                        'Stewart Heitmann & Michael Breakspear'
                        'QIMR Berghofer Medical Research Institute'
-                       'Stewart.Heitmann@qimrberghofer.edu.au'
-                       'Michael.Breakspear@qimrberghofer.edu.au'
+                       'Copyright (C) 2016-2018'
+                       'Open-Source BSD 2-clause License'
                        ''
                        'http://bdtoolbox.blogspot.com.au'
                        ''
@@ -871,52 +871,58 @@ classdef bdGUI < handle
 
             % find all parameter checkbox widgets in the scroll panel
             objs = findobj(panel,'Tag','bdExportPar');
-            objs = objs(end:-1:1);                  % reverse the order of the found widgets (because find returns the most recently created widget first)
-            for obj = objs'                         % for each checkbox widget ...
-                if obj.Value>0                      % if checkbox is enabled then ...
-                    name = obj.UserData.name;       % get the parameter name
-                    indx = obj.UserData.indx;       % get the parameter indx
-                    % ensure data.par exists
-                    if ~isfield(data,'par')
-                        data.par = [];
+            if ~isempty(objs)
+                objs = objs(end:-1:1);                  % reverse the order of the found widgets (because find returns the most recently created widget first)
+                for obj = objs'                         % for each checkbox widget ...
+                    if obj.Value>0                      % if checkbox is enabled then ...
+                        name = obj.UserData.name;       % get the parameter name
+                        indx = obj.UserData.indx;       % get the parameter indx
+                        % ensure data.par exists
+                        if ~isfield(data,'par')
+                            data.par = [];
+                        end
+                        % include the parameter values in the outgoing data
+                        data.par.(name) = this.control.sys.pardef(indx).value;
                     end
-                    % include the parameter values in the outgoing data
-                    data.par.(name) = this.control.sys.pardef(indx).value;
                 end
             end
-
+            
             % find all time lag checkbox widgets in the scroll panel
             objs = findobj(panel,'Tag','bdExportLag');
-            objs = objs(end:-1:1);                  % reverse the order of the found widgets (because find returns the most recently created widget first)          
-            for obj = objs'                         % for each checkbox widget ...
-                if obj.Value>0                      % if checkbox is enabled then ...
-                    name = obj.UserData.name;       % get the parameter name
-                    indx = obj.UserData.indx;       % get the parameter indx
-                    % ensure data.lag exists
-                    if ~isfield(data,'lag')
-                        data.lag = [];
+            if ~isempty(objs)
+                objs = objs(end:-1:1);                  % reverse the order of the found widgets (because find returns the most recently created widget first)          
+                for obj = objs'                         % for each checkbox widget ...
+                    if obj.Value>0                      % if checkbox is enabled then ...
+                        name = obj.UserData.name;       % get the parameter name
+                        indx = obj.UserData.indx;       % get the parameter indx
+                        % ensure data.lag exists
+                        if ~isfield(data,'lag')
+                            data.lag = [];
+                        end
+                        % include the lag parameter values in the outgoing data
+                        data.lag.(name) = this.control.sys.lagdef(indx).value;
                     end
-                    % include the lag parameter values in the outgoing data
-                    data.lag.(name) = this.control.sys.lagdef(indx).value;
                 end
             end
             
             % find all solution variable checkbox widgets in the scroll panel
             objs = findobj(panel,'Tag','bdExportVar');
-            objs = objs(end:-1:1);                  % reverse the order of the found widgets (because find returns the most recently created widget first)
-            for obj = objs'                         % for each checkbox widget ...
-                if obj.Value>0                      % if checkbox is enabled then ...
-                    name = obj.UserData.name;       % get the variable name
-                    solindx = obj.UserData.solindx; % get the solution indx
-                    % ensure data.var exists
-                    if ~isfield(data,'var')
-                        data.var = [];
+            if ~isempty(objs)
+                objs = objs(end:-1:1);                  % reverse the order of the found widgets (because find returns the most recently created widget first)
+                for obj = objs'                         % for each checkbox widget ...
+                    if obj.Value>0                      % if checkbox is enabled then ...
+                        name = obj.UserData.name;       % get the variable name
+                        solindx = obj.UserData.solindx; % get the solution indx
+                        % ensure data.var exists
+                        if ~isfield(data,'var')
+                            data.var = [];
+                        end
+                        % include the variable values in the outgoing data
+                        data.var.(name) = this.control.sol.y(solindx,:);
                     end
-                    % include the variable values in the outgoing data
-                    data.var.(name) = this.control.sol.y(solindx,:);
                 end
             end
-
+            
             % find the time checkbox widget in the scroll panel
             objs = findobj(panel,'Tag','bdExportTime');
             if objs.Value>0
@@ -926,17 +932,19 @@ classdef bdGUI < handle
 
             % find all panel-related checkbox widgets in the scroll panel
             objs = findobj(panel,'Tag','bdExportPanel');
-            objs = objs(end:-1:1);                          % reverse the order of the found widgets (because find returns the most recently created widget first)
-            for obj = objs'                                 % for each checkbox widget ...
-                if obj.Value>0                              % if checkbox is enabled then ...
-                    % ensure data.panels exists
-                    if ~isfield(data,'panels')
-                        data.panels = [];
+            if ~isempty(objs)
+                objs = objs(end:-1:1);                          % reverse the order of the found widgets (because find returns the most recently created widget first)
+                for obj = objs'                                 % for each checkbox widget ...
+                    if obj.Value>0                              % if checkbox is enabled then ...
+                        % ensure data.panels exists
+                        if ~isfield(data,'panels')
+                            data.panels = [];
+                        end
+                        % get the name of the panel class from the widget UserData
+                        panelclass = obj.UserData.panelclass;
+                        % copy the panel data to the outgoing data
+                        data.panels.(panelclass) = this.display.ExportPanel(panelclass);
                     end
-                    % get the name of the panel class from the widget UserData
-                    panelclass = obj.UserData.panelclass;
-                    % copy the panel data to the outgoing data
-                    data.panels.(panelclass) = this.display.ExportPanel(panelclass);
                 end
             end
             

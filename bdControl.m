@@ -327,7 +327,7 @@ classdef bdControl < handle
                 'FontSize',12, ...
                 'Parent', scroll.panel, ...
                 'Callback', @(src,~) this.RandCallback(src), ...
-                'ToolTipString', 'Apply Uniform Random values to all Initial Conditions', ...
+                'ToolTipString', 'Assign Uniform Random values to all Initial Conditions', ...
                 'Position',[col4-1 ypos col5-col4-5 boxh]);
 
             % next row
@@ -359,7 +359,7 @@ classdef bdControl < handle
                         ypos = ypos + bdControlVector.rowh; 
                     case 3
                         % construct a matrix widget
-                        bdControlMatrix(this,'vardef',varindx,scroll.panel,ypos);
+                        bdControlMatrix(this,'vardef',varindx,scroll.panel,ypos,varcheckbox);
                         ypos = ypos + bdControlMatrix.rowh; 
                 end
             end
@@ -398,7 +398,7 @@ classdef bdControl < handle
                             ypos = ypos + bdControlVector.rowh; 
                         case 3
                             % construct a matrix widget
-                            bdControlMatrix(this,'lagdef',lagindx,scroll.panel,ypos);
+                            bdControlMatrix(this,'lagdef',lagindx,scroll.panel,ypos,lagcheckbox);
                             ypos = ypos + bdControlMatrix.rowh; 
                     end
                 end     
@@ -469,7 +469,7 @@ classdef bdControl < handle
                         ypos = ypos + bdControlVector.rowh; 
                     case 3
                         % construct a matrix widget
-                        bdControlMatrix(this,'pardef',parindx,scroll.panel,ypos);
+                        bdControlMatrix(this,'pardef',parindx,scroll.panel,ypos,parcheckbox);
                         ypos = ypos + bdControlMatrix.rowh; 
                 end
             end
@@ -764,6 +764,7 @@ classdef bdControl < handle
                         
             % clear the last warning message
             lastwarn('');            
+            oldwarn = warning('off','backtrace');                
 
             % if the EVOLVE button is active then ....
             if this.ui_evolve.Value
@@ -773,6 +774,9 @@ classdef bdControl < handle
                 % Compute the solution without altering the initial conditions
                 this.Solve();
             end
+            
+            % restore the old warning state
+            warning(oldwarn.state,'backtrace'); 
 
             % Display any warnings from the solver
             [msg,msgid] = lastwarn();
@@ -1137,7 +1141,7 @@ classdef bdControl < handle
     
         % Callback for the RAND button
         function RandCallback(this,button)
-            disp('bdControl.RandCallback()');
+            %disp('bdControl.RandCallback()');
             
             % for each entry in sys.vardef
             for indx = 1:numel(this.sys.vardef)

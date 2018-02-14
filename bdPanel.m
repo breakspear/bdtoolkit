@@ -63,7 +63,7 @@ classdef (Abstract) bdPanel < handle
                
         % Close the panel
         function close(this)
-            disp('bdPanel.close()');
+            %disp('bdPanel.close()');
             % Get the tabgroup handle
             tabgroup = this.tab.Parent;
             

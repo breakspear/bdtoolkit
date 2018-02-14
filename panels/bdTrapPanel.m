@@ -115,7 +115,7 @@ classdef bdTrapPanel < bdPanel
           
        % Check the trap axes for anything suspicious
        function redraw(this,control)
-            disp('bdTrapPanel.redraw()') 
+            %disp('bdTrapPanel.redraw()') 
             
             % Error messages are accumulated in this cell array.
             errmsgs = {};

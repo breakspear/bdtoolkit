@@ -180,7 +180,7 @@ classdef bdControlTime < handle
         
         % min box callback function
         function minboxCallback(this,control)
-            disp('bdControlTime.minboxCallback()');
+            %disp('bdControlTime.minboxCallback()');
             % read the minbox string and convert to a number
             str = this.minbox.String;
             minval = str2double(str);
@@ -219,7 +219,7 @@ classdef bdControlTime < handle
 
         % max box callback function
         function maxboxCallback(this,control)
-            disp('bdControlTime.maxboxCallback()');
+            %disp('bdControlTime.maxboxCallback()');
             % read the maxbox string and convert to a number
             str = this.maxbox.String; 
             maxval = str2double(str);
@@ -258,7 +258,7 @@ classdef bdControlTime < handle
 
         % val box callback function
         function valboxCallback(this,control)
-            disp('bdControlTime.valboxCallback()');
+            %disp('bdControlTime.valboxCallback()');
             % read the valbox string and convert to a number
             str = this.valbox.String; 
             val = str2double(str);

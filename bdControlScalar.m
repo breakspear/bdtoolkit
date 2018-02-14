@@ -70,11 +70,12 @@ classdef bdControlScalar < handle
             
             % define widget geometry
             colw = 50;
+            gap = 5;
             col1 = 2;
-            col2 = col1 + colw + 5;
-            col3 = col2 + colw + 5;
-            col4 = col3 + colw + 5;
-            labelw = 50;
+            col2 = col1 + colw + gap;
+            col3 = col2 + colw + gap;
+            col4 = col3 + colw + gap;
+            col5 = col4 + colw + gap;
             
             % Construct the panel container
             this.panel = uipanel('Parent',parent, ...
@@ -143,13 +144,12 @@ classdef bdControlScalar < handle
             this.labelbtn = uicontrol('Parent',this.panel, ...
                 'Style', 'pushbutton', ...
                 'Units','pixels',...
-                'Position',[col4 2 labelw this.rowh-4], ...
+                'Position',[col4 2 colw this.rowh-4], ...
                 'String',xxxname, ...
-            ...    'HorizontalAlignment', 'left', ...
             ...    'BackgroundColor','g', ...
                 'FontWeight','bold', ...
                 'Callback', @(~,~) this.labelbtnCallback(control,xxxdef,xxxindx,xxxname), ...
-                'ToolTipString',['more options for ''',xxxname,'''']);
+                'ToolTipString',['More options for ''',xxxname,'''']);
        
             % Listen for widget refresh events from the control panel.
             this.listener1 = addlistener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
@@ -338,7 +338,7 @@ classdef bdControlScalar < handle
         
         % Update the widgets according to the values in control.sys.xxxdef
         function refresh(this,control,xxxdef,xxxindx,modecheckbox) 
-            disp(['bdControlScalar.refresh:' xxxdef]);
+            %disp(['bdControlScalar.refresh:' xxxdef]);
             
             % extract the relevant fields from control.sys.xxxdef
             xxxvalue = control.sys.(xxxdef)(xxxindx).value;

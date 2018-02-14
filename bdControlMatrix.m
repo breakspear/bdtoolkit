@@ -44,6 +44,11 @@ classdef bdControlMatrix < handle
         panel
         minbox
         maxbox
+        plusbtn
+        minusbtn
+        randbtn
+        peyebtn
+        meyebtn
         imgaxes
         imgplot
         labelbtn
@@ -53,7 +58,7 @@ classdef bdControlMatrix < handle
     end
     
     methods
-        function this = bdControlMatrix(control,xxxdef,xxxindx,parent,ypos)
+        function this = bdControlMatrix(control,xxxdef,xxxindx,parent,ypos,modecheckbox)
             %disp('bdControlMatrix()');
             
             % init empty handle to dialog box
@@ -68,13 +73,22 @@ classdef bdControlMatrix < handle
             this.parent = parent;
             
             % define widget geometry
-            boxh = 20;
-            colw = 50;
+            colw = 22.5;                  % column width
+            gap = 5;                    % column gap
+            boxh = 20;                  % box height
             col1 = 2;
-            col2 = col1 + colw + 5;
-            col3 = col2 + colw + 5;
-            col4 = col3 + colw + 5;
-            labelw = 50;
+            col2 = ceil(col1 + colw + gap);
+            col3 = floor(col2 + colw + gap);
+            col4 = ceil(col3 + colw + gap);
+            col5 = floor(col4 + colw + gap);
+            col6 = ceil(col5 + colw + gap);
+            col7 = floor(col6 + colw + gap);
+            col8 = ceil(col7 + colw + gap);
+            col9 = floor(col8 + colw + gap);
+            row1 = 4;
+            row1b = 17;
+            row2 = row1 + boxh + 4;
+            row3 = row2 + boxh + 4;
             
             % Construct the panel container
             this.panel = uipanel('Parent',parent, ...
@@ -87,11 +101,11 @@ classdef bdControlMatrix < handle
             this.minbox = uicontrol('Parent',this.panel, ...
                 'Style', 'edit', ...
                 'Units','pixels',...
-                'Position',[col1 17 colw boxh], ...
+                'Position',[col1 row1b col3-col1-gap boxh], ...
                 'String',num2str(xxxlim(1),'%0.4g'), ...
                 'Value',xxxlim(1), ...
                 'HorizontalAlignment','center', ...
-                'Visible','on', ...
+                'Visible','off', ...
                 'Callback', @(~,~) this.minboxCallback(control,xxxdef,xxxindx), ...
                 'ToolTipString',['lower limit for ''' xxxname '''']);
 
@@ -99,18 +113,78 @@ classdef bdControlMatrix < handle
             this.maxbox = uicontrol('Parent',this.panel, ...
                 'Style', 'edit', ...
                 'Units','pixels',...
-                'Position',[col2 17 colw boxh], ...
+                'Position',[col3 row1b col5-col3-gap boxh], ...
                 'String',num2str(xxxlim(2),'%0.4g'), ...
                 'Value',xxxlim(2), ...
                 'HorizontalAlignment','center', ...
-                'Visible','on', ...
+                'Visible','off', ...
                 'Callback', @(~,~) this.maxboxCallback(control,xxxdef,xxxindx), ...
                 'ToolTipString',['upper limit for ''' xxxname '''']);
-                        
+            
+            % Construct the PLUS button
+            this.plusbtn = uicontrol('Parent',this.panel, ...
+                'Style','pushbutton', ...
+                'Units','pixels', ...
+                'Position',[col1 row2 col2-col1-gap boxh], ...
+                'String','+', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Callback', @(~,~) this.PlusCallback(control,xxxdef,xxxindx), ...
+                'ToolTipString',['Increment the values of ''' xxxname '''']);            
+
+            % Construct the MINUS button
+            this.minusbtn = uicontrol('Parent',this.panel, ...
+                'Style','pushbutton', ...
+                'Units','pixels', ...
+                'Position',[col2 row2 col3-col2-gap boxh], ...
+                'String','-', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Callback', @(~,~) this.MinusCallback(control,xxxdef,xxxindx), ...
+                'ToolTipString',['Decrement the values of ''' xxxname '''']);            
+            
+            % Construct the RAND button
+            this.randbtn = uicontrol('Parent',this.panel, ...
+                'Style','pushbutton', ...
+                'Units','pixels', ...
+                'Position',[col3 row2 col5-col3-gap boxh], ...
+                'String','RAND', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Callback', @(~,~) this.RandCallback(control,xxxdef,xxxindx), ...
+                'ToolTipString',['Assign Uniform Random values to ''' xxxname '''']);            
+
+            % Construct the +EYE button
+            this.peyebtn = uicontrol('Parent',this.panel, ...
+                'Style','pushbutton', ...
+                'Units','pixels', ...
+                'Position',[col1 row1 col3-col1-gap boxh], ...
+                'String','+EYE', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Callback', @(~,~) this.PeyeCallback(control,xxxdef,xxxindx), ...
+                'ToolTipString',['Increment the diagonal entries of ''' xxxname '''']);            
+
+            % Construct the -EYE button
+            this.meyebtn = uicontrol('Parent',this.panel, ...
+                'Style','pushbutton', ...
+                'Units','pixels', ...
+                'Position',[col3 row1 col5-col3-gap boxh], ...
+                'String','-EYE', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Callback', @(~,~) this.MeyeCallback(control,xxxdef,xxxindx), ...
+                'ToolTipString',['Decrement the diagonal entries of ''' xxxname '''']);            
+
             % construct image widget for the matrix
             this.imgaxes = axes('Parent', this.panel, ...
                 'Units','pixels', ...
-                'Position',[col3+1 3 colw-2 colw-2]);
+                'Position',[col5+1 row1 col7-col5-gap-2 row3-row1-4]);
             this.imgplot = imagesc(xxxvalue(:,:,1), ...
                 'Parent',this.imgaxes, ...
                 xxxlim);
@@ -120,16 +194,16 @@ classdef bdControlMatrix < handle
             this.labelbtn = uicontrol('Parent',this.panel, ...
                 'Style', 'pushbutton', ...
                 'Units','pixels',...
-                'Position',[col4 17 labelw boxh], ...
+                'Position',[col7 row1b col9-col7-gap boxh], ...
                 'String',xxxname, ...
             ...    'BackgroundColor','g', ...
                 'FontWeight','bold', ...
                 'Callback', @(~,~) this.labelbtnCallback(control,xxxdef,xxxindx,xxxname), ...
-                'ToolTipString','Click to edit');
+                'ToolTipString',['More options for ''',xxxname,'''']);
             
             % listen for widget refresh events from the control panel 
-            this.listener1 = addlistener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx));
-            this.listener2 = addlistener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx));
+            this.listener1 = addlistener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
+            this.listener2 = addlistener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
         end
         
         % Destructor
@@ -141,11 +215,21 @@ classdef bdControlMatrix < handle
         function mode(this,flag)            
             %disp('bdControlMatrix.mode()');
             if flag
-                set(this.minbox,'Visible','off');
-                set(this.maxbox,'Visible','off');
+                this.minbox.Visible = 'off';
+                this.maxbox.Visible = 'off';
+                this.plusbtn.Visible = 'on';
+                this.minusbtn.Visible = 'on';
+                this.randbtn.Visible = 'on';
+                this.peyebtn.Visible = 'on';
+                this.meyebtn.Visible = 'on';
             else
-                set(this.minbox,'Visible','on');
-                set(this.maxbox,'Visible','on');
+                this.minbox.Visible = 'on';
+                this.maxbox.Visible = 'on';
+                this.plusbtn.Visible = 'off';
+                this.minusbtn.Visible = 'off';
+                this.randbtn.Visible = 'off';
+                this.peyebtn.Visible = 'off';
+                this.meyebtn.Visible = 'off';
             end                        
         end
 
@@ -218,9 +302,112 @@ classdef bdControlMatrix < handle
             end      
         end
        
+        % PLUS button callback. Increments the current values by 5 percent
+        % of the limit specified in xxxdef.
+        function PlusCallback(this,control,xxxdef,xxxindx)
+            % determine the limits of the values
+            xxxlim = control.sys.(xxxdef)(xxxindx).lim;
+            lo = xxxlim(1);
+            hi = xxxlim(2);
+            
+            % update the control panel with an incremented version of the data
+            valsize = size(control.sys.(xxxdef)(xxxindx).value);
+            control.sys.(xxxdef)(xxxindx).value =  ...
+                control.sys.(xxxdef)(xxxindx).value + 0.05*(hi-lo);
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            notify(control,xxxdef);
+            
+            % tell the solver to recompute the solution
+            notify(control,'recompute');
+        end
+
+        % MINUS button callback. Decrements the current values by 5 percent
+        % of the limit specified in xxxdef.
+        function MinusCallback(this,control,xxxdef,xxxindx)
+            % determine the limits of the values
+            xxxlim = control.sys.(xxxdef)(xxxindx).lim;
+            lo = xxxlim(1);
+            hi = xxxlim(2);
+            
+            % update the control panel with a decremented version of the data
+            valsize = size(control.sys.(xxxdef)(xxxindx).value);
+            control.sys.(xxxdef)(xxxindx).value =  ...
+                control.sys.(xxxdef)(xxxindx).value - 0.05*(hi-lo);
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            notify(control,xxxdef);
+            
+            % tell the solver to recompute the solution
+            notify(control,'recompute');
+        end
+        
+        % RAND button callback. Replaces the current value with a uniform
+        % random number drawn from the limits specified in xxxdef.
+        function RandCallback(this,control,xxxdef,xxxindx)
+            % determine the limits of the random values
+            xxxlim = control.sys.(xxxdef)(xxxindx).lim;
+            lo = xxxlim(1);
+            hi = xxxlim(2);
+            
+            % update the control panel.
+            valsize = size(control.sys.(xxxdef)(xxxindx).value);
+            control.sys.(xxxdef)(xxxindx).value = (hi-lo)*rand(valsize) + lo;
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            notify(control,xxxdef);
+
+            % tell the solver to recompute the solution
+            notify(control,'recompute');
+        end
+
+        % +EYE button callback. Increments the diagonal values by 5 percent
+        % of the limit specified in xxxdef.
+        function PeyeCallback(this,control,xxxdef,xxxindx)
+            % determine the limits of the values
+            xxxlim = control.sys.(xxxdef)(xxxindx).lim;
+            lo = xxxlim(1);
+            hi = xxxlim(2);
+
+            % determine the size of the matrix
+            valsize = size(control.sys.(xxxdef)(xxxindx).value);
+
+            % increment the diagonal
+            control.sys.(xxxdef)(xxxindx).value =  ...
+                control.sys.(xxxdef)(xxxindx).value + 0.05*(hi-lo)*eye(valsize);
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            notify(control,xxxdef);
+            
+            % tell the solver to recompute the solution
+            notify(control,'recompute');
+        end
+        
+        % -EYE button callback. Decrements the diagonal values by 5 percent
+        % of the limit specified in xxxdef.
+        function MeyeCallback(this,control,xxxdef,xxxindx)
+            % determine the limits of the values
+            xxxlim = control.sys.(xxxdef)(xxxindx).lim;
+            lo = xxxlim(1);
+            hi = xxxlim(2);
+
+            % determine the size of the matrix
+            valsize = size(control.sys.(xxxdef)(xxxindx).value);
+
+            % increment the diagonal
+            control.sys.(xxxdef)(xxxindx).value =  ...
+                control.sys.(xxxdef)(xxxindx).value - 0.05*(hi-lo)*eye(valsize);
+            
+            % notify all widgets (which includes ourself) that sys.xxxdef has changed
+            notify(control,xxxdef);
+            
+            % tell the solver to recompute the solution
+            notify(control,'recompute');
+        end
+                
         % Update the widgets according to the values in control.sys.xxxdef
-        function refresh(this,control,xxxdef,xxxindx) 
-            disp(['bdControlMatrix.refresh:' xxxdef]);
+        function refresh(this,control,xxxdef,xxxindx,modecheckbox) 
+            %disp(['bdControlMatrix.refresh:' xxxdef]);
             
             % extract the relevant fields from control.sys.xxxdef
             xxxvalue = control.sys.(xxxdef)(xxxindx).value;
@@ -239,6 +426,9 @@ classdef bdControlMatrix < handle
             
             % update the colour scale limits of the image
             this.imgaxes.CLim = [this.minbox.Value, this.maxbox.Value] + [-1e-6, 1e-6];
+            
+            % show/hide the slider widget according to the state of the caller's modecheckbox
+            this.mode(modecheckbox.Value);
         end
         
     end
