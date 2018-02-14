@@ -1,6 +1,11 @@
 # Release Notes
 # Brain Dynamics Toolbox
 
+## Version 2018a
+Not yet released.
+
+Major overhaul of the graphical user interface and the panel classes. The new control panel includes sliders and push buttons for manipulating parameters. The Initial Conditions can now be automatically evolved on each simulation run so that numerical solutions can be continued while parameters are slowly varied. A time slider has been included for dealing with transients. New panels are included for Bifurcation plots and Auxiliary plots. The way of implementing auxiliary functions has changed. The model-specific *self* function has been deprecated.
+
 ## Version 2017c
 Released 16 Nov 2017.
 
