@@ -9,9 +9,9 @@
 %   gui = bdGUI(sys);         % Open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2017c)
+%   Stewart Heitmann (2017c,2018a)
 
-% Copyright (C) 2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2017-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -125,9 +125,6 @@ function sys = DFCL2009()
 
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = [];                 
-    
-    % Function hook for the GUI System-New menu
-    sys.self = str2func(mfilename);
 end
 
 % The ODE function. 

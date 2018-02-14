@@ -7,11 +7,10 @@
 %   gui = bdGUI(sys);               % open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2016a,2017a,2017c)
 %   Matthew Aburn (2016a)
-%   This model was called "MultiplicativeNoise" prior to version 2017c.
+%   Stewart Heitmann (2016a,2017a,2017c,2018a)
  
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -84,9 +83,6 @@ function sys = KloedenPlaten446()
 
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = [];     
-    
-    % Handle to this function. The GUI uses it to construct a new system. 
-    sys.self = str2func(mfilename);
 end
 
 % The deterministic part of the equation

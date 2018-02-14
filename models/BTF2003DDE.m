@@ -160,9 +160,6 @@ function sys = BTF2003DDE(Kij)
     % Include the Space-Time panel in the GUI
     sys.panels.bdSpaceTime = [];
 
-    % Include the Hilbert Transform panel in the GUI
-    sys.panels.bdHilbert = [];
-
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = []; 
 end

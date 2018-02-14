@@ -13,36 +13,9 @@
 %   where F(t,y) is implemented by sys.odefun(t,y,a,b)
 %   and G(t,y) is implemented by sys.sdefun(t,y,a,b).
 %
-% Example 1: Using the Brain Dynamics GUI
+% Example:
 %   sys = BrownianMotion();       % construct the system struct
 %   gui = bdGUI(sys);             % open the Brain Dynamics GUI
-% 
-% Example 2: Using the Brain Dynamics command-line solver
-%   sys = BrownianMotion();                           % system struct
-%   sys.pardef = bdSetValue(sys.pardef,'mu',-0.1);    % 'mu' parameter
-%   sys.pardef = bdSetValue(sys.pardef,'sigma',0.1);  % 'sigma' parameter
-%   sys.vardef = bdSetValue(sys.vardef,'Y',rand);     % 'Y' initial value
-%   sys.tspan = [0 10];                               % time domain
-%   sol = bdSolve(sys);                               % solve
-%   t = sol.x;                                        % time steps
-%   Y = sol.y;                                        % solution variables
-%   dW = sol.dW;                                      % Wiener increments
-%   ax = plotyy(t,Y, t,dW);                           % plot the result
-%   xlabel('time');
-%   ylabel(ax(1),'Y');
-%   ylabel(ax(2),'dW');
-%
-% Example 3: Using pre-generated (fixed) random values
-%   sys = BrownianMotion();                       % construct system struct
-%   sys.sdeoption.randn = randn(1,101);           % standard normal values
-%   sys.tspan = [0 10];                           % time domain
-%   sol1 = bdSolve(sys);                          % solve
-%   sol2 = bdSolve(sys);                          % solve (again)
-%   plotyy(sol1.x,sol1.y, sol1.x,sol1.dW);        % plot 1st result
-%   hold on
-%   plotyy(sol2.x,sol2.y, sol2.x,sol2.dW);        % plot 2nd result
-%   hold off                                      
-%   std(sol1.y - sol2.y)                          % results are identical
 %
 % Authors
 %   Stewart Heitmann (2016a,2017a,2018a)
@@ -96,9 +69,9 @@ function sys = BrownianMotion()
 
     % Include the Latex (Equations) panel in the GUI
     sys.panels.bdLatexPanel.title = 'Equations'; 
-    sys.panels.bdLatexPanel.latex = {'\textbf{SDEdemo1}';
+    sys.panels.bdLatexPanel.latex = {'\textbf{Brownian Motion}';
         '';
-        'An Ito Stochastic Differential Equation describing geometric Brownian motion';
+        'An Ito Stochastic Differential Equation of geometric Brownian motion';
         '\qquad $dY = \mu\,Y\,dt + \sigma\,Y\,dW_t$';
         'where';
         '\qquad $Y(t)$ is the dynamic variable,';

@@ -14,9 +14,9 @@ function sys = WaveEquation1D(n)
     %   gui = bdGUI(sys);           % run the GUI application
     %
     % Authors
-    %   Stewart Heitmann (2016a,2017a)
+    %   Stewart Heitmann (2016a,2017a,2018a)
     
-    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -114,9 +114,6 @@ function sys = WaveEquation1D(n)
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel.title = 'Solver';                                   
 
-    % Function hook for the GUI System-New menu
-    sys.self = @self;    
-            
               
     % The ODE function; using the precomputed values of Dxx
     function dY = odefun(~,Y,c,dx)
@@ -134,17 +131,4 @@ function sys = WaveEquation1D(n)
         dY = [dU; dV];
     end
 
-end
-   
-% This function is called by the GUI System-New menu
-function sys = self()
-    % open a dialog box prompting the user for the value of n
-    n = bdEditScalars({100,'number of spatial points'}, ...
-        'New System', 'WaveEquation1D');
-    % if the user cancelled then...
-    if isempty(n)
-        sys = [];                       % return empty sys
-    else
-        sys = WaveEquation1D(round(n));  % generate a new sys
-    end
 end

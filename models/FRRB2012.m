@@ -14,9 +14,9 @@
 %   gui = bdGUI(sys);               % open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2017b,2017c)
+%   Stewart Heitmann (2017b,2017c,2018a)
  
-% Copyright (C) 2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2017-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -90,9 +90,6 @@ function sys = FRRB2012(n)
 
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = [];     
-    
-    % Handle to this function. The GUI uses it to construct a new system. 
-    sys.self = str2func(mfilename);
 end
 
 % The deterministic coefficient function
@@ -105,6 +102,5 @@ function G = sdeG(~,r,~,~,eta,rho)
     n = numel(r);                 % number of instances
     I1 = eye(n).*(1-rho).*eta;    % eta * (1-rho)
     I2 = diag(r.*rho.*eta);       % eta * rho * r   
-    
     G = [I1, I2];                 % return G as (n x 2n) matrix
 end

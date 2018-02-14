@@ -15,9 +15,9 @@ function sys = SwiftHohenberg1D(n,dx)
     %   gui = bdGUI(sys);               % open the Brain Dynamics GUI
     %
     % Authors
-    %   Stewart Heitmann (2016a,2017a,2017c)
+    %   Stewart Heitmann (2016a,2017a,2017c,2018a)
 
-    % Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -102,8 +102,6 @@ function sys = SwiftHohenberg1D(n,dx)
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = [];                      
               
-    % Function hook for the GUI System-New menu
-    sys.self = @self;    
 
     % The ODE function; using the precomputed values of Ix and Dxx
     function dU = odefun(t,U,mu,nu,dx)
@@ -112,16 +110,4 @@ function sys = SwiftHohenberg1D(n,dx)
     end
 
 end
-   
-% This function is called by the GUI System-New menu
-function sys = self()
-    % open a dialog box prompting the user for parameters (n,dx)
-    parm = bdEditScalars({300,'number of spatial points'; 0.25,'spatial step size'}, ...
-        'New System', mfilename);
-    % if the user cancelled then...
-    if isempty(parm)
-        sys = [];                       % return empty sys
-    else
-        sys = SwiftHohenberg1D(round(parm(1)),parm(2));  % generate a new sys
-    end
-end
+  

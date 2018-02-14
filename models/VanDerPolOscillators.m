@@ -29,26 +29,6 @@ function sys = VanDerPolOscillators(Kij)
     %   plot(tplot,U,'b', tplot,V,'r');                     % plot the result
     %   xlabel('time'); ylabel('U (blue), V (red)');        % axis labels
     %
-    % Example 3: Calling ODE45 manually
-    %   n = 20;                                      % number of nodes
-    %   Kij = circshift(eye(n),1) + ...              % nearest-neighbour
-    %         circshift(eye(n),-1);                  % coupling
-    %   sys = VanDerPolOscillators(Kij);             % system struct
-    %   odefun = sys.odefun;                         % ODE function handle
-    %   [~,a,b] = deal(sys.pardef{:,2});             % default parameters
-    %   [U0,V0] = deal(sys.vardef{:,2});             % initial conditions
-    %   Y0=[U0;V0];                                  % concatenate as a column
-    %   odeopt = sys.odeoption;                      % default solver options
-    %   tspan = sys.tspan;                           % default time span
-    %   sol = ode45(odefun,tspan,Y0,odeopt,Kij,a,b); % call the matlab solver
-    %   tsol = tspan(1):0.1:tspan(2);                % time domain of interest
-    %   U = deval(sol,tsol,1:n);                     % extract the U solution
-    %   V = deval(sol,tsol,[1:n]+n);                 % extract the V solution
-    %   subplot(2,1,1);                             
-    %   plot(tsol,U); xlabel('time'); ylabel('U');   % plot the U solution
-    %   subplot(2,1,2); 
-    %   plot(tsol,V); xlabel('time'); ylabel('V');   % plot the V solution
-    %
     % Authors
     %   Stewart Heitmann (2016a,2017a,2018a)
 

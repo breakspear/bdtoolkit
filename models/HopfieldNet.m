@@ -15,9 +15,9 @@
 %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2016a,2017a)
+%   Stewart Heitmann (2016a,2017a,2018a)
 
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -94,26 +94,9 @@ function sys = HopfieldNet(Wij)
 
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel.title = 'Solver';
-
-    % Function hook for the GUI System-New menu
-    sys.self = @self;
 end
 
 % The ODE function.
 function dV = odefun(t,V,Wij,Ii,b,tau)  
     dV = (-V + Wij*tanh(b*V) + Ii)./tau;
-end
-
-% The self function is called by the GUI to reconfigure the model
-function sys = self()
-    % Prompt the user to load Wij from file. 
-    info = {mfilename,'','Load the connectivity matrix, Wij'};
-    Wij = bdLoadMatrix(mfilename,info);
-    if isempty(Wij) 
-        % the user cancelled the operation
-        sys = [];  
-    else
-        % pass Kij to our main function
-        sys = HopfieldNet(Wij);
-    end
 end

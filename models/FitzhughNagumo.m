@@ -18,10 +18,10 @@
 %   Stewart Heitmann (2017a,2018a)
 %
 % See Also:
-% Sanz-Leon et al. (2015) Mathematical framework for large-scale brain network
-%   modeling in The Virtual Brain. NeuroImage 111: 385--430.
 % FitzHugh (1955) Mathematical models of threshold phenomena in the nerve
 %   membrane. Bull. Math. Biophysics, 17:257--278
+% Sanz-Leon et al. (2015) Mathematical framework for large-scale brain network
+%   modeling in The Virtual Brain. NeuroImage 111: 385--430.
 
 
 % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
@@ -105,8 +105,8 @@ function sys = FitzhughNagumo(Kij)
         ['\qquad 1. This simulation has $n{=}',num2str(n),'$.'];
         '';
         'References:';
-        '\quad Sanz-Leon et al. (2015) Mathematical framework for large-scale brain network modeling in The Virtual Brain, \textit{NeuroImage} \textbf{111}:385--430.';
-        '\quad FitzHugh (1955) Mathematical models of threshold phenomena in the nerve membrane, \textit{Bull. Math. Biophysics}, \textbf{17}:257--278'};
+        '\quad FitzHugh (1955) Mathematical models of threshold phenomena in the nerve membrane, \textit{Bull. Math. Biophysics}, \textbf{17}:257--278';
+        '\quad Sanz-Leon et al. (2015) Mathematical framework for large-scale brain network modeling in The Virtual Brain, \textit{NeuroImage} \textbf{111}:385--430.'};
     
     % Include the Time Portrait panel in the GUI
     sys.panels.bdTimePortrait = [];
@@ -117,9 +117,6 @@ function sys = FitzhughNagumo(Kij)
     % Include the Space-Time Portrait panel in the GUI
     sys.panels.bdSpaceTime = [];
 
-    % Include the Correlation panel on the GUI
-    sys.panels.bdCorrPanel = [];
-    
     % Include the Solver panel in the GUI
     sys.panels.bdSolverPanel = [];                 
 end

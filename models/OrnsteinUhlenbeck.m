@@ -24,22 +24,10 @@
 %   subplot(1,2,2);
 %   histfit(dW(:)); xlabel('dW'); ylabel('count');     % noise histogram
 %
-% Example 3: Using pre-generated random values
-%   n = 20;                                       % number of processes
-%   sys = OrnsteinUhlenbeck(n);                   % construct system struct
-%   sys.sdeoption.randn = randn(n,101);           % standard normal values
-%   sys.tspan = [0 10];                           % time domain
-%   sol1 = bdSolve(sys);                          % solve
-%   sol2 = bdSolve(sys);                          % solve (again)
-%   figure
-%   plot(sol1.x,sol1.y,'b');  title('sol1');      % plot 1st result in blue
-%   figure
-%   plot(sol2.x,sol2.y,'r');  title('sol2');      % plot 2nd result in red                                      
-%
 % Authors
-%   Stewart Heitmann (2016a,2017a,2017c)
+%   Stewart Heitmann (2016a,2017a,2017c,2018a)
 
-% Copyright (C) 2016,2017 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -112,9 +100,6 @@ function sys = OrnsteinUhlenbeck(n)
     
     % Default time span (optional)
     sys.tspan = [0 2000];  
-           
-    % Function hook for the bdGUI System-Reconfigure menu
-    sys.self = @self;    
 end
 
 % The deterministic part of the equation.
@@ -125,17 +110,4 @@ end
 % The stochastic part of the equation.
 function G = sdeG(t,Y,theta,mu,sigma)
     G = sigma .* eye(numel(Y));
-end
-
-% This function is called by the GUI System-New menu
-function sys = self()
-    % open a dialog box prompting the user for the value of n
-    n = bdEditScalars({100,'number of processes'}, ...
-        'New System', mfilename);
-    % if the user cancelled then...
-    if isempty(n)
-        sys = [];                             % return empty sys
-    else
-        sys = OrnsteinUhlenbeck(round(n));    % generate a new sys
-    end
 end

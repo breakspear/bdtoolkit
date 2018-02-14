@@ -12,8 +12,8 @@
 %   for t<=0.
 %
 % EXAMPLE
-%   >> sys = WilleBakerEx3();  % construct the system struct
-%   >> gui = bdGUI(sys);       % open the Brain Dynamics GUI
+%   sys = WilleBakerEx3();  % construct the system struct
+%   gui = bdGUI(sys);       % open the Brain Dynamics GUI
 %
 % Authors
 %   Stewart Heitmann (2016a-2018a)
@@ -63,9 +63,6 @@ function sys = WilleBakerEx3()
                    struct('name','y2', 'value',1);
                    struct('name','y3', 'value',1) ];
                
-    % Auxiliary variables
-    sys.auxdef = struct('name','norm', 'value',0);
-    
     % Default time span
     sys.tspan = [0 20]; 
 
