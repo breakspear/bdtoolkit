@@ -213,8 +213,24 @@ classdef bdAuxiliary < bdPanel
             % get the details of the currently selected plot function
             auxfun  = this.submenu.UserData.auxfun;
             
-            % execute the auxiliary plot function
-            feval(auxfun,this.ax,control.sys.tval,control.sol,struct2cell(control.par)');
+            % Execute the auxiliary plot function.
+            % The type of the solver function determines the parameters we call it with. 
+            switch control.solvertype
+                case 'odesolver'
+                    % case of an ODE solver (eg ode45)
+                    feval(auxfun,this.ax,control.sys.tval,control.sol,struct2cell(control.par)');
+
+                case 'ddesolver'
+                    % case of a DDE solver (eg dde23)
+                    lagcell = struct2cell(control.lag)';
+                    parcell = struct2cell(control.par)';
+                    allcell = {lagcell{:} parcell{:}};
+                    feval(auxfun,this.ax,control.sys.tval,control.sol,allcell{:});
+
+                case 'sdesolver'
+                    % case of an SDE solver
+                    feval(auxfun,this.ax,control.sys.tval,control.sol,struct2cell(control.par)');
+            end        
         end
 
     end
