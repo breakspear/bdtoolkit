@@ -1,19 +1,29 @@
 # Brain Dynamics Toolbox
 
 ##Version 2018a
-Not yet released.
+No official release yet. Currently in beta testing.
 
-The [Brain Dynamics Toolbox](http://bdtoolbox.blogspot.com) is open-source software for simulating dynamical systems in neuroscience. It is for researchers and students who wish to explore mathematical models of brain function using Matlab. It includes a graphical tool for simulating dynamical systems in real-time as well as command-line tools for scripting large-scale simulations. 
-
-The toolbox supports the major classes of dynamical systems that typically arise in computational neuroscience. Specifically Ordinary Differential Equations (ODE), Delay Differential Equations (DDE) and Stochastic Differential Equations (SDE).
-Nonetheless it can also be applied to dynamical systems from any discipline.
+The [Brain Dynamics Toolbox](http://bdtoolbox.blogspot.com) is open-source software for simulating dynamical systems in neuroscience. It is for researchers and students who wish to explore mathematical models of brain function using Matlab. It includes a graphical tool for simulating dynamical systems in real-time as well as command-line tools for scripting large-scale simulations.
 
 ![Handbook Cover Art](CoverArt.png)
 
-## Getting Started
-The toolbox requires MATLAB 2014b or newer. It will not work with Octave.
-Download the sample chapter of the *Handbook for the Brain Dynamics Toolbox* from [http://bdtoolbox.blogspot.com](http://bdtoolbox.blogspot.com) and follow the instructions in the *Getting Started* section.
+## Download
+The latest official release (Version 2017c) can be downloaded as a zip file from [http://bdtoolbox.blogspot.com](http://bdtoolbox.blogspot.com). 
 
+The beta release of Version 2018a can be obtained by cloning the master branch of the [bdtoolkit](https://github.com/breakspear/bdtoolkit) repository on GitHub.
+
+```
+$ git clone https://github.com/breakspear/bdtoolkit.git
+Cloning into 'bdtoolkit'...
+remote: Counting objects: 890, done.
+remote: Total 890 (delta 0), reused 0 (delta 0), pack-reused 890
+Receiving objects: 100% (890/890), 4.47 MiB | 1.42 MiB/s, done.
+Resolving deltas: 100% (620/620), done.
+```
+
+## Getting Started
+Follow the instructions in the *Getting Started* section of the *Handbook for the Brain Dynamics Toolbox*. 
+The toolbox requires MATLAB 2014b or newer. It will not work with Octave.
 
 ## BSD License
 This software is freely available under the [2-clause BSD license](https://opensource.org/licenses/BSD-2-Clause).
