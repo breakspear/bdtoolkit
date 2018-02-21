@@ -477,11 +477,12 @@ classdef bdGUI < handle
                 msg = {'The Brain Dynamics Toolbox'
                        ['Version ' this.version]
                        ''
-                       'Stewart Heitmann & Michael Breakspear'
-                       'QIMR Berghofer Medical Research Institute'
                        'Copyright (C) 2016-2018'
-                       'Open-Source BSD 2-clause License'
+                       'QIMR Berghofer Medical Research Institute'
+                       'BSD 2-clause Open-Source License'
                        ''
+                       'Project Leaders'
+                       'Stewart Heitmann & Michael Breakspear'
                        'http://bdtoolbox.blogspot.com.au'
                        ''
                        };
