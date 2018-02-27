@@ -151,8 +151,8 @@ classdef bdAuxiliary < bdPanel
             
             % default axes for the case of no auxiliary function            
             title(this.ax,'No Auxiliary Functions');
-            text(this.ax,0.5,0.5,'No auxiliary plotting functions are defined for this system', ...
-                'HorizontalAlignment','center');
+            text(0.5,0.5,'No auxiliary plotting functions are defined for this system', ...
+                'HorizontalAlignment','center', 'Parent',this.ax);
 
             % construct the selector menu for the auxiliary functions
             naux = numel(control.sys.panels.bdAuxiliary.auxfun);
@@ -270,8 +270,8 @@ classdef bdAuxiliary < bdPanel
         end
         
         function auxdefault(ax,varargin)
-            text(ax,0.5,0.5,'No auxiliary plotting functions are defined for this system', ...
-                'HorizontalAlignment','center');
+            text(0.5,0.5,'No auxiliary plotting functions are defined for this system', ...
+                'HorizontalAlignment','center', 'Parent',ax);
             title(ax,'No Auxiliary Functions');
         end
     end
