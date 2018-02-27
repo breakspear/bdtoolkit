@@ -53,6 +53,10 @@ classdef bdHilbert < bdPanel
         relmenu         % handle to RELATIVE PHASE menu item        
         submenu         % handle to subpanel selector menu item
         listener        % handle to listener
+        cylinder        % handle to cylinder mesh
+        cylinderX       % cylinder wire frame (x-coord)
+        cylinderY       % cylinder wire frame (y-coord)
+        cylinderZ       % cylinder wire frame (z-coord)
     end
     
     methods
@@ -64,6 +68,9 @@ classdef bdHilbert < bdPanel
             
             % assign default values to missing options in sys.panels.bdHilbert
             control.sys.panels.bdHilbert = bdHilbert.syscheck(control.sys);
+
+            % construct the cylinder frame
+            [this.cylinderY,this.cylinderZ,this.cylinderX] = cylinder(0.95*ones(1,31),31);
             
             % configure the pull-down menu
             this.menu.Label = control.sys.panels.bdHilbert.title;
@@ -80,22 +87,6 @@ classdef bdHilbert < bdPanel
 
             % listen to the control panel for redraw events
             this.listener = addlistener(control,'redraw',@(~,~) this.redraw(control));    
-
-            return
-
-%                 % Relative Phase toggle button
-%                 posx = 210;
-%                 posy = 10;
-%                 posw = 200;
-%                 posh = 20;
-%                 this.checkbox = uicontrol('Style','checkbox', ...
-%                     'String', 'Phase Relative to ...', ...
-%                     'Value',0, ...
-%                     'Callback', @(~,~) this.checkboxCallback(control), ...
-%                     'FontUnits','pixels', ...
-%                     'FontSize',12, ...
-%                     'Parent', this.tab, ...
-%                     'Position',[posx posy posw posh]);
         end
         
         function delete(this)
@@ -103,129 +94,10 @@ classdef bdHilbert < bdPanel
             delete(this.listener)
         end
          
-        function redraw(this,control)
-            %disp('bdHilbert.redraw()')
-
-            % get the details of the variable currently selected variable
-            varname  = this.submenu.UserData.xxxname;          % generic name of variable
-            varlabel = this.submenu.UserData.label;            % plot label for selected variable
-            varindx  = this.submenu.UserData.xxxindx;          % index of selected variable in sys.vardef
-            valindx  = this.submenu.UserData.valindx;          % indices of selected entries in sys.vardef.value
-            solindx  = control.sys.vardef(varindx).solindx;    % indices of selected entries in sol
-            ylim     = control.sys.vardef(varindx).lim;        % axis limits of the selected variable
-
-            % clear the axes
-            cla(this.ax1);
-            cla(this.ax2);
-
-            % set the y-axes limits on the upper plot
-            this.ax1.YLim = ylim + [-1e-4 +1e-4];
-
-            % set the y- and z-axes limits on the lower plot
-            this.ax2.YLim = [-1 1];
-            this.ax2.ZLim = [-1 1];
-
-            % if the TRANSIENT menu is enabled then  ...
-            switch this.tranmenu.Checked
-                case 'on'
-                    % set the x-axes limits to the full time span
-                    this.ax1.XLim = control.sys.tspan + [-1e-4 0];
-                    this.ax2.XLim = control.sys.tspan + [-1e-4 0];
-
-                    % use all time steps in sol.x
-                    tindx = true(size(control.tindx));  % logical indices of all time steps in this.t
-                    
-                case 'off'
-                    % limit the x-axes to the non-transient part of the time domain
-                    this.ax1.XLim = [control.sys.tval control.sys.tspan(2)] + [-1e-4 0];
-                    this.ax2.XLim = [control.sys.tval control.sys.tspan(2)] + [-1e-4 0];
-                    
-                    % use only the non-transient time steps in sol.x
-                    tindx = control.tindx;              % logical indices of the non-transient time steps
-            end
-
-            % Our method asumes equi-spaced time steps but many of our
-            % solvers generate variable time steps.  So we interpolate
-            % the time-series to ensure equi-spaced time steps.
-            % How we interpolate depends on the type of solver.
-            switch control.solvertype
-                case 'sde'
-                    % The current SDE solvers only used fixed time steps
-                    % so we can avoid interpolation altogether and simply
-                    % use the solver's own time steps.
-                    this.t = control.sol.x(tindx);
-
-                otherwise
-                    % We use interpolation for all other solvers to ensure
-                    % that our correlation used fixed-size time steps.
-                    % We choose the number of time steps of the interpolant
-                    % to be similar to the number of steps chosen by the
-                    % solver. This avoids over-sampling and under-sampling.
-                    tt = control.sol.x(tindx);
-                    this.t = linspace(tt(1),tt(end),numel(tt));                        
-            end
-            
-            % interpolate the trajectory onto equi-spaced time points 
-            this.y = bdEval(control.sol,this.t,solindx);
-            
-            % compute the Hilbert transfrom
-            this.h = hilbert(this.y')';
-
-            % compute the phase angles from the Hilbert transfrom
-            this.p = angle(this.h);
-            
-            % if the RELATIVE PHASE menu is enabled then  ...
-            switch this.relmenu.Checked
-                case 'on'
-                    % adjust the phase angles of the all variables relative to the first variable.
-                    
-                    % repeat the first row of this.p as a matrix
-                    p2 = this.p(ones(1,size(this.p,1)),:);
-
-                    % subtract the first row from all other rows
-                    this.p = this.p - p2;
-                    
-                case 'off'
-                    % Nothing to do
-            end
-            
-            % update the ylabels
-            ylabel(this.ax1, varlabel);
-            ylabel(this.ax2, varlabel);
-
-            % Plot the original signal in ax1
-            % ... with the background traces in grey
-            plot(this.ax1, this.t, this.y, 'color',[0.75 0.75 0.75], 'HitTest','off');              
-            % ... and variable of interest in black
-            plot(this.ax1, this.t, this.y(valindx,:), 'color','k', 'Linewidth',1.5);
-            %ylabel(this.ax1,name, 'FontSize',16,'FontWeight','normal');
-
-            % Constuct the cylinder
-            [Y,Z,X] = cylinder(0.95*ones(1,31),31);
-            edgecolor = 0.8*[1 1 1];
-            facecolor = 1.0*[1 1 1];
-            edgealpha = 0.7;
-            facealpha = 0.7;
-
-            span = tt(end)-tt(1);
-            hnd = mesh(this.ax2, X.*span,Y,Z, 'EdgeColor',edgecolor,'FaceColor',facecolor, 'FaceAlpha',facealpha, 'EdgeAlpha',edgealpha);
-            view(this.ax2,-5,0);
-            %xlim(this.ax2,[t(1) tt(end)]);
-            %ylim(this.ax2, [-1 1]);
-            %zlim(this.ax2, [-1 1]);
-            hold on;
-
-            % Plot the phase cyliner in ax2
-            sinp = sin(this.p);
-            cosp = cos(this.p);
-            plot3(this.ax2, this.t, 0.975*sinp, 0.975*cosp, 'color',[0.5 0.5 0.5], 'HitTest','off');
-            plot3(this.ax2, this.t, sinp(valindx,:), cosp(valindx,:), 'color','k', 'Linewidth',1.5);
-        end        
     end
     
     
     methods (Access=private)
-        
         % Initialise the CALIBRATE menu item
         function InitCalibrateMenu(this,control)
             % construct the menu item
@@ -401,12 +273,34 @@ classdef bdHilbert < bdPanel
             % construct the second axis
             this.ax2 = axes('Parent',spanel, ...
                 'Units','normal', ...
-                'OuterPosition',[0 0.03 1 0.47], ...
+                'OuterPosition',[0 0.01 1 0.47], ...
                 'NextPlot','add', ...
+            ...    'PlotBoxAspectRatioMode','manual', ...
+            ...    'PlotBoxAspectRatio',[3 1 1], ...
+                'YDir','reverse', ...
+                'XLim',[-1.1 1.1], ...
+                'YLim',[-1.1 1.1], ...
+                'YTick', [], ...
+                'ZTick', [], ...                
                 'FontSize',12, ...
                 'Box','on');
             xlabel(this.ax2,'time');
-            title(this.ax2,'Hilbert Phase');
+
+            % Constuct the cylinder for the second axis
+            edgecolor = 0.8*[1 1 1];
+            facecolor = 1.0*[1 1 1];
+            edgealpha = 0.7;
+            facealpha = 0.7;
+            t0 = control.sys.tspan(1);
+            t1 = control.sys.tspan(2);
+            this.cylinder = mesh(this.ax2, ...
+                this.cylinderX.*(t1-t0) + t0, ...
+                this.cylinderY, ...
+                this.cylinderZ, ...
+                'EdgeColor',edgecolor,'FaceColor',facecolor, 'FaceAlpha',facealpha, 'EdgeAlpha',edgealpha);
+
+            % Set the initial view angle
+            view(this.ax2,-5,0);
 
             % construct a selector menu comprising items from sys.vardef
             this.submenu = bdPanel.SelectorMenuFull(cmenu, ...
@@ -425,17 +319,151 @@ classdef bdHilbert < bdPanel
             end
         end
         
+        function redraw(this,control)
+            %disp('bdHilbert.redraw()')
 
-        
-        % Callback for the "relative phase" checkbox
-        function checkboxCallback(this,control)
-            if this.checkbox.Value
-                set(this.popup2,'Enable','on');
-            else
-                set(this.popup2,'Enable','off');
+            % get the details of the variable currently selected variable
+            varname  = this.submenu.UserData.xxxname;          % generic name of variable
+            varlabel = this.submenu.UserData.label;            % plot label for selected variable
+            varindx  = this.submenu.UserData.xxxindx;          % index of selected variable in sys.vardef
+            valindx  = this.submenu.UserData.valindx;          % indices of selected entries in sys.vardef.value
+            solindx  = control.sys.vardef(varindx).solindx;    % indices of selected entries in sol
+            ylim     = control.sys.vardef(varindx).lim;        % axis limits of the selected variable
+
+            % Ensure we are using equi-spaced time points
+            switch control.solvertype
+                case 'sde'
+                    % The SDE solvers use fixed time steps already
+                    % so we simply use the solver's own time steps.
+                    this.t = control.sol.x;
+
+                otherwise
+                    % Use interpolation to obtain fixed time steps.
+                    % We choose the number of time steps of the interpolant
+                    % to be similar to the number of steps chosen by the
+                    % solver. This avoids over-sampling and under-sampling.
+                    this.t = linspace(control.sol.x(1),control.sol.x(end),numel(control.sol.x));                        
             end
-            this.render(control);           
-        end
+            
+            % get the indices of the non-transient time steps in this.t
+            tindx = (this.t >= control.sys.tval);  % logical indices of the non-transient time steps
+            indxt = find(tindx>0,1);            % numerical index of the first non-transient step (may be empty)
+
+            % interpolate the trajectory using the equi-spaced time points 
+            this.y = bdEval(control.sol,this.t,solindx);
+            
+            % compute the Hilbert transform and its phase angles
+            [this.h,this.p] = bdHilbert.hilbert(this.y);
+            
+            % clear the top axes
+            cla(this.ax1);
+            
+            % clear parts of the bottom axes
+            delete( findobj(this.ax2,'Tag','fgnd') );
+
+            % if the RELATIVE PHASE menu is enabled then  ...
+            switch this.relmenu.Checked
+                case 'on'
+                    % adjust the phase angles of the all variables relative to the first variable.
+                    
+                    % repeat the first row of this.p as a matrix
+                    p2 = this.p(ones(1,size(this.p,1)),:);
+
+                    % subtract the first row from all other rows
+                    this.p = this.p - p2;
+                    
+                    % title
+                    title(this.ax2,['(Hilbert Phase of ' varlabel ') - (Hilbert Phase of ' varname '_1)']);
+
+                case 'off'
+                    % title
+                    title(this.ax2,['Hilbert Phase of ' varlabel]);
+            end
+
+            % set the y-axes limits on the upper plot
+            this.ax1.YLim = ylim + [-1e-4 +1e-4];
+
+            % set the y- and z-axes limits on the lower plot
+            this.ax2.YLim = [-1.1 +1.1];
+            this.ax2.ZLim = [-1.1 +1.1];
+                    
+            % if the TRANSIENT menu is enabled then  ...
+            switch this.tranmenu.Checked
+                case 'on'
+                    % set the x-axes limits to the full time span
+                    this.ax1.XLim = control.sys.tspan + [-1e-4 0];
+                    this.ax2.XLim = control.sys.tspan + [-1e-4 0];
+
+                case 'off'
+                    % limit the x-axes to the non-transient part of the time domain
+                    this.ax1.XLim = [control.sys.tval control.sys.tspan(2)] + [-1e-4 0];
+                    this.ax2.XLim = [control.sys.tval control.sys.tspan(2)] + [-1e-4 0];
+            end
+            
+            % update the ylabels
+            ylabel(this.ax1, varlabel);
+
+            % Plot the original signal in ax1
+            % ... with the background traces in grey
+            plot(this.ax1, this.t, this.y, 'color',[0.75 0.75 0.75], 'HitTest','off');              
+            % ... and variable of interest in black
+            plot(this.ax1, this.t(tindx), this.y(valindx,tindx), 'color','k', 'Linewidth',1.5);
+
+            % rescale the cylinder mesh to fit the simulation time span
+            t0 = control.sys.tspan(1);
+            t1 = control.sys.tspan(2);
+            this.cylinder.XData = this.cylinderX.*(t1-t0) + t0;
+            
+            % Plot the Hilbert phase superimposed on the cylinder
+            sinp = sin(this.p);
+            cosp = cos(this.p);   
+            % ... with the background traces in grey
+            plot3(this.ax2, this.t, 0.975*cosp, 0.975*sinp, 'color',[0.5 0.5 0.5], 'HitTest','off', 'Tag','fgnd');
+            % ... and variable of interest in black
+            plot3(this.ax2, this.t(tindx), cosp(valindx,tindx), sinp(valindx,tindx), 'color','k', 'Linewidth',1.5, 'Tag','fgnd');
+            
+            % if the TRANSIENT menu is enabled then  ...
+            if strcmp(this.tranmenu.Checked,'on')                            
+                % plot the pentagram marker on the first axes
+                plot(this.ax1, this.t(1), this.y(valindx,1), ...
+                    'Marker','p', ...
+                    'Color','k', ...
+                    'MarkerFaceColor','y', ...
+                    'MarkerSize',10 , ...
+                    'Visible',this.markmenu.Checked, ...
+                    'Tag','fgnd');
+
+                % plot the pentagram marker on the second axes
+                plot3(this.ax2, this.t(1), cosp(valindx,1), sinp(valindx,1), ...
+                    'Marker','p', ...
+                    'Color','k', ...
+                    'MarkerFaceColor','y', ...
+                    'MarkerSize',10 , ...
+                    'Visible',this.markmenu.Checked, ...
+                    'Tag','fgnd');
+            end
+
+            if ~isempty(indxt)
+                % plot the circle marker on teh first axes
+                plot(this.ax1, this.t(indxt), this.y(valindx,indxt), ...
+                    'Marker','o', ...
+                    'Color','k', ...
+                    'MarkerFaceColor','y', ...
+                    'MarkerSize',6, ...
+                    'Visible',this.markmenu.Checked, ...
+                    'Tag','fgnd');
+
+                % plot the circle marker on the second axes
+                plot3(this.ax2, this.t(indxt), cosp(valindx,indxt), sinp(valindx,indxt), ...
+                    'Marker','o', ...
+                    'Color','k', ...
+                    'MarkerFaceColor','y', ...
+                    'MarkerSize',6 , ...
+                    'Visible',this.markmenu.Checked, ...
+                    'Tag','fgnd');
+            end
+            
+        end        
                 
         % Callback for panel resizing. 
         function SizeChanged(this,parent)
@@ -464,11 +492,13 @@ classdef bdHilbert < bdPanel
     
     methods (Static)
         
-        % Check the sys.panels struct
         function syspanel = syscheck(sys)
+            % Returns a copy of the sys.panels struct with all 
+            % default values appropriately initialised.
+
             % Default panel settings
             syspanel.title = bdHilbert.title;
-            syspanel.transients = false;            
+            syspanel.transients = true;            
             syspanel.markers = true;
             syspanel.relphase = false;
 
@@ -498,6 +528,53 @@ classdef bdHilbert < bdPanel
             end
         end
         
+        function [H,P] = hilbert(Y)
+            % Discrete-time anaytic signal via Hilbert Transform.
+            %
+            % Usage:
+            %   [H,P] = bdHilbert.hilbert(Y)
+            % where the real part of H is equivalent to the input signal Y
+            % and the imaginary part of H is the Hilbert transform of Y.
+            % The phase angles of H are returned in P.
+            %
+            % The algorithm [1] is similar to that used by the hilbert()
+            % function provided with Matlab Signal Processing Toolbox
+            % except that here it operates along the rows of Y instead
+            % of the columns.
+            %
+            % [1] Marple S L "Computing the Discrete-Time Analytic Signal
+            %     via FFT" IEEE Transactions on Signal Processing. Vol 47
+            %     1999, pp 2600-2603.
+            %
+            % SEE ALSO
+            %    hilbert
+            
+            % Fourier Transform along the rows of Y 
+            Yfft = fft(Y,[],2);
+            nfft = size(Yfft,2);
+            halfn = ceil(nfft/2);
+
+            % construct the multiplier matrix
+            M = zeros(size(Yfft));
+            if mod(nfft,2)
+                % nfft is odd
+                M(:,1) = 1;             % DC component
+                M(:,2:halfn) = 2;       % positive frequencies
+            else
+                % nfft is even
+                M(:,1) = 1;             % DC component
+                M(:,2:halfn) = 2;       % positive frequencies
+                M(:,halfn+1) = 1;       % Nyquist component
+            end
+            
+            % Hilbert Transform
+            H = ifft(Yfft.*M,[],2);
+            
+            % Return the phase angles (if requested)
+            if nargout==2
+                P = angle(H);
+            end
+        end
     end
     
 end
