@@ -4,7 +4,7 @@
 ## Version 2018a
 Not yet released.
 
-Major overhaul of the graphical user interface and the panel classes. The new control panel includes sliders and push buttons for manipulating parameters. The Initial Conditions can now be automatically evolved on each simulation run so that numerical solutions can be continued while parameters are slowly varied. A time slider has been included for dealing with transients. New panels are included for Bifurcation plots and Auxiliary plots. The way of implementing auxiliary functions has changed. The model-specific *self* function has been deprecated.
+This release is a major overhaul of the graphical user interface and the design of the display panel classes. Notable additions are slider controls and the capability to evolve the initial conditions to follow a solution in paramater space. Bifurcation plots and Auxiliary panels have also been added. The auxiliary functions have been redesigned and the 'self' function has been deprecated. 
 
 ## Version 2017c
 Released 16 Nov 2017.
