@@ -3,12 +3,12 @@
 ##Version 2018a
 No official release yet. Currently in beta testing.
 
-The [Brain Dynamics Toolbox](http://bdtoolbox.blogspot.com) is open-source software for simulating dynamical systems in neuroscience. It is for researchers and students who wish to explore mathematical models of brain function using Matlab. It includes a graphical tool for simulating dynamical systems in real-time as well as command-line tools for scripting large-scale simulations.
+The [Brain Dynamics Toolbox](http://www.bdtoolbox.org) is open-source software for simulating dynamical systems in neuroscience. It is for researchers and students who wish to explore mathematical models of brain function using Matlab. It includes a graphical tool for simulating dynamical systems in real-time as well as command-line tools for scripting large-scale simulations.
 
 ![Handbook Cover Art](CoverArt.png)
 
 ## Download
-The latest official release (Version 2017c) can be downloaded as a zip file from [http://bdtoolbox.blogspot.com](http://bdtoolbox.blogspot.com). 
+The latest official release (Version 2017c) can be downloaded as a zip file from [http://www.bdtoolbox.org](http://www.bdtoolbox.org). 
 
 The beta release of Version 2018a can be obtained by cloning the master branch of the [bdtoolkit](https://github.com/breakspear/bdtoolkit) repository on GitHub.
 
