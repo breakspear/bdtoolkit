@@ -183,6 +183,7 @@ classdef bdAuxiliary < bdPanel
                 
                 % clear the axis, reset to defaults, set hold='on'
                 cla(this.ax);
+                legend(this.ax,'off');
                 reset(this.ax);
                 hold(this.ax,'on');
                 
@@ -218,7 +219,8 @@ classdef bdAuxiliary < bdPanel
             switch control.solvertype
                 case 'odesolver'
                     % case of an ODE solver (eg ode45)
-                    feval(auxfun,this.ax,control.sys.tval,control.sol,struct2cell(control.par)');
+                    parcell = struct2cell(control.par)';
+                    feval(auxfun,this.ax,control.sys.tval,control.sol,parcell{:});
 
                 case 'ddesolver'
                     % case of a DDE solver (eg dde23)
@@ -229,7 +231,8 @@ classdef bdAuxiliary < bdPanel
 
                 case 'sdesolver'
                     % case of an SDE solver
-                    feval(auxfun,this.ax,control.sys.tval,control.sol,struct2cell(control.par)');
+                    parcell = struct2cell(control.par)';
+                    feval(auxfun,this.ax,control.sys.tval,control.sol,parcell{:});
             end        
         end
 
