@@ -63,15 +63,15 @@ function sys = HindmarshRose(Kij)
                    struct('name','r',     'value',0.006);
                    struct('name','s',     'value',4);
                    struct('name','x0',    'value',-1.6);
-                   struct('name','Iapp',  'value',1.5);
+                   struct('name','I',     'value',zeros(n,1));
                    struct('name','gs',    'value',0.1);
                    struct('name','Vs',    'value',2);
                    struct('name','theta', 'value',-0.25) ];
                    
     % Our ODE variables
-    sys.vardef = [ struct('name','x', 'value',rand(n,1), 'lim',[-2.5 2.5]);
-                   struct('name','y', 'value',rand(n,1), 'lim',[ -21   3]);
-                   struct('name','z', 'value',rand(n,1), 'lim',[   0   4]) ];
+    sys.vardef = [ struct('name','X', 'value',rand(n,1), 'lim',[-2.5 2.5]);
+                   struct('name','Y', 'value',rand(n,1), 'lim',[ -21   3]);
+                   struct('name','Z', 'value',rand(n,1), 'lim',[   0   4]) ];
 
     % Default time span
     sys.tspan = [0 1000];
@@ -85,18 +85,22 @@ function sys = HindmarshRose(Kij)
     sys.panels.bdLatexPanel.latex = {'\textbf{HindmarshRose}';
         '';
         'Network of reciprocally-coupled Hindmarsh-Rose neurons';
-        '\qquad $\dot X_i = Y_i - a\,X_i^3 + b\,X_i^2 - Z_i + I_{app} - g_s\,(X_i-V_s) \sum_j K_{ij} F(X_j-\theta)$';
+        '\qquad $\dot X_i = Y_i - a\,X_i^3 + b\,X_i^2 - Z_i + I_i - g_s\,(X_i-V_s) \sum_j K_{ij} F(X_j-\theta)$';
         '\qquad $\dot Y_i = c - d\,X_i^2 - Y_i$';
         '\qquad $\dot Z_i = r\,(s\,(X_i-x_0) - Z_i)$';
         'where';
         '\qquad $K_{ij}$ is the connectivity matrix ($n$ x $n$),';
-        '\qquad $a, b, c, d, r, s, x_0, I_{app}, g_s, V_s$ and $\theta$ are constants,';
-        '\qquad $I_{app}$ is the applied current,';
-        '\qquad $F(x) = 1/(1+\exp(-x))$,';
-        '\qquad $i{=}1 \dots n$.';
+        '\qquad $g_s$ is the conductance of synaptic connections,';
+        '\qquad $I_{i}$ is the external current applied to the $i^{th}$ neuron,';
+        '\qquad $a, b, c, d, r, s, x_0, V_s$ and $\theta$ are constants,';
+        '\qquad $F(x) = 1/(1+\exp(-x))$ is the firing-rate function,';
+        '\qquad $i{=}1 \dots n$,';
+        ['\qquad $n{=}',num2str(n),'$.'];
         '';
-        'Notes';
-        ['\qquad 1. This simulation has $n{=}',num2str(n),'$.']};
+        '';
+        '';
+        'Hindmarsh \& Rose (1984) A model of neuronal bursting using three';
+        'coupled first order differential equations. Proc R Soc London, Ser B.'};
     
     % Include the Time Portrait panel in the GUI
     sys.panels.bdTimePortrait = [];
