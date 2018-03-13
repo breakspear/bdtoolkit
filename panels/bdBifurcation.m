@@ -38,11 +38,8 @@ classdef bdBifurcation < bdPanel
         title = 'Bifurcation';
     end    
 
-    properties
-        ax              % Handle to the plot axes
-    end
-    
     properties (Access=private)
+        ax              % Handle to the plot axes
         nvar            % the number of system variables (elements in vardef)
         viewmenu        % handle to 3D VIEW menu item
         tranmenu        % handle to TRANSIENTS menu item
