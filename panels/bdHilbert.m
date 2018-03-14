@@ -373,11 +373,11 @@ classdef bdHilbert < bdPanel
                     this.p = this.p - p2;
                     
                     % title
-                    title(this.ax2,['(Hilbert Phase of ' varlabel ') - (Hilbert Phase of ' varname '_1)']);
+                    title(this.ax2,['Phase of ' varlabel ' relative to ' varname '_1']);
 
                 case 'off'
                     % title
-                    title(this.ax2,['Hilbert Phase of ' varlabel]);
+                    title(this.ax2,['Phase of ' varlabel]);
             end
 
             % set the y-axes limits on the upper plot
