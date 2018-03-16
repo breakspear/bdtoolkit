@@ -223,7 +223,7 @@ classdef bdTrapPanel < bdPanel
         % Check the sys.panels struct
         function syspanel = syscheck(sys)
             % Default panel settings
-            syspanel.title = bdTrapPanel.title
+            syspanel.title = bdTrapPanel.title;
             
             % Nothing more to do if sys.panels.bdTrapPanel is undefined
             if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdTrapPanel')

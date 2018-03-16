@@ -78,15 +78,12 @@ function sys = KuramotoNet(Kij)
         '\qquad $\omega_i$ is its natural oscillation frequency (cycles/sec),';
         '\qquad $K$ is the network connectivity matrix ($n$ x $n$),';
         '\qquad $k$ is a scaling constant,';
-        '\qquad $i,j=1 \dots n$';
+        '\qquad $i,j=1 \dots n,$';
+        ['\qquad $n{=}',num2str(n),'.$'];
         '';
-        'Auxillary variables';
-        '\qquad $\phi_i = \sin( \theta_i - \theta_1 )$ is the sinusoid of the phase of $\theta_i$ relative to $\theta_1$';                  
-        '\qquad $R = \frac{1}{n} \sum_i \exp(\mathbf{i} \theta_i)$ is the Kuramoto order parameter.';
-        '';
-        'Notes';
-        ['\qquad 1. This simulation has $n{=}',num2str(n),'$ oscillators.'];
-        '\qquad 2. $\mathbf{i} = \sqrt{-1}$';
+        'The Kuramoto Order parameter is ';
+        '\qquad $R = \frac{1}{n} \| \sum_i \exp(\mathbf{i} \theta_i) \|$';
+        'where $\mathbf{i} = \sqrt{-1}.$';
         '';
         'References';
         '\qquad Kuramoto (1984) Chemical oscillations, waves and turbulence.';
@@ -172,10 +169,8 @@ function centroidplot(ax,ztheta)
     ylim(ax,[-1.1 1.1]);
 end
 
-% Auxiliary function for plotting the time course of the 
-% Kuramoto order parameter (R) whic is defined as the magnitude
-% of the centroid of the oscillators.
-function aux = KuramotoR(ax,t,sol,Kij,k,omega)
+% Auxiliary function for plotting the Kuramoto order parameter (R).
+function KuramotoR(ax,t,sol,Kij,k,omega)
     % Project the phases into the complex plane.
     ztheta = exp(1i.*sol.y);
 
