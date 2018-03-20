@@ -8,7 +8,7 @@ classdef bdSurrogate < bdPanel
     %  Stewart Heitmann (2017b,2017c,2018a)
     %  Incorporating original code from Michael Breakspear.
 
-    % Copyright (C) 2017-2018 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

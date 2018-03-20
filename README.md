@@ -1,29 +1,15 @@
 # Brain Dynamics Toolbox
 
 ##Version 2018a
-No official release yet. Currently in beta testing.
+Released 20 Mar 2018.
 
-The [Brain Dynamics Toolbox](http://www.bdtoolbox.org) is open-source software for simulating dynamical systems in neuroscience. It is for researchers and students who wish to explore mathematical models of brain function using Matlab. It includes a graphical tool for simulating dynamical systems in real-time as well as command-line tools for scripting large-scale simulations.
+The [Brain Dynamics Toolbox](http://www.bdtoolbox.org) is an open-source software toolbox for simulating dynamical systems in neuroscience. It is for students and researchers who wish to explore numerical models of brain function using Matlab. It includes a graphical platform that brings differential equations to life as interactive simulations, and includes command-line tools for scripting large-scale simulations in batch mode.
 
 ![Handbook Cover Art](CoverArt.png)
 
-## Download
-The latest official release (Version 2017c) can be downloaded as a zip file from [http://www.bdtoolbox.org](http://www.bdtoolbox.org). 
-
-The beta release of Version 2018a can be obtained by cloning the master branch of the [bdtoolkit](https://github.com/breakspear/bdtoolkit) repository on GitHub.
-
-```
-$ git clone https://github.com/breakspear/bdtoolkit.git
-Cloning into 'bdtoolkit'...
-remote: Counting objects: 890, done.
-remote: Total 890 (delta 0), reused 0 (delta 0), pack-reused 890
-Receiving objects: 100% (890/890), 4.47 MiB | 1.42 MiB/s, done.
-Resolving deltas: 100% (620/620), done.
-```
-
 ## Getting Started
-Follow the instructions in the *Getting Started* section of the *Handbook for the Brain Dynamics Toolbox*. 
-The toolbox requires MATLAB 2014b or newer. It will not work with Octave.
+Download the latest official release (Version 2018a) from [http://www.bdtoolbox.org](http://www.bdtoolbox.org). 
+Follow the *Getting Started* section of the *Handbook for the Brain Dynamics Toolbox*.
 
 ## BSD License
 This software is freely available under the [2-clause BSD license](https://opensource.org/licenses/BSD-2-Clause).

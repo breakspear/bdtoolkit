@@ -6,7 +6,7 @@ classdef bdControlVectorDialog < handle
     %AUTHORS
     %  Stewart Heitmann (2017c-d,2018a)
 
-    % Copyright (C) 2017-2018 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without

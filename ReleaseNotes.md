@@ -2,9 +2,9 @@
 # Brain Dynamics Toolbox
 
 ## Version 2018a
-Not yet released.
+Released 20 Mar 2018.
 
-This release is a major overhaul of the graphical user interface and the design of the display panel classes. Notable additions are slider controls and the capability to evolve the initial conditions to follow a solution in paramater space. Bifurcation plots and Auxiliary panels have also been added. The auxiliary functions have been redesigned and the 'self' function has been deprecated. 
+This release is a major overhaul of the graphical user interface and the design of the display panel classes. Notable additions are slider controls and the capability to evolve the initial conditions to follow a solution in paramater space. Bifurcation plots and Auxiliary panels have also been added. The auxiliary panel replaces the old auxiliary variables.
 
 ## Version 2017c
 Released 16 Nov 2017.
