@@ -476,15 +476,12 @@ classdef bdGUI < handle
             function SystemAbout()
                 msg = {'The Brain Dynamics Toolbox'
                        ['Version ' this.version]
+                       'http://www.bdtoolbox.org'
                        ''
+                       'Stewart Heitmann, Michael Breakspear'
                        'Copyright (C) 2016-2018'
                        'QIMR Berghofer Medical Research Institute'
-                       'BSD 2-clause Open-Source License'
-                       ''
-                       'Project Leaders'
-                       'Stewart Heitmann & Michael Breakspear'
-                       'http://bdtoolbox.blogspot.com.au'
-                       ''
+                       'BSD 2-clause License'
                        };
                 uiwait(helpdlg(msg,'About'));
             end
