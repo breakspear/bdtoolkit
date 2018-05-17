@@ -19,7 +19,7 @@
 %
 % Authors
 %   Michael Breakspear (2017b)
-%   Stewart Heitmann (2017b,2017c,2018a)
+%   Stewart Heitmann (2017b,2017c,2018a,2018b)
 
 % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -119,8 +119,8 @@ function sys = BTF2003DDE(Kij)
         'Time-delayed variant of a network of neural masses comprising densely connected local ensembles of';
         'excitatory and inhibitory neurons with long-range excitatory coupling between ensembles.';
         'Transmission delays apply only to the long-range connections and all delays are identical.';
-        '\qquad $\dot{V}^{(j)}(t) = -\Big(g_{Ca} + (1-C)\,r\,a_{ee}\, K_{jj}\, Q_V^{(j)}(t) + C\,r\,a_{ee}\, \frac{1}{k^{(j)}} \sum_i K_{ij} Q_V^{(i)}(t{-}d) \Big)\,m_{Ca}^{(j)}(t)\,\big(V^{(j)}(t) {-} V_{Ca}\big)$';
-        '\qquad \qquad \qquad $ - \, \Big(g_{Na}\,m_{Na}^{(j)}(t) + a_{ee}\,K_{jj}\,Q_V^{(j)}(t) + \,a_{ee}\, \frac{1}{k^{(j)}} \sum_i K_{ij} Q_V^{(i)}(t{-}d) \Big)\,\big(V^{(j)}(t) {-} V_{Na}\big) $';
+        '\qquad $\dot{V}^{(j)}(t) = -\big(g_{Ca} + (1{-}C)\,r\,a_{ee}\, Q_V^{(j)}(t) + C\,r\,a_{ee}\,\langle Q_V(t-d) \rangle^{(j)} \big)\,m_{Ca}^{(j)}(t)\,\big(V^{(j)}(t) {-} V_{Ca}\big)$';
+        '\qquad \qquad \qquad $ - \, \big(g_{Na}\,m_{Na}^{(j)}(t) + (1{-}C)\,a_{ee}\,Q_V^{(j)}(t) + C\,a_{ee}\,\langle Q_V(t-d) \rangle^{(j)} \big)\,\big(V^{(j)}(t) {-} V_{Na}\big) $';
         '\qquad \qquad \qquad $ - \, g_K\,W^{(j)}(t)\,\big(V^{(j)}(t) {-} V_K\big)$';
         '\qquad \qquad \qquad $ - \, g_L\,\big(V^{(j)}(t) {-} V_L\big)$';
         '\qquad \qquad \qquad $ - \, a_{ie}\,Z^{(j)}(t)\,Q_Z^{(j)}(t)$';
@@ -136,8 +136,9 @@ function sys = BTF2003DDE(Kij)
         '\qquad $m_{ion}^{(j)} = \frac{1}{2} \big(1 + \tanh((V^{(j)}{-}V_{ion})/\delta_{ion})\big)$ is the proportion of open ion channels for a given $V$,';
         '\qquad $Q_{V}^{(j)} = \frac{1}{2} \big(1 + \tanh((V^{(j)}{-}V_{T})/\delta_{V})\big)$ is the mean firing rate of \textit{excitatory} cells in the $j^{th}$ ensemble,';
         '\qquad $Q_{Z}^{(j)} = \frac{1}{2} \big(1 + \tanh((Z^{(j)}{-}Z_{T})/\delta_{Z})\big)$ is the mean firing rate of \textit{inhibitory} cells in the $j^{th}$ ensemble,';
+        '\qquad $\langle Q \rangle^{(j)} = \sum_i Q_V^{(i)} K_{ij} / k^{(j)}$, is the connectivity-weighted input to the $j^{th}$ ensemble,';
         '\qquad $K_{ij}$ is the network connection weight from ensemble $i$ to ensemble $j$ (diagonals should be zero),';
-        '\qquad $k^{(j)} = \sum_i K_{ij}$ for $i \neq j$ is the sum of incoming connection weights to ensemble $j$,';
+        '\qquad $k^{(j)} = \sum_i K_{ij}$ is the sum of incoming connection weights to ensemble $j$,';
         '\qquad $a_{ee},a_{ei},a_{ie},a_{ne},a_{ni}$ are the connection weights ($a_{ei}$ denotes excitatory-to-inhibitory),';
         '\qquad $b$ is the time constant of inhibition,';
         '\qquad $C$ is the relative contribution of excitatory connections within-ensembles versus between-ensembles,'; 
@@ -203,23 +204,23 @@ function dYdt = ddefun(~,Y,Ylag,Kij,aee,aei,aie,ane,ani,b,C,r,phi,Gion,Vion,thrs
     deltaK  = delta(4);
     deltaNa = delta(5);
     
-    % firing-rate functions
+    % Compute Firing-rate functions
     Qvlag = gain(Vlag, VT, deltaV); % (nx1) vector
     Qv = gain(V, VT, deltaV);       % (nx1) vector
     Qz = gain(Z, ZT, deltaZ);       % (nx1) vector
 
-    % fraction of open channels
+    % Compute fraction of open channels
     mCa = gain(V, TCa, deltaCa);    % (nx1) vector
     mK  = gain(V, TK,  deltaK );    % (nx1) vector
     mNa = gain(V, TNa, deltaNa);    % (nx1) vector
     
-    % mean firing rates
+    % Compute Mean firing rates
     k = sum(Kij)';                  % (1xn) vector
     QvMean = ((Qvlag'*Kij)')./k;    % (1xn) vector
     QvMean(isnan(QvMean)) = 0;    
 
-    % excitatory cell dynamics
-    dV = -(gCa + (1-C)*r.*aee.*Qv + C*r.*aee.*QvMean).*mCa.*(V-VCa) ...
+    % Excitatory cell dynamics
+    dV = -(gCa + (1-C).*r.*aee.*Qv + C.*r.*aee.*QvMean).*mCa.*(V-VCa) ...
          - gK.*W.*(V-VK) ...
          - gL.*(V-VL) ... 
          - (gNa.*mNa + (1-C).*aee.*Qv + C.*aee.*QvMean).*(V-VNa) ...
@@ -229,10 +230,10 @@ function dYdt = ddefun(~,Y,Ylag,Kij,aee,aei,aie,ane,ani,b,C,r,phi,Gion,Vion,thrs
     % K cell dynamics
     dW = phi.*(mK-W);
     
-    % inhibitory cell dynamics
+    % Inhibitory cell dynamics
     dZ = b.*(ani.*I + aei.*Qv.*V);
 
-    % return a column vector
+    % Return a column vector
     dYdt = [dV; dW; dZ]; 
 end
 
