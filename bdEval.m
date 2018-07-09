@@ -9,13 +9,13 @@
 %   rows of the solution (sol.y) to return.
 % 
 %EXAMPLE
-%   sys = ODEdemo1();
-%   [sol,solx] = bdSolve(sys,'ode45');
-%   tdomain = linspace(sys.tspan(1),sys.tspan(2),100);
-%   [y,yp] = bdEval(sol,tdomain);
-%   [z,zp] = bdEval(solx,tdomain);
-%   figure; plot(tdomain,y, tdomain,z); legend('y','z')
-%   figure; plot(tdomain,yp, tdomain,zp); legend('yp','zp')
+%   sys = LinearODE;                    % Linear system of ODEs
+%   tspan = [0 10];                     % Integration time domain
+%   sol = bdSolve(sys,tspan,@ode45);    % Apply the ode45 solver
+%   tplot = 0:0.1:10;                   % Interpolation time points
+%   [y,yp] = bdEval(sol,tplot);         % Interpolate the solution
+%   figure; plot(tplot,y); legend('y1','y2')
+%   figure; plot(tplot,yp); legend('dy1/dt','dy2/dt')
 %
 %AUTHORS
 %  Stewart Heitmann (2016a)
