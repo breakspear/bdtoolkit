@@ -131,6 +131,7 @@ function dY = odefun(~,Y,Kij,a,b,c,d,e,f,g,alpha,beta,gamma,tau,I,sigma,theta)
     % The network coupling term
     Inet = Kij*F((V-theta)./sigma);
     
+    % FitzHugh-Nagumo equations
     dV = d*tau*(-f*V.^3 + e*V.^2 + g*V + alpha*W + gamma.*(I + Inet));
     dW = d*(c*V.^2 + b*V - beta*W + a)./tau;
 
