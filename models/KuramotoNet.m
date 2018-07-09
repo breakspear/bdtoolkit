@@ -129,6 +129,7 @@ function centroid1(ax,t,sol,Kij,k,omega)
     
     % Plot the centroid.
     centroidplot(ax,ztheta);
+    text(-1,-1,num2str(t,'time = %g'));
     title(ax,'centroid of oscillators'); 
 end
 
@@ -145,6 +146,7 @@ function centroid2(ax,t,sol,Kij,k,omega)
     
     % Plot the centroid.
     centroidplot(ax,ztheta);
+    text(-1,-1,num2str(t,'time = %g'));
     title(ax,'centroid of oscillators (rotating frame)'); 
 end
 
