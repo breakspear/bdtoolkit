@@ -120,36 +120,36 @@ function sys = WilsonCowanRing(n,Ke,Ki,Je,Ji)
     
     % Latex Panel
     sys.panels.bdLatexPanel.latex = {
-        '\textbf{WilsonCowanRing}',
-        '',
-        'A ring of non-locally coupled Wilson-Cowan equations where the nodes of',
-        'the ring represent local populations of excitatory and inhibitory neurons.',
-        'The dynamical equations are defined as',
-        '',
-        '\qquad $\tau_e \; \dot U_e(x,t) = -U_e(x,t) + F\Big(w_{ee} V_e(x,t) - w_{ei} V_i(x,t) - b_e + J_e(x) \Big)$',
-        '\qquad $\tau_i \; \dot U_i(x,t) \; = -U_i(x,t) \; + F\Big(w_{ie} V_e(x,t) - w_{ii} V_i(x,t) - b_i + J_i(x) \Big)$',
+        '\textbf{WilsonCowanRing}'
         ''
-        'where the non-local coupling is defined by the spatial convolution',
-        '',
-        '\qquad $V(x,t) = k \int K(x) \; U(x,t) \; dx$',
+        'A ring of non-locally coupled Wilson-Cowan equations where the nodes of'
+        'the ring represent local populations of excitatory and inhibitory neurons.'
+        'The dynamical equations are defined as'
         ''
-        'where';
-        '\qquad $U_e(x,t)$ is the firing rate of the \textit{excitatory} population at position $x$,',
-        '\qquad $U_i(x,t)$ is the firing rate of the \textit{inhibitory} population at position $x$,',
-        '\qquad $V_e(x,t)$ is the spatial sum of \textit{excitation} at position $x$,',
-        '\qquad $V_i(x,t)$ is the spatial sum of \textit{inhibition} at position $x$,',
-        '\qquad $w_{ei}$ is the weight of the connection to $e$ from $i$,',
-        '\qquad $K_e(x)$ and $K_i(x)$ are spatial coupling kernels,',
-        '\qquad $k_e$ and $k_i$ are scaling constants,',
-        '\qquad $b_{e}$ and $b_{i}$ are threshold constants,',
-        '\qquad $J_{e}(x)$ and $J_i(x)$ are spatially extended injection currents,',
-        '\qquad $\tau_{e}$ and $\tau_{i}$ are time constants,',
-        '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoidal firing-rate function,',
-        '',
-        '\textbf{References}';
-        'Wilson \& Cowan (1973) Kybernetik 13(2):55-80.',
-        'Rule, Stoffregen \& Ermentrout (2011) PLoS Computational Biology 7(9).';
-        'Heitmann, Rule, Truccolo \& Ermentrout (2017) PLoS Computational Biology 13(1).';
+        '\qquad $\tau_e \; \dot U_e(x,t) = -U_e(x,t) + F\Big(w_{ee} V_e(x,t) - w_{ei} V_i(x,t) - b_e + J_e(x) \Big)$'
+        '\qquad $\tau_i \; \dot U_i(x,t) \; = -U_i(x,t) \; + F\Big(w_{ie} V_e(x,t) - w_{ii} V_i(x,t) - b_i + J_i(x) \Big)$'
+        ''
+        'where the non-local coupling is defined by the spatial convolution'
+        ''
+        '\qquad $V(x,t) = k \int K(x) \; U(x,t) \; dx$'
+        ''
+        'where'
+        '\qquad $U_e(x,t)$ is the firing rate of the \textit{excitatory} population at position $x$,'
+        '\qquad $U_i(x,t)$ is the firing rate of the \textit{inhibitory} population at position $x$,'
+        '\qquad $V_e(x,t)$ is the spatial sum of \textit{excitation} at position $x$,'
+        '\qquad $V_i(x,t)$ is the spatial sum of \textit{inhibition} at position $x$,'
+        '\qquad $w_{ei}$ is the weight of the connection to $e$ from $i$,'
+        '\qquad $K_e(x)$ and $K_i(x)$ are spatial coupling kernels,'
+        '\qquad $k_e$ and $k_i$ are scaling constants,'
+        '\qquad $b_{e}$ and $b_{i}$ are threshold constants,'
+        '\qquad $J_{e}(x)$ and $J_i(x)$ are spatially extended injection currents,'
+        '\qquad $\tau_{e}$ and $\tau_{i}$ are time constants,'
+        '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoidal firing-rate function,'
+        ''
+        '\textbf{References}'
+        'Wilson \& Cowan (1973) Kybernetik 13(2):55-80.'
+        'Rule, Stoffregen \& Ermentrout (2011) PLoS Computational Biology 7(9).'
+        'Heitmann, Rule, Truccolo \& Ermentrout (2017) PLoS Computational Biology 13(1).'
         };
     
     % Other Panels

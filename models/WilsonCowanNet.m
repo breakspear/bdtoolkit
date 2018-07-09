@@ -115,30 +115,30 @@ function sys = WilsonCowanNet(Kij,Je,Ji)
     
     % Latex Panel
     sys.panels.bdLatexPanel.latex = {
-        '\textbf{WilsonCowanNet}',
-        '',
-        'A network of Wilson-Cowan equations where the nodes of the network',
-        'are local populations of excitatory and inhibitory neurons. Only the',
-        'excitatory cells are connected by the network. The inhibitory interact-',
-        'ions are local only. The dynamical equations are',
-        '',
-        '\qquad $\tau_e \; \dot U_e = -U_e + F\big(w_{ee} U_e - w_{ei} U_i - b_e + J_e + k \sum_j K_{ij} U_e\big)$',
-        '\qquad $\tau_i \; \dot U_i\; = -U_i \; + F\big(w_{ie} U_e - w_{ii} U_i - b_i + J_i \big)$',
+        '\textbf{WilsonCowanNet}'
         ''
-        'where';
-        '\qquad $U_e$ is the firing rate of the \textit{excitatory} populations (nx1),',
-        '\qquad $U_i$ is the firing rate of the \textit{inhibitory} populations (nx1),',
-        '\qquad $w_{ei}$ is the weight of the connection to $e$ from $i$,',
-        '\qquad $K_{ij}$ in an nxn connectivity matrix,',
-        '\qquad $k$ is a scaling constant,',
-        '\qquad $b_{e}$ and $b_{i}$ are threshold constants,',
-        '\qquad $J_{e}$ and $J_i$ are injection currents (1x1 or nx1),',
-        '\qquad $\tau_{e}$ and $\tau_{i}$ are time constants,',
-        '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoidal firing-rate function,',
-        '',
-        '\textbf{References}';
-        'Wilson \& Cowan (1972) Biophysics Journal 12(1):1-24.',
-        'Hinka \& Coombes (2012) Euro J Neurosci 36:2137-2145.';
+        'A network of Wilson-Cowan equations where the nodes of the network'
+        'are local populations of excitatory and inhibitory neurons. Only the'
+        'excitatory cells are connected by the network. The inhibitory interact-'
+        'ions are local only. The dynamical equations are'
+        ''
+        '\qquad $\tau_e \; \dot U_e = -U_e + F\big(w_{ee} U_e - w_{ei} U_i - b_e + J_e + k \sum_j K_{ij} U_e\big)$'
+        '\qquad $\tau_i \; \dot U_i\; = -U_i \; + F\big(w_{ie} U_e - w_{ii} U_i - b_i + J_i \big)$'
+        ''
+        'where'
+        '\qquad $U_e$ is the firing rate of the \textit{excitatory} populations (nx1),'
+        '\qquad $U_i$ is the firing rate of the \textit{inhibitory} populations (nx1),'
+        '\qquad $w_{ei}$ is the weight of the connection to $e$ from $i$,'
+        '\qquad $K_{ij}$ in an nxn connectivity matrix,'
+        '\qquad $k$ is a scaling constant,'
+        '\qquad $b_{e}$ and $b_{i}$ are threshold constants,'
+        '\qquad $J_{e}$ and $J_i$ are injection currents (1x1 or nx1),'
+        '\qquad $\tau_{e}$ and $\tau_{i}$ are time constants,'
+        '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoidal firing-rate function,'
+        ''
+        '\textbf{References}'
+        'Wilson \& Cowan (1972) Biophysics Journal 12(1):1-24.'
+        'Hinka \& Coombes (2012) Euro J Neurosci 36:2137-2145.'
         };
     
     % Other Panels

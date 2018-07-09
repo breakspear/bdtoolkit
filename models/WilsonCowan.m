@@ -83,30 +83,30 @@ function sys = WilsonCowan()
     
     % Latex Panel
     sys.panels.bdLatexPanel.latex = {
-        '\textbf{WilsonCowan}',
-        '',
-        'Describes the mean firing rates of reciprocally-coupled populations',
-        'of excitatory and inhibitory neurons',
-        '';
-        '\qquad $\tau_e \; \dot E = -E + F\big(w_{ee} E - w_{ei} I - b_e + J_e\big)$',
-        '\qquad $\tau_i \; \dot I \; = -I \; + F\big(w_{ie} E - w_{ii} I - b_i + J_i \big)$',
+        '\textbf{WilsonCowan}'
         ''
-        'where';
-        '\qquad $E(t)$ is the mean firing rate of the \textit{excitatory} population,',
-        '\qquad $I(t)$ is the mean firing rate of the \textit{inhibitory} population,',
-        '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoidal firing-rate function,',
-        '\qquad $w_{ei}$ is the weight of the connection to $E$ from $I$,',
-        '\qquad $b_{e}$ is the firing threshold for excitatory cells,',
-        '\qquad $b_{i}$ is the firing threshold for inhibitory cells,',
-        '\qquad $J_{e}$ is an external current injected into the excitatory cells,',
-        '\qquad $J_{i}$ is an external current injected into the inhibitory cells,',
-        '\qquad $\tau_{e}$ is the time constant of excitation,',
-        '\qquad $\tau_{i}$ is the time constant of inhibition.',
-        '',
-        '\textbf{References}';
-        'Wilson \& Cowan (1972) Biophysics Journal 12(1):1-24.',
-        'Wilson \& Cowan (1973) Kybernetik 13(2):55-80.',
-        'Kilpatrick (2013) Encyclopedia of Computational Neuroscience. Springer.';
+        'Describes the mean firing rates of reciprocally-coupled populations'
+        'of excitatory and inhibitory neurons'
+        ''
+        '\qquad $\tau_e \; \dot E = -E + F\big(w_{ee} E - w_{ei} I - b_e + J_e\big)$'
+        '\qquad $\tau_i \; \dot I \; = -I \; + F\big(w_{ie} E - w_{ii} I - b_i + J_i \big)$'
+        ''
+        'where'
+        '\qquad $E(t)$ is the mean firing rate of the \textit{excitatory} population,'
+        '\qquad $I(t)$ is the mean firing rate of the \textit{inhibitory} population,'
+        '\qquad $F(v)=1/(1+\exp(-v))$ is a sigmoidal firing-rate function,'
+        '\qquad $w_{ei}$ is the weight of the connection to $E$ from $I$,'
+        '\qquad $b_{e}$ is the firing threshold for excitatory cells,'
+        '\qquad $b_{i}$ is the firing threshold for inhibitory cells,'
+        '\qquad $J_{e}$ is an external current injected into the excitatory cells,'
+        '\qquad $J_{i}$ is an external current injected into the inhibitory cells,'
+        '\qquad $\tau_{e}$ is the time constant of excitation,'
+        '\qquad $\tau_{i}$ is the time constant of inhibition.'
+        ''
+        '\textbf{References}'
+        'Wilson \& Cowan (1972) Biophysics Journal 12(1):1-24.'
+        'Wilson \& Cowan (1973) Kybernetik 13(2):55-80.'
+        'Kilpatrick (2013) Encyclopedia of Computational Neuroscience. Springer.'
         };
     
     % Other Panels
@@ -136,7 +136,7 @@ function y = F(x)
 end
 
 % Auxiliary plot of the compound firing rate (Local Field Potential)
-function compound(ax,t,sol,wee,wei,wie,wii,be,bi,Je,Ji,taue,taui)
+function compound(ax,~,sol,wee,wei,wie,wii,be,bi,Je,Ji,taue,taui)
     % extract solution data
     t = sol.x;
     E = sol.y(1,:);
