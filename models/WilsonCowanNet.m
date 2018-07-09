@@ -138,7 +138,7 @@ function sys = WilsonCowanNet(Kij,Je,Ji)
         ''
         '\textbf{References}'
         'Wilson \& Cowan (1972) Biophysics Journal 12(1):1-24.'
-        'Hinka \& Coombes (2012) Euro J Neurosci 36:2137-2145.'
+        'Hlinka \& Coombes (2012) Euro J Neurosci 36:2137-2145.'
         };
     
     % Other Panels
