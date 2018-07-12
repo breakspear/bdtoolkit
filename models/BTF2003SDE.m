@@ -209,9 +209,9 @@ function dY = sdeF(~,Y,Kij,aee,aei,aie,ane,ani,b,C,r,phi,Gion,Vion,thrsh,delta,I
     mK  = gain(V, TK,  deltaK );    % (nx1) vector
     mNa = gain(V, TNa, deltaNa);    % (nx1) vector
     
-    % mean firing rates
-    k = sum(Kij)';                  % (1xn) vector
-    QvMean = ((Qv'*Kij)')./k;       % (1xn) vector
+    % Compute Mean firing rates
+    k = sum(Kij,2);                 % (nx1) vector
+    QvMean = (Kij*Qv)./k;           % (nx1) vector
     QvMean(isnan(QvMean)) = 0;    
 
     % excitatory cell dynamics

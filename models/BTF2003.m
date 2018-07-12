@@ -207,10 +207,10 @@ function dYdt = odefun(~,Y,Kij,aee,aei,aie,ane,ani,b,C,r,phi,Gion,Vion,thrsh,del
     mNa = gain(V, TNa, deltaNa);    % (nx1) vector
     
     % Compute Mean firing rates
-    k = sum(Kij)';                  % (1xn) vector
-    QvMean = ((Qv'*Kij)')./k;       % (1xn) vector
+    k = sum(Kij,2);                 % (nx1) vector
+    QvMean = (Kij*Qv)./k;           % (nx1) vector
     QvMean(isnan(QvMean)) = 0;    
-
+    
     % Excitatory cell dynamics
     dV = -(gCa + (1-C).*r.*aee.*Qv + C.*r.*aee.*QvMean).*mCa.*(V-VCa) ...
          - gK.*W.*(V-VK) ...
