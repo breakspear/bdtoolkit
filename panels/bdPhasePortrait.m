@@ -781,6 +781,10 @@ classdef bdPhasePortrait < bdPanel
                   
                 % 2D plot
                 case 'off'
+                    % reset the z-axes limits
+                    this.ax.ZLim = [-1 1];
+                    zlabel(this.ax,[]);
+
                     % compute the 2D vector field (if required)
                     if vecflag
                         % compute the 2D vector field on the hyperplane that passes through the initial conditions
@@ -791,7 +795,7 @@ classdef bdPhasePortrait < bdPanel
 
                     % if the VECTOR FIELD menu is checked then ...
                     if strcmp(this.vecfmenu.Checked,'on')
-                        % plot the 3D vector field (after deleting the existing one)
+                        % plot the 2D vector field (after deleting the existing one)
                         delete(this.vecfplot);
                         this.vecfplot = quiver(xmesh,ymesh,dxmesh,dymesh,'parent',this.ax, 'color',[0.75 0.75 0.75], 'ShowArrowHead','off', 'Marker','.', 'HitTest','off');
                     end
