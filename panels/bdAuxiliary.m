@@ -38,6 +38,7 @@ classdef bdAuxiliary < bdPanel
     
     properties
         ax              % Handle to the plot axes
+        auxdata         % User-defined auxiliary data     
     end
     
     properties (Access=private)
@@ -220,19 +221,35 @@ classdef bdAuxiliary < bdPanel
                 case 'odesolver'
                     % case of an ODE solver (eg ode45)
                     parcell = struct2cell(control.par)';
-                    feval(auxfun,this.ax,control.sys.tval,control.sol,parcell{:});
+                    %this.auxdata = feval(auxfun,this.ax,control.sys.tval,control.sol,parcell{:});
+                    if nargout(auxfun)==0
+                        auxfun(this.ax,control.sys.tval,control.sol,parcell{:});
+                    else
+                        this.auxdata = auxfun(this.ax,control.sys.tval,control.sol,parcell{:});
+                    end
 
                 case 'ddesolver'
                     % case of a DDE solver (eg dde23)
                     lagcell = struct2cell(control.lag)';
                     parcell = struct2cell(control.par)';
                     allcell = {lagcell{:} parcell{:}};
-                    feval(auxfun,this.ax,control.sys.tval,control.sol,allcell{:});
+                    %feval(auxfun,this.ax,control.sys.tval,control.sol,allcell{:});
+                    if nargout(auxfun)==0
+                        auxfun(this.ax,control.sys.tval,control.sol,allcell{:});
+                    else
+                        this.auxdata = auxfun(this.ax,control.sys.tval,control.sol,allcell{:});
+                    end
 
                 case 'sdesolver'
                     % case of an SDE solver
                     parcell = struct2cell(control.par)';
-                    feval(auxfun,this.ax,control.sys.tval,control.sol,parcell{:});
+                    %feval(auxfun,this.ax,control.sys.tval,control.sol,parcell{:});
+                    %this.auxdata = feval(auxfun,this.ax,control.sys.tval,control.sol,parcell{:});
+                    if nargout(auxfun)==0
+                        auxfun(this.ax,control.sys.tval,control.sol,parcell{:});
+                    else
+                        this.auxdata = auxfun(this.ax,control.sys.tval,control.sol,parcell{:});
+                    end                    
             end        
         end
 
