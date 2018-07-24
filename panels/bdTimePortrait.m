@@ -369,6 +369,9 @@ classdef bdTimePortrait < bdPanel
             % construct the subpanel
             [this.ax1,cmenu] = bdPanel.Subpanel(this.tab,[0 0.5 1 0.5],[0 0.05 1 0.9]);
             xlabel(this.ax1,'time');
+            
+            % init the axes grid according to the grid menu setting
+            grid(this.ax1, this.gridmenu.Checked);
 
             % construct a selector menu comprising items from sys.vardef
             this.submenu1 = bdPanel.SelectorMenuFull(cmenu, ...
@@ -393,6 +396,9 @@ classdef bdTimePortrait < bdPanel
             [this.ax2,cmenu] = bdPanel.Subpanel(this.tab,[0 0.0 1 0.5],[0 0.05 1 0.9]);
             xlabel(this.ax2,'time');
 
+            % init the axes grid according to the grid menu setting
+            grid(this.ax2, this.gridmenu.Checked);
+            
             % construct a selector menu comprising items from sys.vardef
             this.submenu2 = bdPanel.SelectorMenuFull(cmenu, ...
                 control.sys.vardef, ...
