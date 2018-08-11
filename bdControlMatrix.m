@@ -257,7 +257,7 @@ classdef bdControlMatrix < handle
                 
                 % notify all widgets (which includes ourself) that sys.xxxdef has changed
                 %notify(this.control,'refresh');
-                notify(this.control,xxxdef);
+                notify(control,xxxdef);
 
                 % notify all display panels to redraw themselves
                 notify(control,'redraw');
