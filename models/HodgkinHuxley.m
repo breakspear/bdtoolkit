@@ -119,6 +119,7 @@ function sys = HodgkinHuxley()
     % Auxiliary Plot panel
     sys.panels.bdAuxiliary.auxfun = {@sodium,@potassium,@combined,@VoltageGates};
 
+    % Solver panel
     sys.panels.bdSolverPanel = [];                 
 end
 
