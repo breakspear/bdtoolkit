@@ -179,7 +179,7 @@ function KuramotoR(ax,t,sol,Kij,k,omega)
     % compute the running phase centroid
     centroid = mean(ztheta);
 
-    % plot the amplitide of the centroid versus time.
+    % plot the amplitude of the centroid versus time.
     plot(ax,sol.x,abs(centroid),'color','k','linewidth',1.5);
     
     % axis limits etc
