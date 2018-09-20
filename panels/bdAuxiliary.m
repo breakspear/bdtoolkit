@@ -2,7 +2,7 @@ classdef bdAuxiliary < bdPanel
     %bdAuxiliary Display panel for plotting model-specific functions.
     %
     %AUTHORS
-    %  Stewart Heitmann (2018a)
+    %  Stewart Heitmann (2018a,2018b)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -38,7 +38,7 @@ classdef bdAuxiliary < bdPanel
     
     properties
         ax              % Handle to the plot axes
-        auxdata         % User-defined auxiliary data     
+        UserData        % User data returned by the auxiliary function     
     end
     
     properties (Access=private)
@@ -150,9 +150,9 @@ classdef bdAuxiliary < bdPanel
             % construct the subpanel
             [this.ax,cmenu] = bdPanel.Subpanel(this.tab,[0 0 1 1],[0 0 1 1]);
             
-            % default axes for the case of no auxiliary function            
+            % default axes for the case of no auxiliary function 
             title(this.ax,'No Auxiliary Functions');
-            text(0.5,0.5,'No auxiliary plotting functions are defined for this system', ...
+            text(0.5,0.5,'No auxiliary plotting functions are defined for this model', ...
                 'HorizontalAlignment','center', 'Parent',this.ax);
 
             % construct the selector menu for the auxiliary functions
@@ -182,11 +182,8 @@ classdef bdAuxiliary < bdPanel
                 % update our handle to the selected menu item
                 this.submenu = menuitem;
                 
-                % clear the axis, reset to defaults, set hold='on'
-                cla(this.ax);
-                legend(this.ax,'off');
-                reset(this.ax);
-                hold(this.ax,'on');
+                % clear the axis, reset to defaults
+                cla(this.ax,'reset');
                 
                 % redraw the panel
                 this.redraw(control);
@@ -202,15 +199,15 @@ classdef bdAuxiliary < bdPanel
                 return
             end
             
+            % make the axis current
+            axes(this.ax);
+
             % if 'hold' menu is checked then ...
             switch this.holdmenu.Checked
                 case 'off'
                     % Clear the plot axis
                     cla(this.ax);
             end
-
-            % init the title with the name of the auxiliary function   
-            title(this.ax,this.submenu.UserData.label);
 
             % get the details of the currently selected plot function
             auxfun  = this.submenu.UserData.auxfun;
@@ -225,7 +222,7 @@ classdef bdAuxiliary < bdPanel
                     if nargout(auxfun)==0
                         auxfun(this.ax,control.sys.tval,control.sol,parcell{:});
                     else
-                        this.auxdata = auxfun(this.ax,control.sys.tval,control.sol,parcell{:});
+                        this.UserData = auxfun(this.ax,control.sys.tval,control.sol,parcell{:});
                     end
 
                 case 'ddesolver'
@@ -237,7 +234,7 @@ classdef bdAuxiliary < bdPanel
                     if nargout(auxfun)==0
                         auxfun(this.ax,control.sys.tval,control.sol,allcell{:});
                     else
-                        this.auxdata = auxfun(this.ax,control.sys.tval,control.sol,allcell{:});
+                        this.UserData = auxfun(this.ax,control.sys.tval,control.sol,allcell{:});
                     end
 
                 case 'sdesolver'
@@ -248,7 +245,7 @@ classdef bdAuxiliary < bdPanel
                     if nargout(auxfun)==0
                         auxfun(this.ax,control.sys.tval,control.sol,parcell{:});
                     else
-                        this.auxdata = auxfun(this.ax,control.sys.tval,control.sol,parcell{:});
+                        this.UserData = auxfun(this.ax,control.sys.tval,control.sol,parcell{:});
                     end                    
             end        
         end
@@ -261,12 +258,8 @@ classdef bdAuxiliary < bdPanel
 
             % Default panel settings
             syspanel.title = bdAuxiliary.title;
-            %syspanel.transients = true;
-            %syspanel.markers = true;
-            %syspanel.points = false;
-            %syspanel.grid = false;
             syspanel.hold = false;
-            syspanel.auxfun = []; %{@bdAuxiliary.auxdefault};
+            syspanel.auxfun = [];
             
             % Nothing more to do if sys.panels.bdAuxiliary is undefined
             if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdAuxiliary')
@@ -296,8 +289,4 @@ classdef bdAuxiliary < bdPanel
         end
     end
     
-end
-
-function myfunc(ax,tindx,sol,Kij,a,b,c,d,r,s,x0,Iap,gs,Vs,theta)
-    plot(ax,sol.x(tindx),sol.y(:,tindx));
 end

@@ -152,35 +152,45 @@ function dY = odefun(t,Y,V0,E0,tau0,tau1,alpha,kappa,gamma,Z,ton,toff)
 end
 
 % Auxiliary function for plotting the BOLD response 
-function auxdata = BOLD(ax,t,sol,V0,E0,tau0,tau1,alpha,kappa,gamma,Z,ton,toff)
+function UserData = BOLD(ax,t,sol,V0,E0,tau0,tau1,alpha,kappa,gamma,Z,ton,toff)
     % extract solution
     v = sol.y(1,:);                   % blood volume
     q = sol.y(2,:);                   % deoxyhaemoglobin
     
-    % BOLD signal
+    % compute the BOLD signal
     k1 = 7*E0;
     k2 = 2;
     k3 = 2*E0 - 0.2;
-    auxdata.y = V0*(k1*(1-q) + k2*(1-q./v) + k3*(1-v));
-    auxdata.t = sol.x;
+    y = V0*(k1*(1-q) + k2*(1-q./v) + k3*(1-v));
+    t = sol.x;
     
-    plot(ax,auxdata.t, 100*auxdata.y, 'color','k', 'LineWidth',1);
-    ylabel(ax,'BOLD (%)');
-    xlabel(ax,'time');
+    % plot the BOLD signal
+    plot(t, 100*y, 'color','k', 'LineWidth',1);
+    ylabel('BOLD (%)');
+    xlabel('time');
+    title('BOLD Haemodynamic Response');
+    
+    % make the data accessible to the workspace
+    UserData.t = t;
+    UserData.y = y;
 end
 
 % Auxiliary function for plotting the profile of the neural activity 
-function auxdata = NeuralActivity(ax,t,sol,V0,E0,tau0,tau1,alpha,kappa,gamma,Z,ton,toff)
+function UserData = NeuralActivity(ax,t,sol,V0,E0,tau0,tau1,alpha,kappa,gamma,Z,ton,toff)
     % time steps of the solution
-    auxdata.t = sol.x;
+    t = sol.x;
 
     % reconstruct the neural activity profile
-    auxdata.u = zeros(size(auxdata.t));
-    tindx = (ton<=auxdata.t & auxdata.t<toff);
-    auxdata.u(tindx) = Z;
+    u = zeros(size(t));
+    tindx = (ton<=t & t<toff);
+    u(tindx) = Z;
     
-    stairs(ax,auxdata.t, auxdata.u, 'color','k', 'LineWidth',1);
-    ylabel(ax,'u(t)');
-    xlabel(ax,'time');
-    title(ax,'Neural Activity Pulse');
+    stairs(t, u, 'color','k', 'LineWidth',1);
+    ylabel('u(t)');
+    xlabel('time');
+    title('Neural Activity Pulse');
+    
+    % make the data accessible to the workspace
+    UserData.t = t;
+    UserData.u = u;
 end

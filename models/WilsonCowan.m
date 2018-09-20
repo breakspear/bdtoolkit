@@ -142,12 +142,12 @@ function compound(ax,~,sol,wee,wei,wie,wii,be,bi,Je,Ji,taue,taui)
     E = sol.y(1,:);
     I = sol.y(2,:);
     
-    plot(ax,t,E+I, 'k','Linewidth',2);
-    plot(ax,t,E, 'k-.');
-    plot(ax,t,I, 'k:');
-    legend(ax,'E+I','E','I');
-    xlim(ax,[t(1) t(end)]);
-    ylim(ax,[0 2]);
-    title(ax,'Compound Firing Rate (E+I)')
-    xlabel(ax,'time');
+    plot(t,E+I, 'k','Linewidth',2);
+    plot(t,E, 'k-.');
+    plot(t,I, 'k:');
+    legend('E+I','E','I');
+    xlim([t(1) t(end)]);
+    ylim([0 2]);
+    title('Compound Firing Rate')
+    xlabel('time');
 end

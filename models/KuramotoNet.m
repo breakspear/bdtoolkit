@@ -13,7 +13,7 @@
 %   gui = bdGUI(sys);          % open the Brain Dynamics GUI
 %
 % Authors
-%   Stewart Heitmann (2016a,2017a,2018a)
+%   Stewart Heitmann (2016a,2017a,2018a,2018b)
 
 % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -128,9 +128,9 @@ function centroid1(ax,t,sol,Kij,k,omega)
     ztheta = exp(1i.*theta);
     
     % Plot the centroid.
-    centroidplot(ax,ztheta);
+    centroidplot(ztheta);
     text(-1,-1,num2str(t,'time = %g'));
-    title(ax,'centroid of oscillators'); 
+    title('centroid of oscillators'); 
 end
 
 % Auxiliary function that plots the centroid of the oscillators
@@ -145,30 +145,30 @@ function centroid2(ax,t,sol,Kij,k,omega)
     ztheta = exp(1i.*theta) .* exp(-1i*theta(1));
     
     % Plot the centroid.
-    centroidplot(ax,ztheta);
+    centroidplot(ztheta);
     text(-1,-1,num2str(t,'time = %g'));
-    title(ax,'centroid of oscillators (rotating frame)'); 
+    title('centroid (rotating frame)'); 
 end
 
 % Utility function for plotting the centroid
-function centroidplot(ax,ztheta)
+function centroidplot(ztheta)
     % compute the phase centroid
     centroid = mean(ztheta);
     
     % plot the unit circle
-    plot(ax,exp(1i.*linspace(-pi,pi,100)), 'color',[0.75 0.75 0.75]);
+    plot(exp(1i.*linspace(-pi,pi,100)), 'color',[0.75 0.75 0.75]);
     
     % plot the oscillator phases on the unit circle
-    plot(ax,ztheta,'o','color','k');
+    plot(ztheta,'o','color','k');
     
     % plot the centroid (yellow paddle)
-    plot(ax,[0 centroid], 'color', 'k');
-    plot(ax,centroid,'o','color','k', 'Marker','o', 'MarkerFaceColor','y', 'MarkerSize',10);
+    plot([0 centroid], 'color', 'k');
+    plot(centroid,'o','color','k', 'Marker','o', 'MarkerFaceColor','y', 'MarkerSize',10);
     
     % axis limits etc
-    axis(ax,'equal');
-    xlim(ax,[-1.1 1.1]);
-    ylim(ax,[-1.1 1.1]);
+    axis equal;
+    xlim([-1.1 1.1]);
+    ylim([-1.1 1.1]);
 end
 
 % Auxiliary function for plotting the Kuramoto order parameter (R).
@@ -180,14 +180,15 @@ function KuramotoR(ax,t,sol,Kij,k,omega)
     centroid = mean(ztheta);
 
     % plot the amplitide of the centroid versus time.
-    plot(ax,sol.x,abs(centroid),'color','k','linewidth',1.5);
+    %axis normal;
+    plot(sol.x,abs(centroid),'color','k','linewidth',1.5);
     
     % axis limits etc
     t0 = sol.x(1);
     t1 = sol.x(end);
-    xlim(ax,[t0 t1]);
-    ylim(ax,[-0.1 1.1]);
-    xlabel(ax,'time');
-    ylabel(ax,'R = abs(centroid)');
-    title(ax,'Kuramoto Order Parameter (R)')
+    xlim([t0 t1]);
+    ylim([-0.1 1.1]);
+    xlabel('time');
+    ylabel('R = abs(centroid)');
+    title('Kuramoto Order Parameter (R)');
 end

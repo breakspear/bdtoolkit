@@ -70,10 +70,14 @@ classdef bdDisplay < handle
             h = figh - this.dpanely - this.dpanelm;
             this.dpanel = uipanel(fig,'Units','pixels','Position',[x y w h],'BorderType','none');
             
-            % construct the tab group within the container uipanel
+            % construct the tab group within the container uipanel.
+            % new axes in the tab group default to FontSize=12, Box=on, Hold=on 
             this.tabgroup = uitabgroup(this.dpanel, ...
                 'SelectionChangedFcn', @bdPanel.PanelSelectionChangedFcn, ...
-                'Interruptible','off');
+                'Interruptible','off', ...
+                'DefaultAxesFontSize',12, ...
+                'DefaultAxesBox','on', ...
+                'DefaultAxesNextPlot', 'add');
         end
        
         % Resize the display panel to fit the figure window.

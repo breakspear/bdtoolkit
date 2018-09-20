@@ -25,7 +25,7 @@
 %    gui = bdGUI(sys);
 %
 % Authors
-%   Stewart Heitmann (2018)
+%   Stewart Heitmann (2018b)
 %
 % References:
 % Hodgkin and Huxley (1952) A quantitative description of membrane current
@@ -161,7 +161,7 @@ function dY = odefun(~,Y,C,I,gNa,gK,gL,ENa,EK,EL)
 end
 
 % Auxiliary function that plots the time course of activation and inactivation of the sodium ion channel
-function sodium(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
+function UserData = sodium(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
     % extract the solution data
     t = sol.x;
     V = sol.y(1,:);
@@ -170,18 +170,25 @@ function sodium(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
     h = sol.y(4,:);
 
     % Plot the conductances.
-    plot(ax, t, m.^3, 'b-');
-    plot(ax, t, h, 'b--');
-    plot(ax, t, m.^3 .* h , 'k-', 'Linewidth',1.5);
-    ylim(ax,[-0.1 1.1]);
-    xlim(ax,[t(1) t(end)]);
-    legend(ax,'activation, m^3','inactivation, h','combined, m^3h');
-    title(ax,'sodium channel activation and inactivation'); 
-    xlabel(ax,'time');
+    plot(t, m.^3, 'b-');
+    plot(t, h, 'b--');
+    plot(t, m.^3 .* h , 'k-', 'Linewidth',1.5);
+    ylim([-0.1 1.1]);
+    xlim([t(1) t(end)]);
+    legend('activation, m^3','inactivation, h','combined, m^3h');
+    title('sodium channel activation and inactivation'); 
+    xlabel('time');
+    
+    % Make a copy of the data accessible to the workspace
+    UserData.t = t;
+    UserData.V = V;
+    UserData.m = m;
+    UserData.n = n;
+    UserData.h = h;
 end
 
 % Auxiliary function that plots the time course of activation of the potassium ion channel
-function potassium(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
+function UserData = potassium(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
     % extract the solution data
     t = sol.x;
     V = sol.y(1,:);
@@ -190,16 +197,23 @@ function potassium(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
     h = sol.y(4,:);
 
     % Plot the conductances.
-    plot(ax, t, n.^4 , 'r-', 'Linewidth',1.5);
-    ylim(ax,[-0.1 1.1]);
-    xlim(ax,[t(1) t(end)]);
-    legend(ax,'activation, n^4');
-    title(ax,'potassium channel activation'); 
-    xlabel(ax,'time');
+    plot(t, n.^4 , 'r-', 'Linewidth',1.5);
+    ylim([-0.1 1.1]);
+    xlim([t(1) t(end)]);
+    legend('activation, n^4');
+    title('potassium channel activation'); 
+    xlabel('time');
+    
+    % Make a copy of the data accessible to the workspace
+    UserData.t = t;
+    UserData.V = V;
+    UserData.m = m;
+    UserData.n = n;
+    UserData.h = h;
 end
 
 % Auxiliary function that plots the time course of sodium and postassium activation combined
-function combined(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
+function UserData = combined(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
     % extract the solution data
     t = sol.x;
     V = sol.y(1,:);
@@ -208,13 +222,20 @@ function combined(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
     h = sol.y(4,:);
 
     % Plot the conductances.
-    plot(ax, t, m.^3 .* h , 'k-', 'Linewidth',1.5);
-    plot(ax, t, n.^4 , 'r-', 'Linewidth',1.5);
-    ylim(ax,[-0.1 1.1]);
-    xlim(ax,[t(1) t(end)]);
-    legend(ax,'sodium','potassium');
-    title(ax,'sodium and potassium channel activation'); 
-    xlabel(ax,'time');
+    plot(t, m.^3 .* h , 'k-', 'Linewidth',1.5);
+    plot(t, n.^4 , 'r-', 'Linewidth',1.5);
+    ylim([-0.1 1.1]);
+    xlim([t(1) t(end)]);
+    legend('sodium','potassium');
+    title('sodium and potassium channel activation'); 
+    xlabel('time');
+    
+    % Make a copy of the data accessible to the workspace
+    UserData.t = t;
+    UserData.V = V;
+    UserData.m = m;
+    UserData.n = n;
+    UserData.h = h;    
 end
 
 % Auxiliary function that plots steady-state voltage-dependent channel activations
@@ -234,12 +255,18 @@ function VoltageGates(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
     hinf = ah ./ (ah + bh); 
 
     % Plot minf.
-    plot(ax, V, minf , 'b-', 'Linewidth',1.5);
-    plot(ax, V, hinf , 'b--', 'Linewidth',1.5);
-    plot(ax, V, ninf , 'r-', 'Linewidth',1.5);
-    ylim(ax,[-0.1 1.1]);
-    xlim(ax,[-90 50]);
-    legend(ax,'minf','hinf','ninf');
-    title(ax,'Steady-state Voltage-dependent Channel Activations'); 
-    xlabel(ax,'V');
+    plot(V, minf , 'b-', 'Linewidth',1.5);
+    plot(V, hinf , 'b--', 'Linewidth',1.5);
+    plot(V, ninf , 'r-', 'Linewidth',1.5);
+    ylim([-0.1 1.1]);
+    xlim([-90 50]);
+    legend('minf','hinf','ninf');
+    title('Steady-state Voltage-dependent Channel Activations'); 
+    xlabel('V');
+    
+    % Make a copy of the data accessible to the workspace
+    UserData.V = V;
+    UserData.minf = minf;
+    UserData.hinf = hinf;
+    UserData.ninf = ninf;
 end

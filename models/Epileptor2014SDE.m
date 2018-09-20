@@ -6,7 +6,7 @@
 %    gui = bdGUI(sys);
 %
 % Authors
-%   Stewart Heitmann (2018)
+%   Stewart Heitmann (2018b)
 %
 % References:
 % Jirsa, Stacey, Quilichini, Ivanov, Bernard (2014) On the nature of 
@@ -144,19 +144,23 @@ end
 
 % Auxiliary function that plots the time course of the simulated field
 % potential (-x1+x2)
-function FieldPotential(ax,~,sol,~,~,~,~,~,~,~,~,~)
+function UserData = FieldPotential(ax,~,sol,~,~,~,~,~,~,~,~,~)
     % extract the solution data
     t = sol.x;
     x1 = sol.y(1,:);
     x2 = sol.y(4,:);
 
     % Plot the conductances.
-    plot(ax, t, -x1+x2, 'k-');
-    ylim(ax,[-5 5]);
-    xlim(ax,[t(1) t(end)]);
-    title(ax,'Simulated Field Potential'); 
-    ylabel(ax,'-x1 + x2');
-    xlabel(ax,'time');
+    plot(t, -x1+x2, 'k-');
+    ylim([-5 5]);
+    xlim([t(1) t(end)]);
+    title('Simulated Field Potential'); 
+    ylabel('-x1 + x2');
+    xlabel('time');
+    
+    % Make the data available to the workspace
+    UserData.t = t;
+    UserData.p = -x1+x2;
 end
 
 
