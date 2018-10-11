@@ -33,7 +33,6 @@
 %   117:165-181
 % Hansel, Mato, Meunier (1993) Phase Dynamics for Weakly Coupled Hodgkin-
 %   Huxley Neurons. Europhys Lett 23(5)
-
 function sys = HodgkinHuxley()
     % Handle to our ODE function
     sys.odefun = @odefun;
@@ -66,42 +65,33 @@ function sys = HodgkinHuxley()
 
     % Latex (Equations) panel
     sys.panels.bdLatexPanel.latex = {
-        '\textbf{Hodgkin Huxley Equations}';
+        '\textbf{HodgkinHuxley}';
         '';
-        'Describe the membrane potential of squid giant axon';
-        '\qquad $C \; \dot V = I - g_{Na}\; m^3 \; h \; (V-E_{Na}) - g_K \; n^4 \; (V-E_K) - g_L \; (V-E_L)$';
-        '\qquad $\dot m = \big(m_{\infty}(V) - m \big) \; / \; \tau_m(V)$';
-        '\qquad $\dot h = \big(h_{\infty}(V) - h \big) \; / \; \tau_h(V)$';
-        '\qquad $\dot n = \big(n_{\infty}(V) - n \big) \; / \; \tau_n(V)$';
+        'The Hodgkin-Huxley (1952) equations describe the action potential';
+        'in the squid giant axon by the kinetics of voltage-dependent sodium';
+        'and potassium ion channels in the cell membrane. ';
+        '';
+        'The differential equations are,';
+        '\qquad $C \; \dot V = I - I_{Na} - I_K - I_L$';
+        '\qquad $\tau_m(V) \; \dot m = m_{\infty}(V) - m$';
+        '\qquad $\tau_h(V) \; \dot h = h_{\infty}(V) - h$';
+        '\qquad $\tau_n(V) \; \dot n = n_{\infty}(V) - n$';
         'where';
-        '\qquad $V(t)$ is the membrane potential,';
-        '\qquad $m(t)$ is the activation variable of the sodium current,';
-        '\qquad $h(t)$ is the inactivation variable of the sodium current,';
-        '\qquad $n(t)$ is the activation variable of the potassium current,';
+        '\qquad $V(t)$ is the electrical potential across the membrane,';
+        '\qquad $m(t)$ is the activation variable of the sodium channel,';
+        '\qquad $h(t)$ is the inactivation variable of the sodium channel,';
+        '\qquad $n(t)$ is the activation variable of the potassium channel,';
         '\qquad $C$ is the membrane capacitance,';
-        '\qquad $I$ is the injected current,';
-        '\qquad $g_{Na}, g_K, g_L$ are the maximum conductances of the Na, K and leak currents,';
-        '\qquad $E_{Na}, E_K, E_L$ are the reversal potentials of the Na, K and leak currents.';
+        '\qquad $I$ is an external current that is applied to the membrane,';
+        '\qquad $I_{Na} = g_{Na}\; m^3 \; h \; (V-E_{Na})$ is the sodium current,';
+        '\qquad $I_{K} = g_K \; n^4 \; (V-E_K)$ is the potassium current,';
+        '\qquad $I_{L} = g_L \; (V-E_L)$ is the membrane leak current,';
+        '\qquad $g_{Na}, g_K, g_L$ are the maximal conductances of the ion channels,';
+        '\qquad $E_{Na}, E_K, E_L$ are the reversal potentials of the ion chanels.';
         '';
-        'The steady-state voltage-dependent channel activations are given by';
-        '\qquad $m_{\infty}(V) = a_m / (a_m + b_m)$,';
-        '\qquad $n_{\infty}(V) = a_n / (a_n + b_n)$.';
-        '\qquad $h_{\infty}(V) = a_h / (a_h + b_h)$,';
-        '';
-        'Their characteristic times are given by';
-        '\qquad $\tau_m(V) = 1 / (a_m + b_m)$,';
-        '\qquad $\tau_n(V) = 1 / (a_n + b_n)$.';
-        '\qquad $\tau_h(V) = 1 / (a_h + b_h)$,';
-        '';
-        'The voltage-dependent relations';
-        '\qquad $a_m = 0.1*(V+40)/(1-\exp((-V-40)/10))$';
-        '\qquad $a_n = 0.01*(V+55)/(1-\exp((-V-55)/10))$';
-        '\qquad $a_h = 0.07*\exp((-V-65)/20)$';
-        '\qquad $b_m = 4*\exp((-V-65)/18)$';
-        '\qquad $b_n = 0.125*\exp((-V-65)/80)$';
-        '\qquad $b_h = 1/(1+\exp((-V-35)/10))$';
-        'were established by empirical observation.';
-        '';
+        'The injection current ($I$) is the principal parameter of interest for'
+        'this model. The equations are described further in Chapter 6 of';
+        'the Handbook for the Brain Dynamics Toolbox (Version 2018b).';
         '';
         '\textbf{References}';
         'Hodgkin, Huxley (1952) A quantitative description of membrane current and';
@@ -117,14 +107,14 @@ function sys = HodgkinHuxley()
     sys.panels.bdPhasePortrait = [];
     
     % Auxiliary Plot panel
-    sys.panels.bdAuxiliary.auxfun = {@sodium,@potassium,@combined,@VoltageGates};
+    sys.panels.bdAuxiliary.auxfun = {@sodium,@potassium,@combined,@VoltageGates,@IonCurrents};
 
     % Solver panel
     sys.panels.bdSolverPanel = [];                 
 end
 
 % The ODE function
-function dY = odefun(~,Y,C,I,gNa,gK,gL,ENa,EK,EL)  
+function [dY,INa,IK,IL] = odefun(~,Y,C,I,gNa,gK,gL,ENa,EK,EL)  
     % extract incoming variables from Y
     V = Y(1);
     m = Y(2);
@@ -239,9 +229,11 @@ function UserData = combined(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
 end
 
 % Auxiliary function that plots steady-state voltage-dependent channel activations
-function VoltageGates(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
+function UserData = VoltageGates(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
+    % Voltage domain of interest
     V = linspace(-90,50,201);
     
+    % Steady-state Hodgkin-Huxley channel activations
     am = 0.1*(V+40)./(1-exp((-V-40)./10));
     an = 0.01*(V+55)./(1-exp((-V-55)./10));
     ah = 0.07*exp((-V-65)./20);
@@ -254,7 +246,7 @@ function VoltageGates(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
     ninf = an ./ (an + bn); 
     hinf = ah ./ (ah + bh); 
 
-    % Plot minf.
+    % Plot minf, hinf and ninf.
     plot(V, minf , 'b-', 'Linewidth',1.5);
     plot(V, hinf , 'b--', 'Linewidth',1.5);
     plot(V, ninf , 'r-', 'Linewidth',1.5);
@@ -270,3 +262,40 @@ function VoltageGates(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
     UserData.hinf = hinf;
     UserData.ninf = ninf;
 end
+
+% Auxiliary function that plots the ion currents
+function UserData = IonCurrents(ax,tt,sol,C,I,gNa,gK,gL,ENa,EK,EL)
+    % initilaise the data vectors
+    UserData.t   = sol.x;
+    UserData.INa = NaN(size(sol.x));
+    UserData.IK  = NaN(size(sol.x));
+    UserData.IL  = NaN(size(sol.x));
+    
+    % for each time step in the solution
+    for tindx = 1:numel(sol.x)
+        % get the solution vector for this time step
+        Y = sol.y(:,tindx);
+        t = sol.x(tindx);
+        
+        % call the ODE to reconstruct the ionic currents
+        [~,INa,IK,IL] = odefun(t,Y,C,I,gNa,gK,gL,ENa,EK,EL);
+        
+        % accumulate the results in UserData
+        UserData.INa(tindx) = INa;
+        UserData.IK(tindx)  = IK;
+        UserData.IL(tindx)  = IL;
+    end
+    
+    % plot the ionic currents
+    plot(UserData.t,UserData.INa,'r');
+    plot(UserData.t,UserData.IK,'b');
+    plot(UserData.t,UserData.IL,'g');
+    plot(UserData.t,UserData.INa+UserData.IK+UserData.IL,'k', 'Linewidth',1.5);
+    xlim(UserData.t([1 end]));
+    ylim([-800 800]);
+    xlabel('time');
+    ylabel('current density');
+    legend('INa','IK','IL','combined');
+    title('Ionic Currents'); 
+end
+
