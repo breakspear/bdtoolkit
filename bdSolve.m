@@ -22,11 +22,6 @@
 %      by the matlab ode45 solver. Use the bdEval function to extract the
 %      results from sol.
 %
-%NOTE
-%   Older versions of bdSolve returned the solutions of auxiliary variables
-%   in a second output parameter. Auxiliary variables are no longer
-%   supported. They were deprecated in version 2018a. 
-%
 %EXAMPLE
 %   sys = LinearODE;                % Linear system of ODEs
 %   tspan = [0 10];                 % integration time domain
@@ -37,7 +32,7 @@
 %   xlabel('time'); ylabel('y');
 %
 %AUTHORS
-%   Stewart Heitmann (2016a,2017a,2018a)
+%   Stewart Heitmann (2016a-2018b)
 
 % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -67,9 +62,6 @@
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
 function sol = bdSolve(sys,tspan,solverfun,solvertype)
-        % add the bdtoolkit/solvers directory to the path
-        addpath(fullfile(fileparts(mfilename('fullpath')),'solvers'));
-
         % check the number of output variables
         if nargout>1
             error('Too many output variables');
