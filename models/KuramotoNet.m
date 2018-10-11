@@ -69,9 +69,9 @@ function sys = KuramotoNet(Kij)
                     
     % Latex (Equations) panel
     sys.panels.bdLatexPanel.title = 'Equations'; 
-    sys.panels.bdLatexPanel.latex = {'\textbf{Kuramoto}';
+    sys.panels.bdLatexPanel.latex = {'\textbf{KuramotoNet}';
         '';
-        'Network of Kuramoto Oscillators';
+        'A generalised network of Kuramoto Oscillators';
         '\qquad $\dot \theta_i = \omega_i + \frac{k}{n} \sum_j K_{ij} \sin(\theta_i - \theta_j)$';
         'where';
         '\qquad $\theta_i$ is the phase of the $i^{th}$ oscillator (radians),';
@@ -81,14 +81,16 @@ function sys = KuramotoNet(Kij)
         '\qquad $i,j=1 \dots n,$';
         ['\qquad $n{=}',num2str(n),'.$'];
         '';
-        'The Kuramoto Order parameter is ';
+        'The Kuramoto order parameter ($R$) is a metric of phase synchronisation.';
         '\qquad $R = \frac{1}{n} \| \sum_i \exp(\mathbf{i} \theta_i) \|$';
-        'where $\mathbf{i} = \sqrt{-1}.$';
+        'It corresponds to the radius of the centroid of the phases, as shown in';
+        'the Auxiliary panel.';
         '';
         'References';
         '\qquad Kuramoto (1984) Chemical oscillations, waves and turbulence.';
         '\qquad Strogatz (2000) From Kuramoto to Crawford.';
-        '\qquad Breakspear et al (2010) Generative models of cortical oscillations.'};
+        '\qquad Breakspear et al (2010) Generative models of cortical oscillations.';
+        '\qquad Chapter 6.2 of the Handbook for the Brain Dynamics Toolbox (Version 2018b).'};
     
     % Time Portrait panel
     sys.panels.bdTimePortrait.title = 'Time Portrait';
