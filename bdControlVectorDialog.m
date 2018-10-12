@@ -171,7 +171,7 @@ classdef bdControlVectorDialog < handle
             % HALT button
             this.haltbutton = uicontrol('Style','radio', ...
                 'String','HALT', ...
-                'Value',this.control.halt, ...
+                'Value',this.control.sys.halt, ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -230,7 +230,7 @@ classdef bdControlVectorDialog < handle
             notify(this.control,xxxdef);
             
             % tell the solver to recompute the solution
-            if ~this.control.halt
+            if ~this.control.sys.halt
                 notify(this.control,'recompute');
             end
         end
@@ -246,7 +246,7 @@ classdef bdControlVectorDialog < handle
             notify(this.control,xxxdef);
             
             % tell the solver to recompute the solution
-            if ~this.control.halt
+            if ~this.control.sys.halt
                 notify(this.control,'recompute');
             end
         end
@@ -267,7 +267,7 @@ classdef bdControlVectorDialog < handle
             notify(this.control,xxxdef);
             
             % tell the solver to recompute the solution
-            if ~this.control.halt
+            if ~this.control.sys.halt
                 notify(this.control,'recompute');
             end
         end
@@ -290,7 +290,7 @@ classdef bdControlVectorDialog < handle
             notify(this.control,xxxdef);
             
             % tell the solver to recompute the solution
-            if ~this.control.halt
+            if ~this.control.sys.halt
                 notify(this.control,'recompute');
             end
         end
@@ -349,10 +349,10 @@ classdef bdControlVectorDialog < handle
         
         % HALT button callback
         function HaltCallback(this,haltbutton)
-            this.control.halt = haltbutton.Value;    % get the HALT button state
-            notify(this.control,'refresh');          % notify all widgets to refresh themselves
-            if ~this.control.halt
-                notify(this.control,'recompute');    % tell the solver to recompute
+            this.control.sys.halt = haltbutton.Value;   % get the HALT button state
+            notify(this.control,'refresh');             % notify all widgets to refresh themselves
+            if ~this.control.sys.halt
+                notify(this.control,'recompute');       % tell the solver to recompute
             end
         end
         
@@ -387,7 +387,7 @@ classdef bdControlVectorDialog < handle
             this.maxbox.String = num2str(xxxlim(2),'%0.4g');
 
             % update the HALT button
-            this.haltbutton.Value = this.control.halt; 
+            this.haltbutton.Value = this.control.sys.halt; 
         end
         
     end

@@ -90,7 +90,7 @@ classdef bdGUI < handle
     % POSSIBILITY OF SUCH DAMAGE.
 
     properties (Constant=true)
-        version = '2018a';      % version number of the toolbox
+        version = '2018b';      % version number of the toolbox
     end
     
     properties
@@ -107,6 +107,7 @@ classdef bdGUI < handle
         sys             % system definition structure (read only)
         sol             % current output of the solver (read only)
         panels          % current panel object handles (read only)
+        halt            % halt button state (read/write)
     end
     
     properties (Access=private)
@@ -444,6 +445,23 @@ classdef bdGUI < handle
            panels = this.display.ExportPanels(); 
         end
  
+        % Get halt property
+        function halt = get.halt(this)
+           halt = logical(this.control.sys.halt); 
+        end
+ 
+        % Set halt property
+        function set.halt(this,value)
+            % update the halt property of the control panel
+            this.control.sys.halt = logical(value);
+            % notify all control panel widgets to refresh themselves
+            notify(this.control,'refresh');
+            % if the halt state is 'off' then ...
+            if ~this.control.sys.halt
+                % tell the solver to recompute
+                notify(this.control,'recompute');    
+            end
+        end
     end
        
     

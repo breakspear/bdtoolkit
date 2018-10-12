@@ -547,6 +547,13 @@ classdef bd
                 throw(MException('bdtoolkit:syscheck:panels','The sys.panels field must be a struct'));
             end
             
+            % check sys.halt (optional)
+            if isfield(sys,'halt')
+                sys.halt = logical(sys.halt);
+            else
+                sys.halt = false;
+            end
+            
             % all tests have passed, return the updated sys.
             sysout = sys;
         end

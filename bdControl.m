@@ -42,7 +42,6 @@ classdef bdControl < handle
         tindx           % indices of the non-transient time steps in sol.x 
         solver          % the active solver function
         solvertype      % solver type string ('odesolver' or 'ddesolver' or 'sdesolver')
-        halt = 0        % state of the HALT button
     end
     
     properties (Access=private)
@@ -136,7 +135,10 @@ classdef bdControl < handle
             % initialise the solver panel
             this.SolverPanelInit();
             
-            % listen for widget refresh events
+            % force a refresh of all widgets once at startup
+            this.RefreshListener();
+            
+            % listen for future widget refresh events
             addlistener(this,'refresh',@(~,~) this.RefreshListener());    
    
             % listen for redraw events
@@ -523,7 +525,7 @@ classdef bdControl < handle
             % HALT button
             this.ui_halt = uicontrol('Style','radio', ...
                 'String','HALT', ...
-                'Value',this.halt, ...
+                'Value',this.sys.halt, ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',14, ...
@@ -708,9 +710,9 @@ classdef bdControl < handle
             this.ui_nfevals.String = num2str(this.sol.stats.nfevals,'%d');
 
             % refresh the HALT button
-            this.ui_halt.Value = this.halt;                
+            this.ui_halt.Value = this.sys.halt;                
 
-            if this.halt
+            if this.sys.halt
                 % change the solver stats to red
                 this.ui_nsteps.ForegroundColor = 'r';
                 this.ui_nfailed.ForegroundColor = 'r';
@@ -740,7 +742,7 @@ classdef bdControl < handle
         % Recompute the solution (called by the timer)
         function Recompute(this)
             % Do nothing if the HALT button is active
-            if this.halt
+            if this.sys.halt
                 return
             end
             
@@ -768,7 +770,7 @@ classdef bdControl < handle
 
             % if the EVOLVE button is active then ....
             if this.ui_evolve.Value
-                % Update the initial conditions and compute thr new solution
+                % Update the initial conditions and compute the new solution
                 this.Evolve();
             else
                 % Compute the solution without altering the initial conditions
@@ -1041,11 +1043,6 @@ classdef bdControl < handle
                 this.Recompute();
             end
             
-%             % If either of the EVOLVE or JITTER buttons are active
-%             % then initate another recompute event.
-%             if (this.ui_jitter.Value || this.ui_evolve.Value)
-%                 this.recomputeflag = true;
-%             end
         end
         
         % Callback function for ODE solver output
@@ -1073,7 +1070,7 @@ classdef bdControl < handle
                         drawnow;
                     end
                 case 'done'
-                   if this.halt~=1
+                   if this.sys.halt~=1
                         cpu = cputime - this.cpustart;
                         this.ui_cputime.String = num2str(cpu,'%5.2fs');
                         this.ui_progress.String = '100%';
@@ -1084,7 +1081,7 @@ classdef bdControl < handle
                    end
             end   
             % return the state of the HALT button
-            status = this.halt;
+            status = this.sys.halt;
         end
         
         % Callback for the noise HOLD button (SDE only)
@@ -1099,8 +1096,8 @@ classdef bdControl < handle
         
         % Callback for the HALT button
         function HaltCallback(this,haltbutton)
-            this.halt = haltbutton.Value;
-            if this.halt
+            this.sys.halt = haltbutton.Value;
+            if this.sys.halt
                 notify(this,'refresh');             % notify widgets to refresh themselves
                 notify(this,'redraw');
             else

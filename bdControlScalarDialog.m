@@ -212,7 +212,7 @@ classdef bdControlScalarDialog < handle
             notify(this.control,xxxdef);
 
             % tell the solver to recompute the solution
-            if ~this.control.halt
+            if ~this.control.sys.halt
                 notify(this.control,'recompute');
             end
         end
@@ -236,7 +236,7 @@ classdef bdControlScalarDialog < handle
             notify(this.control,xxxdef);
             
             % tell the solver to recompute the solution
-            if ~this.control.halt
+            if ~this.control.sys.halt
                 notify(this.control,'recompute');
             end
         end
