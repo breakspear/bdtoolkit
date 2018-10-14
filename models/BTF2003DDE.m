@@ -11,11 +11,9 @@
 %   The diagonals of Kij should be zero.
 %
 % Example:
-%   n = 6;                      % Number of neurons
-%   Kij = randn(n);             % Random connectivity matrix.
-%   Kij = Kij - Kij.*eye(n);    % Force diagonals to zero.
-%   sys = BTF2003DDE(Kij);      % Construct the system struct.
-%   gui = bdGUI(sys);           % Open the Brain Dynamics GUI.
+%   Kij = [0 1 0; 0 0 0; 0 1 0];    % M3 connectivity motif.
+%   sys = BTF2003DDE(Kij);          % Construct the system struct.
+%   gui = bdGUI(sys);               % Open the Brain Dynamics GUI.
 %
 % Authors
 %   Michael Breakspear (2017b)
@@ -105,7 +103,7 @@ function sys = BTF2003DDE(Kij)
                    struct('name','Z', 'value',rand(n,1)./10) ];            % Mean firing rate of inhibitory cells
                
     % Integration time span
-    sys.tspan = [0 1000]; 
+    sys.tspan = [0 300]; 
    
     % Specify DDE solvers and default options
     sys.ddesolver = {@dde23,@dde23a};          % DDE solvers
