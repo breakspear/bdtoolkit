@@ -741,6 +741,10 @@ classdef bdControl < handle
                 this.ui_progress.ForegroundColor = 'r';
                 %this.ui_cputime.String = '0.00s';
                 %this.ui_progress.String = '-';
+                
+                % disable the RUN button
+                this.ui_run.Enable = 'off';
+                this.ui_run.ForegroundColor = 'r';
             else
                 % change the solver stats to black
                 this.ui_nsteps.ForegroundColor = 'k';
@@ -748,6 +752,10 @@ classdef bdControl < handle
                 this.ui_nfevals.ForegroundColor = 'k';
                 this.ui_cputime.ForegroundColor = 'k';
                 this.ui_progress.ForegroundColor = 'k';
+
+                % enable the RUN button
+                this.ui_run.Enable = 'on';
+                this.ui_run.ForegroundColor = 'k';
             end
             
             % refresh the EVOLVE button
