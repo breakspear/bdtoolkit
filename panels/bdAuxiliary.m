@@ -84,7 +84,7 @@ classdef bdAuxiliary < bdPanel
         % Initialise the HOLD menu item
         function InitHoldMenu(this,control)
              % get the hold menu setting from sys.panels options
-            if control.sys.panels.bdTimePortrait.hold
+            if control.sys.panels.bdAuxiliary.hold
                 holdcheck = 'on';
             else
                 holdcheck = 'off';

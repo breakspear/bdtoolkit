@@ -155,7 +155,7 @@ classdef bdSpace2D < bdPanel
             ylabel(this.ax,'row');
             
             % construct the image data object (using zero data)
-            this.img = imagesc(this.ax,0);
+            this.img = imagesc(0,'Parent',this.ax);
             this.img.Clipping='off';             % Clipping is not necessary
 
             axis(this.ax,'tight','ij');

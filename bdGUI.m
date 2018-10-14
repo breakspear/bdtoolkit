@@ -547,7 +547,6 @@ classdef bdGUI < handle
                        'Stewart Heitmann, Michael Breakspear'
                        'Copyright (C) 2016-2018'
                        'QIMR Berghofer Medical Research Institute'
-                       'BSD 2-clause License'
                        };
                 uiwait(helpdlg(msg,'About'));
             end

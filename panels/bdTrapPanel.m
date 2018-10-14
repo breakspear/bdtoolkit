@@ -127,7 +127,7 @@ classdef bdTrapPanel < bdPanel
             if ~isequal(this.ax.ALim,[0 1])
                 errmsgs{end+1} = '* The ALIM property has been altered.';
             end            
-            if ~strcmp(this.ax.Box,'off')
+            if ~strcmp(this.ax.Box,'on')
                 errmsgs{end+1} = '* The BOX property has been altered';
             end            
             if ~isequal(this.ax.CLim,[0 1])
@@ -145,9 +145,9 @@ classdef bdTrapPanel < bdPanel
             if ~strcmp(this.ax.FontName,'Helvetica')
                 errmsgs{end+1} = '* The FONTNAME property has been altered';
             end            
-            if this.ax.FontSize ~= 10
-                errmsgs{end+1} = '* The FONTSIZE property has been altered';
-            end            
+            %if this.ax.FontSize ~= 11.5
+            %    errmsgs{end+1} = '* The FONTSIZE property has been altered';
+            %end            
             if ~strcmp(this.ax.FontUnits,'points')
                 errmsgs{end+1} = '* The FONTUNITS property has been altered';
             end            
