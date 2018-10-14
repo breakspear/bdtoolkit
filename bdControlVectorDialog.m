@@ -4,7 +4,7 @@ classdef bdControlVectorDialog < handle
     %   It should not be called directly by the user. 
     %
     %AUTHORS
-    %  Stewart Heitmann (2017c-d,2018a)
+    %  Stewart Heitmann (2017c-d,2018a-b)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -43,6 +43,9 @@ classdef bdControlVectorDialog < handle
         histogrm        % handle to histogram widget
         minbox          % handle to minbox
         maxbox          % handle to maxbox
+        zerobutton      % handle to zero button
+        perbbutton      % handle to perb button
+        randbutton      % handle to rand button
         haltbutton      % handle to halt button
         listener1       % handle to listener1
         listener2       % handle to listener2
@@ -112,7 +115,7 @@ classdef bdControlVectorDialog < handle
             title(ax2,'Histogram');
            
             % 'ZERO' button
-            uicontrol('Style','pushbutton', ...
+            this.zerobutton = uicontrol('Style','pushbutton', ...
                 'String','ZERO', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
@@ -123,7 +126,7 @@ classdef bdControlVectorDialog < handle
                 'ToolTipString','Zero the data');            
 
             % 'PERB' button
-            uicontrol('Style','pushbutton', ...
+            this.perbbutton = uicontrol('Style','pushbutton', ...
                 'String','PERB', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
@@ -134,7 +137,7 @@ classdef bdControlVectorDialog < handle
                 'ToolTipString','Uniform perturbation (5%)');            
 
             % 'RAND' button
-            uicontrol('Style','pushbutton', ...
+            this.randbutton = uicontrol('Style','pushbutton', ...
                 'String','RAND', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
@@ -193,6 +196,9 @@ classdef bdControlVectorDialog < handle
                 'Position',[310 10 60 20], ...
                 'ToolTipString','Close the dialog box');
  
+            % force a refresh at startup
+            this.refreshListener(xxxdef,xxxindx);   
+
             % listen to the control panel for widget refresh events (incuding those generate by this dialog box)
             this.listener1 = addlistener(control,'refresh',@(~,~) this.refreshListener(xxxdef,xxxindx));   
             this.listener2 = addlistener(control,xxxdef,@(~,~) this.refreshListener(xxxdef,xxxindx));   
@@ -388,6 +394,26 @@ classdef bdControlVectorDialog < handle
 
             % update the HALT button
             this.haltbutton.Value = this.control.sys.halt; 
+            
+            % special case: if this is a vardef control and the evolve button
+            % is ON then disable the edit buttons.
+            switch xxxdef
+                case 'vardef'
+                    if this.control.sys.evolve
+                        % disable the edit buttons
+                        this.datatable.Enable = 'off';
+                        this.zerobutton.Enable = 'off';
+                        this.perbbutton.Enable = 'off';
+                        this.randbutton.Enable = 'off';
+                    else
+                        % enable the buttons
+                        this.datatable.Enable = 'on';
+                        this.zerobutton.Enable = 'on';
+                        this.perbbutton.Enable = 'on';
+                        this.randbutton.Enable = 'on';
+                    end
+            end
+
         end
         
     end

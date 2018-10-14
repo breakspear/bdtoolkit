@@ -201,6 +201,9 @@ classdef bdControlMatrix < handle
                 'Callback', @(~,~) this.labelbtnCallback(control,xxxdef,xxxindx,xxxname), ...
                 'ToolTipString',['More options for ''',xxxname,'''']);
             
+            % force refresh at startup
+            this.refresh(control,xxxdef,xxxindx,modecheckbox);
+
             % listen for widget refresh events from the control panel 
             this.listener1 = addlistener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
             this.listener2 = addlistener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
@@ -429,6 +432,27 @@ classdef bdControlMatrix < handle
             
             % show/hide the slider widget according to the state of the caller's modecheckbox
             this.mode(modecheckbox.Value);
+            
+            % special case: if this is a vardef control and the evolve button
+            % is ON then disable the plus/minus/rand buttons.
+            switch xxxdef
+                case 'vardef'
+                    if control.sys.evolve
+                        % disable the buttons
+                        this.plusbtn.Enable = 'off';
+                        this.minusbtn.Enable = 'off';
+                        this.randbtn.Enable = 'off';
+                        this.peyebtn.Enable = 'off';
+                        this.meyebtn.Enable = 'off';
+                    else
+                        % enable the buttons
+                        this.plusbtn.Enable = 'on';
+                        this.minusbtn.Enable = 'on';
+                        this.randbtn.Enable = 'on';
+                        this.peyebtn.Enable = 'on';
+                        this.meyebtn.Enable = 'on';                        
+                    end
+            end
         end
         
     end

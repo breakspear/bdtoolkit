@@ -4,7 +4,7 @@ classdef bdControlScalar < handle
     %  It is not intended to be called directly by users.
     % 
     %AUTHORS
-    %  Stewart Heitmann (2018a)
+    %  Stewart Heitmann (2018a,b)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -135,7 +135,7 @@ classdef bdControlScalar < handle
                 'String',num2str(xxxvalue,'%0.3g'), ...
                 'Value',xxxvalue, ...
                 'HorizontalAlignment','center', ...
-                'FontWeight','bold', ...
+                'FontWeight','normal', ...
                 'Visible','on', ...
                 'Callback', @(~,~) this.valboxCallback(control,xxxdef,xxxindx), ...
                 'ToolTipString',['current value of ''' xxxname '''']);
@@ -151,6 +151,9 @@ classdef bdControlScalar < handle
                 'Callback', @(~,~) this.labelbtnCallback(control,xxxdef,xxxindx,xxxname), ...
                 'ToolTipString',['More options for ''',xxxname,'''']);
        
+            % force a refresh at startup
+            this.refresh(control,xxxdef,xxxindx,modecheckbox);
+
             % Listen for widget refresh events from the control panel.
             this.listener1 = addlistener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
             this.listener2 = addlistener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
@@ -360,7 +363,22 @@ classdef bdControlScalar < handle
             this.sliderUpdate(xxxlim(1), xxxlim(2), xxxvalue);
             
             % show/hide the slider widget according to the state of the caller's modecheckbox
-            this.mode(modecheckbox.Value)
+            this.mode(modecheckbox.Value);
+            
+            % special case: if this is a vardef control and the evolve button
+            % is ON then disable the slider and edit box.
+            switch xxxdef
+                case 'vardef'
+                    if control.sys.evolve
+                        % disable the slider and edit box
+                        set(this.jslider,'Enabled',0);
+                        this.valbox.Enable = 'off';
+                    else
+                        % enable the slider and edit box
+                        set(this.jslider,'Enabled',1);
+                        this.valbox.Enable = 'on';
+                    end
+            end
         end
         
     end

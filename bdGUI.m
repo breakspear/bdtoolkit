@@ -29,7 +29,7 @@ classdef bdGUI < handle
     %matlab workspace.
     %
     %   gui = bdGUI with properties:
-    %       version: '2018a'
+    %       version: '2018b'
     %           fig: [1×1 Figure]
     %           par: [1×1 struct]
     %          var0: [1×1 struct]
@@ -40,6 +40,9 @@ classdef bdGUI < handle
     %           sys: [1×1 struct]
     %           sol: [1×1 struct]
     %        panels: [1×1 struct]
+    %          halt: 0
+    %        evolve: 0
+    %       perturb: 0
     %
     % Where
     %   gui.version is the version string of the toolbox (read-only)
@@ -53,13 +56,16 @@ classdef bdGUI < handle
     %   gui.sys is a copy of the model's system structure (read-only)
     %   gui.sol is the output of the solver (read-only)
     %   gui.panels contains the outputs of the display panels (read-only)
+    %   gui.halt is the state of the HALT button (read-write)
+    %   gui.evolve is the state of the EVOLVE button (read-write)
+    %   gui.perturb is the state of the PERTURB button (read-write)
     %
     %SEE ALSO
-    %   The 'Getting Started' section of the 'Handbook for the Brain
-    %   Dynamics Toolbox'.
+    %   1. Getting Started in the Handbook for the Brain Dynamics Toolbox.
+    %   2. The Toolbox Basics course at http://www.bdtoolbox.org
     %
     %AUTHORS
-    %   Stewart Heitmann (2016a-2018a)
+    %   Stewart Heitmann (2016a-2018b)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -108,6 +114,8 @@ classdef bdGUI < handle
         sol             % current output of the solver (read only)
         panels          % current panel object handles (read only)
         halt            % halt button state (read/write)
+        evolve          % evolve button state (read/write)
+        perturb         % perturb button state (read/write)
     end
     
     properties (Access=private)
@@ -210,8 +218,8 @@ classdef bdGUI < handle
             set(this.fig,'SizeChangedFcn', @(~,~) this.SizeChanged());
 
             if isempty(sol)
-                % force a recompute
-                notify(this.control,'recompute');
+                % recompute and wait until complete
+                this.control.RecomputeWait();    
             else
                 % load the given sol and issue a redraw event
                 this.control.LoadSol(sol);
@@ -274,9 +282,10 @@ classdef bdGUI < handle
             this.control.sys.pardef = syspardef;
             
             % Notify the control panel to refresh its pardef widgets
-            % and then to recompute the trajectory.
             notify(this.control,'pardef');
-            notify(this.control,'recompute');
+            
+            % recompute and wait until complete
+            this.control.RecomputeWait();    
         end
 
         % Get var0 (initial conditions) property
@@ -331,9 +340,10 @@ classdef bdGUI < handle
             this.control.sys.vardef = sysvardef;
             
             % Notify the control panel to refresh its vardef widgets
-            % and then to recompute the trajectory.
             notify(this.control,'vardef');
-            notify(this.control,'recompute');
+            
+            % recompute and wait until complete
+            this.control.RecomputeWait();         
         end
         
         % Get var (solution variables) property
@@ -425,9 +435,10 @@ classdef bdGUI < handle
             this.control.sys.lagdef = syslagdef;
             
             % Notify the control panel to refresh its lagdef widgets
-            % and then to recompute the trajectory.
             notify(this.control,'lagdef');
-            notify(this.control,'recompute');
+            
+            % recompute and wait until complete
+            this.control.RecomputeWait();    
         end       
         
         % Get sys property
@@ -456,12 +467,49 @@ classdef bdGUI < handle
             this.control.sys.halt = logical(value);
             % notify all control panel widgets to refresh themselves
             notify(this.control,'refresh');
-            % if the halt state is 'off' then ...
+            % if the halt state is now OFF then ...
             if ~this.control.sys.halt
-                % tell the solver to recompute
-                notify(this.control,'recompute');    
+                % recompute and wait until complete
+                this.control.RecomputeWait();    
             end
         end
+        
+        % Get evolve property
+        function evolve = get.evolve(this)
+           evolve = logical(this.control.sys.evolve); 
+        end
+ 
+        % Set evolve property
+        function set.evolve(this,value)
+            % update the evolve property of the control panel
+            this.control.sys.evolve = logical(value);
+            % notify the panel widgets to refresh themselves
+            notify(this.control,'refresh');
+            % if the evolve state is now ON then ...
+            if this.control.sys.evolve
+                % recompute and wait until complete
+                this.control.RecomputeWait();    
+            end
+        end
+        
+        % Get perturb property
+        function perturb = get.perturb(this)
+           perturb = logical(this.control.sys.perturb); 
+        end
+ 
+        % Set perturb property
+        function set.perturb(this,value)
+            % update the perturb property of the control panel
+            this.control.sys.perturb = logical(value);
+            % notify the widgets to refresh themselves
+            notify(this.control,'refresh');
+            % if the perturb state is now ON then ...
+            if this.control.sys.perturb
+                % recompute and wait until complete
+                this.control.RecomputeWait();    
+            end
+        end
+        
     end
        
     

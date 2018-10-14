@@ -172,7 +172,10 @@ classdef bdControlVector < handle
                 'FontWeight','bold', ...
                 'Callback', @(~,~) this.labelbtnCallback(control,xxxdef,xxxindx,xxxname), ...
                 'ToolTipString',['More options for ''',xxxname,'''']);
-
+            
+            % force a refresh at startup
+            this.refresh(control,xxxdef,xxxindx,modecheckbox);
+  
             % listen for widget refresh events from the control panel 
             this.listener1 = addlistener(control,'refresh', @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));
             this.listener2 = addlistener(control,xxxdef, @(~,~) this.refresh(control,xxxdef,xxxindx,modecheckbox));           
@@ -351,7 +354,24 @@ classdef bdControlVector < handle
             this.baxes.YLim = xxxlim + [-1e-6 1e-6];
             
             % show/hide the slider widget according to the state of the caller's modecheckbox
-            this.mode(modecheckbox.Value)
+            this.mode(modecheckbox.Value);
+            
+            % special case: if this is a vardef control and the evolve button
+            % is ON then disable the plus/minus/rand buttons.
+            switch xxxdef
+                case 'vardef'
+                    if control.sys.evolve
+                        % disable the buttons
+                        this.plusbtn.Enable = 'off';
+                        this.minusbtn.Enable = 'off';
+                        this.randbtn.Enable = 'off';
+                    else
+                        % enable the buttons
+                        this.plusbtn.Enable = 'on';
+                        this.minusbtn.Enable = 'on';
+                        this.randbtn.Enable = 'on';
+                    end
+            end
         end
         
     end

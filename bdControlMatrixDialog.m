@@ -4,7 +4,7 @@ classdef bdControlMatrixDialog < handle
     %   It should not be called directly by the user. 
     % 
     %AUTHORS
-    %  Stewart Heitmann (2017c-d)
+    %  Stewart Heitmann (2017c-d,2018b)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -42,6 +42,9 @@ classdef bdControlMatrixDialog < handle
         dataimage       % handle to image plot widget
         minbox          % handle to minbox
         maxbox          % handle to maxbox
+        zerobutton      % handle to ZERO button
+        perbbutton      % handle to PERB button
+        randbutton      % handle to RAND button
         haltbutton      % handle to HALT button
         listener1       % handle to listener1
         listener2       % handle to listener2
@@ -96,7 +99,7 @@ classdef bdControlMatrixDialog < handle
             title(xxxname);
 
             % 'ZERO' button
-            uicontrol('Style','pushbutton', ...
+            this.zerobutton = uicontrol('Style','pushbutton', ...
                 'String','ZERO', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
@@ -107,7 +110,7 @@ classdef bdControlMatrixDialog < handle
                 'ToolTipString','Zero the data');            
 
             % 'PERB' button
-            uicontrol('Style','pushbutton', ...
+            this.perbbutton = uicontrol('Style','pushbutton', ...
                 'String','PERB', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
@@ -118,7 +121,7 @@ classdef bdControlMatrixDialog < handle
                 'ToolTipString','Uniform perturbation (5%)');            
 
             % 'RAND' button
-            uicontrol('Style','pushbutton', ...
+            this.randbutton = uicontrol('Style','pushbutton', ...
                 'String','RAND', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
@@ -177,6 +180,9 @@ classdef bdControlMatrixDialog < handle
                 'Position',[480 10 60 20], ...
                 'ToolTipString','Close the dialog box');
             
+            % force refresh at startup
+            this.refreshListener(xxxdef,xxxindx);   
+
             % listen to the control panel for widget refresh events (incuding those generate by this dialog box)
             this.listener1 = addlistener(control,'refresh',@(~,~) this.refreshListener(xxxdef,xxxindx));   
             this.listener2 = addlistener(control,xxxdef,@(~,~) this.refreshListener(xxxdef,xxxindx));   
@@ -372,6 +378,26 @@ classdef bdControlMatrixDialog < handle
            
             % update the HALT button
             this.haltbutton.Value = this.control.sys.halt; 
+                        
+            % special case: if this is a vardef control and the evolve button
+            % is ON then disable the zero/perb/rand buttons.
+            switch xxxdef
+                case 'vardef'
+                    if this.control.sys.evolve
+                        % disable the buttons
+                        this.datatable.Enable = 'off';
+                        this.zerobutton.Enable = 'off';
+                        this.perbbutton.Enable = 'off';
+                        this.randbutton.Enable = 'off';
+                    else
+                        % enable the buttons
+                        this.datatable.Enable = 'on';
+                        this.zerobutton.Enable = 'on';
+                        this.perbbutton.Enable = 'on';
+                        this.randbutton.Enable = 'on';
+                    end
+            end
+
         end
         
         % Callback for the data cursor

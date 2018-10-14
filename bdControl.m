@@ -4,7 +4,7 @@ classdef bdControl < handle
     %  by bdGUI. It is not intended to be called directly by users.
     % 
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a-c,2018a)
+    %  Stewart Heitmann (2016a,2017a-c,2018a-b)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -52,8 +52,9 @@ classdef bdControl < handle
         % Widgets in the control panel
         ui_hold         % handle to the noise HOLD button (SDE only)
         ui_evolve       % handle to the EVOLVE button
-        ui_jitter       % handle to the JITTER button
+        ui_perturb      % handle to the PERTURB button
         ui_rand         % handle to the RAND button
+        ui_run          % handle to the RUN button
         ui_reverse      % handle to the REVERSE button
         
         % Widgets in the solver panel
@@ -135,7 +136,7 @@ classdef bdControl < handle
             % initialise the solver panel
             this.SolverPanelInit();
             
-            % force a refresh of all widgets once at startup
+            % force a refresh of all widgets at startup
             this.RefreshListener();
             
             % listen for future widget refresh events
@@ -214,6 +215,12 @@ classdef bdControl < handle
             w = figw - bdControl.cpanelw - 5;
             h = 50;
             this.spanel.Position = [x y w h];
+        end
+        
+        % Force a recompute and wait until complete
+        function RecomputeWait(this)
+            this.recomputeflag = false;
+            this.Recompute();
         end
        
         % Destructor
@@ -299,7 +306,7 @@ classdef bdControl < handle
             % EVOLVE button
             this.ui_evolve = uicontrol('Style','radio', ...
                 'String','Evolve', ...
-                'Value',0, ...
+                'Value',this.sys.evolve, ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
@@ -308,15 +315,15 @@ classdef bdControl < handle
                 'ToolTipString', 'Replace the Initial Conditions with the final state before each run', ...
                 'Position',[col1+3 ypos col3-col1 boxh]);
             
-            % JITTER button
-            this.ui_jitter = uicontrol('Style','radio', ...
+            % PERTURB button
+            this.ui_perturb = uicontrol('Style','radio', ...
                 'String','Perturb', ...
-                'Value',0, ...
+                'Value',this.sys.perturb, ...
                 'HorizontalAlignment','left', ...
                 'FontUnits','pixels', ...
                 'FontSize',12, ...
                 'Parent', scroll.panel, ...
-                'Callback', @(src,~) this.JitterCallback(src), ...
+                'Callback', @(src,~) this.PerturbCallback(src), ...
                 'ToolTipString', 'Perturb the Initial Conditions (5%) before each run', ...
                 'Position',[85 ypos 70 boxh]);
             
@@ -330,6 +337,19 @@ classdef bdControl < handle
                 'Parent', scroll.panel, ...
                 'Callback', @(src,~) this.RandCallback(src), ...
                 'ToolTipString', 'Assign Uniform Random values to all Initial Conditions', ...
+                'Position',[col4-1 ypos col5-col4-5 boxh]);
+
+            % RUN button
+            this.ui_run = uicontrol('Style','pushbutton', ...
+                'String','RUN', ...
+                'Value',0, ...
+                'Visible','off', ...
+                'HorizontalAlignment','center', ...
+                'FontUnits','pixels', ...
+                'FontSize',12, ...
+                'Parent', scroll.panel, ...
+                'Callback', @(src,~) notify(this,'recompute'), ...
+                'ToolTipString', 'Run (evolve) the simulation once more', ...
                 'Position',[col4-1 ypos col5-col4-5 boxh]);
 
             % next row
@@ -729,6 +749,24 @@ classdef bdControl < handle
                 this.ui_cputime.ForegroundColor = 'k';
                 this.ui_progress.ForegroundColor = 'k';
             end
+            
+            % refresh the EVOLVE button
+            this.ui_evolve.Value = this.sys.evolve;
+            
+            if this.sys.evolve
+                % Hide the RAND button
+                this.ui_rand.Visible = 'off';
+                % Show the RUN button
+                this.ui_run.Visible = 'on';
+            else
+                % Show the RAND button
+                this.ui_rand.Visible = 'on';
+                % Hide the RUN button
+                this.ui_run.Visible = 'off';
+            end
+                
+            % refresh the PERTURB button
+            this.ui_perturb.Value = this.sys.perturb;
         end
         
         % Listener for RECOMPUTE events
@@ -768,8 +806,8 @@ classdef bdControl < handle
             lastwarn('');            
             oldwarn = warning('off','backtrace');                
 
-            % if the EVOLVE button is active then ....
-            if this.ui_evolve.Value
+            % if the EVOLVE button is ON then ....
+            if this.sys.evolve
                 % Update the initial conditions and compute the new solution
                 this.Evolve();
             else
@@ -819,11 +857,13 @@ classdef bdControl < handle
             this.ui_cputime.String = num2str(cpu,'%5.2fs');
         end
         
-        % Returned jittered versions of the initial conditions 
-        function Y0 = JitterValues(this,amp)
-            % Get teh initial conditions as they stand
-            Y0 = bdGetValues(this.sys.vardef);
-            
+        % Returns a uniform pertubation that is suitable for the initial
+        % conditions. The amp parameter dictates the amplitude of the
+        % perturbation relative to [lo hi] limits of each variable.
+        function P0 = Perturbation(this,amp)
+            % Initialise P0 to the same size as Y0. The contents do not matter.
+            P0 = bdGetValues(this.sys.vardef);
+
             % for each entry in sys.vardef
             for indx = 1:numel(this.sys.vardef)
                 % determine the limits of the variable
@@ -836,22 +876,22 @@ classdef bdControl < handle
                 % determine the size of the variable in Y0
                 solsize = [numel(solindx) 1];
 
-                % perturb the variable with a uniform random value scaled by 'amp'
-                Y0(solindx) = Y0(solindx) + amp*(hi-lo)*(rand(solsize)-0.5);
+                % create the perturbation as a uniform random value scaled by 'amp'
+                P0(solindx) = amp*(hi-lo)*(rand(solsize)-0.5);
             end            
         end
-
+        
         % Call the solver 
         function Solve(this)
             % Get the initial conditions
-            if this.ui_jitter.Value
-                % Add 5 percent jitter to the initial conditions
-                Y0 = this.JitterValues(0.05);
-            else
-                % Use the initial conditions as they are
-                Y0 = bdGetValues(this.sys.vardef);
-            end
+            Y0 = bdGetValues(this.sys.vardef);
             
+            % If the perturb button state is ON then ...
+            if this.sys.perturb
+                % Add 5 percent perturbation to the initial conditions
+                Y0 = Y0 + this.Perturbation(0.05);           
+            end         
+
             % Get the system parameters as a cell array
             parcell = {this.sys.pardef.value};
             
@@ -916,11 +956,14 @@ classdef bdControl < handle
                     warning('bdGUI:Overflow','The computed solution exceeds machine limits.');
                     warning(oldwarn.state,'backtrace'); 
                     
-                    % turn the EVOLVE button off
-                    this.ui_evolve.Value = 0;
+                    % turn the EVOLVE button OFF
+                    this.sys.evolve = false;
                     
-                    % turn the HALT button on
-                    this.ui_halt.Value = 1;
+                    % turn the HALT button ON
+                    this.sys.halt = true;
+                    
+                    % notify the widgets to refresh themselves
+                    notify(this,'refresh');
                 end
             end
             
@@ -933,14 +976,14 @@ classdef bdControl < handle
                     % Case of an ODE solver (eg ode45)
                     odeoption = odeset(this.sys.odeoption, 'OutputFcn',@this.odeOutputFcn, 'OutputSel',[]);
 
-                    % Get the initial conditions from sys.vardef
-                    if this.ui_jitter.Value
-                        % Add 5 percent jitter to the initial conditions
-                        Y0 = this.JitterValues(0.05);
-                    else
-                        % Use the initial conditions as they are
-                        Y0 = bdGetValues(this.sys.vardef);
-                    end
+                    % Get the initial conditions
+                    Y0 = bdGetValues(this.sys.vardef);
+            
+                    % If the perturb button state is ON then ...
+                    if this.sys.perturb
+                        % Add 5 percent perturbation to the initial conditions
+                        Y0 = Y0 + this.Perturbation(0.05);           
+                    end         
 
                     % Call the solver
                     this.sol = this.solver(this.sys.odefun, ...
@@ -957,7 +1000,7 @@ classdef bdControl < handle
                     lags = bdGetValues(this.sys.lagdef); 
                     
                     % Call the solver using the values of the previous run as history.
-                    % Notice we do not support JITTER for evolving DDEs. At least not for this build.
+                    % The History function perturbs the historical data if required.
                     this.sol = this.solver(this.sys.ddefun, ...
                         lags, ...
                         @(t,varargin) this.History(t), ...
@@ -970,15 +1013,15 @@ classdef bdControl < handle
                     sdeoption = this.sys.sdeoption;
                     sdeoption.OutputFcn = @this.odeOutputFcn;
                     sdeoption.OutputSel = [];      
-
-                    % Get the initial conditions from sys.vardef
-                    if this.ui_jitter.Value
-                        % Add 5 percent jitter to the initial conditions
-                        Y0 = this.JitterValues(0.05);
-                    else
-                        % Use the initial conditions as they are
-                        Y0 = bdGetValues(this.sys.vardef);
-                    end
+                    
+                    % Get the initial conditions
+                    Y0 = bdGetValues(this.sys.vardef);
+            
+                    % If the perturb button state is ON then ...
+                    if this.sys.perturb
+                        % Add 5 percent perturbation to the initial conditions
+                        Y0 = Y0 + this.Perturbation(0.05);           
+                    end         
 
                     % Call the solver
                     this.sol = this.solver(this.sys.sdeF, ...
@@ -1002,13 +1045,13 @@ classdef bdControl < handle
             % if there is no previous solution then ...
             if ~isfield(this.sol,'solver')
                 % Use the initial conditions from sys.vardef as constant history
-                if this.ui_jitter.Value
-                    % Add 5 percent jitter to the initial conditions
-                    Y0 = this.JitterValues(0.05);
-                else
-                    % Use the initial conditions as they are
-                    Y0 = bdGetValues(this.sys.vardef);
-                end
+                Y0 = bdGetValues(this.sys.vardef);
+            
+                % If the perturb button state is ON then ...
+                if this.sys.perturb
+                    % Add 5 percent perturbation to the initial conditions
+                    Y0 = Y0 + this.Perturbation(0.05);           
+                end         
             else
                 % Use the previous solution as history for the current solution.
 
@@ -1025,6 +1068,12 @@ classdef bdControl < handle
             
                 % interpolate the historical value
                 Y0 = deval(this.sol,t);
+
+                % If the perturb button state is ON then ...
+                if this.sys.perturb
+                    % Add 5 percent perturbation to the historical value
+                    Y0 = Y0 + this.Perturbation(0.05);           
+                end         
             end
         end
 
@@ -1108,31 +1157,23 @@ classdef bdControl < handle
     
         % Callback for the EVOLVE button
         function EvolveCallback(this,evobutton)
-            if evobutton.Value
-                % EVOLVE button is now ON
-                this.recomputeflag = true;
-                
-                % DDEs currently dont support JITTER when they are evolving
-                switch this.solvertype
-                    case 'ddesolver'
-                        % Ensure the JITTER button is off
-                        this.ui_jitter.Value = 0;
-                        this.ui_jitter.Enable = 'off';
-                end
-             else
-                % EVOLVE button is now OFF
-                % Ensure the JITTER button is enabled
-                this.ui_jitter.Enable = 'on';
+            this.sys.evolve = evobutton.Value;
+            if this.sys.evolve
+                notify(this,'refresh');             % notify widgets to refresh themselves
+                notify(this,'recompute');           % recompute the new solution
+            else
+                notify(this,'refresh');             % notify widgets to refresh themselves
              end
          end
     
-        % Callback for the JITTER button
-        function JitterCallback(this,button)
-            if button.Value
-                % JITTER button is now ON
-                this.recomputeflag = true;
-             else
-                % JITTER button is now OFF
+        % Callback for the PERTURB button
+        function PerturbCallback(this,button)
+            this.sys.perturb = button.Value;
+            if this.sys.perturb
+                notify(this,'refresh');             % notify widgets to refresh themselves
+                notify(this,'recompute');           % recompute the new solution
+            else
+                notify(this,'refresh');             % notify widgets to refresh themselves
              end
          end
     
@@ -1155,9 +1196,9 @@ classdef bdControl < handle
             notify(this,'vardef');
 
             % tell the solver to recompute the solution
-            this.recomputeflag = true;
+            notify(this,'recompute');
         end
-        
+                
     end
 end
 

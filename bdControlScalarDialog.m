@@ -4,7 +4,7 @@ classdef bdControlScalarDialog < handle
     %   It should not be called directly by the user. 
     % 
     %AUTHORS
-    %  Stewart Heitmann (2018a)
+    %  Stewart Heitmann (2018a,b)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -39,7 +39,9 @@ classdef bdControlScalarDialog < handle
         dialogfig       % handle to dialog box figure
         minbox          % handle to minbox
         maxbox          % handle to maxbox
-        valbox          % handel to valbox
+        valbox          % handle to valbox
+        perbbtn         % handle to PERB button
+        randbtn         % handle to RAND button
         listener1       % handle to listener1
         listener2       % handle to listener2
     end
@@ -89,7 +91,7 @@ classdef bdControlScalarDialog < handle
                 'String',num2str(xxxvalue,'%0.4g'), ...
                 'Value',xxxvalue, ...
                 'HorizontalAlignment','center', ...
-                'FontWeight','bold', ...
+                'FontWeight','normal', ...
                 'Visible','on', ...
                 'Callback', @(~,~) this.valboxCallback(xxxdef,xxxindx), ...
                 'ToolTipString',['current value of ''',xxxname,'''']);
@@ -132,7 +134,7 @@ classdef bdControlScalarDialog < handle
                 'ToolTipString',['upper limit for ''',xxxname,'''']);
 
             % 'PERB' button
-            uicontrol('Style','pushbutton', ...
+            this.perbbtn = uicontrol('Style','pushbutton', ...
                 'String','PERB', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
@@ -143,7 +145,7 @@ classdef bdControlScalarDialog < handle
                 'ToolTipString','Perturb');            
             
             % 'RAND' button
-            uicontrol('Style','pushbutton', ...
+            this.randbtn = uicontrol('Style','pushbutton', ...
                 'String','RAND', ...
                 'HorizontalAlignment','center', ...
                 'FontUnits','pixels', ...
@@ -153,6 +155,9 @@ classdef bdControlScalarDialog < handle
                 'Position',[col2 row1 colw rowh], ...
                 'ToolTipString','Uniform random');            
 
+            % force a refresh as startup
+            this.refresh(xxxdef,xxxindx);
+            
             % listen to the control panel for widget refresh events (incuding those generate by this dialog box)
             this.listener1 = addlistener(control,'refresh',@(~,~) this.refresh(xxxdef,xxxindx));
             this.listener2 = addlistener(control,xxxdef,@(~,~) this.refresh(xxxdef,xxxindx));
@@ -190,6 +195,24 @@ classdef bdControlScalarDialog < handle
             % update the max box
             this.maxbox.Value = xxxlim(2);
             this.maxbox.String = num2str(xxxlim(2),'%0.4g');
+            
+            % special case: if this is a vardef control and the evolve button
+            % is ON then disable the valbox, RAND and PERB buttons.
+            switch xxxdef
+                case 'vardef'
+                    if this.control.sys.evolve
+                        % disable the widgets
+                        this.valbox.Enable = 'off';
+                        this.perbbtn.Enable = 'off';
+                        this.randbtn.Enable = 'off';
+                    else
+                        % enable the widgets
+                        this.valbox.Enable = 'on';
+                        this.perbbtn.Enable = 'on';
+                        this.randbtn.Enable = 'on';
+                    end
+            end
+            
         end
 
     end

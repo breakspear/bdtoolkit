@@ -4,7 +4,7 @@ classdef bd
     %  when building custom GUI panels.
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a,2017c,2018a)
+    %  Stewart Heitmann (2016a,2017a,2017c,2018a,2018b)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -547,11 +547,25 @@ classdef bd
                 throw(MException('bdtoolkit:syscheck:panels','The sys.panels field must be a struct'));
             end
             
-            % check sys.halt (optional)
+            % check sys.halt (an optional parameter)
             if isfield(sys,'halt')
                 sys.halt = logical(sys.halt);
             else
                 sys.halt = false;
+            end
+            
+            % check sys.evolve (an optional parameter)
+            if isfield(sys,'evolve')
+                sys.evolve = logical(sys.evolve);
+            else
+                sys.evolve = false;
+            end
+            
+            % check sys.perturb (an optional parameter)
+            if isfield(sys,'perturb')
+                sys.perturb = logical(sys.perturb);
+            else
+                sys.perturb = false;
             end
             
             % all tests have passed, return the updated sys.
