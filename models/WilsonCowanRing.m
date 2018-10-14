@@ -153,7 +153,6 @@ function sys = WilsonCowanRing(n,Ke,Ki,Je,Ji)
         };
     
     % Other Panels
-    sys.panels.bdTimePortrait = [];
     sys.panels.bdSpaceTime = [];
     sys.panels.bdSolverPanel = [];
 end

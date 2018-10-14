@@ -96,7 +96,7 @@ function syscheck(sys)
         disp('  sys.odefun format is OK');
     end
 
-    % test sys.odefun and sys.auxfun with each ODE solver
+    % test sys.odefun with each ODE solver
     if isfield(sys,'odefun')
         if isempty(sys.pardef)
             parnames=',';
@@ -110,25 +110,8 @@ function syscheck(sys)
             sol = bdSolve(sys,sys.tspan,solverfun);
             solx = num2str(size(sol.x),'[%d %d]');
             soly = num2str(size(sol.y),'[%d %d]');
-            disp(['  sol.x as size ', solx]);
-            disp(['  sol.y as size ', soly]);
-            
-            % test sys.auxfun with the sol struct
-            if isfield(sys,'auxfun')
-                % call the auxfun with the final sol struct we just computed
-                disp(['Calling aux = sys.auxfun(sol,',parnames(1:end-1),') returns']);
-                par = {sys.pardef.value};
-                aux = sys.auxfun(sol,par{:});
-                disp(['  ',num2str(size(aux),'aux as size [%d %d]')]);      
-                if size(aux,2)~=size(sol.y,2)
-                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with the same number of columns as sol.y'));
-                end
-                aux0 = bdGetValues(sys.auxdef);
-                if size(aux,1)~=numel(aux0)
-                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
-                end                
-                disp('  sys.auxfun format is OK');
-            end            
+            disp(['  sol.x is size ', solx]);
+            disp(['  sol.y is size ', soly]);
         end
     end
     
@@ -180,25 +163,8 @@ function syscheck(sys)
             sol = bdSolve(sys,sys.tspan,solverfun);
             solx = num2str(size(sol.x),'[%d %d]');
             soly = num2str(size(sol.y),'[%d %d]');
-            disp(['  sol.x as size ', solx]);
-            disp(['  sol.y as size ', soly]);
-
-            % test sys.auxfun with the sol struct
-            if isfield(sys,'auxfun')
-                % call the auxfun with the final sol struct we just computed
-                disp(['Calling aux = sys.auxfun(sol,',parnames(1:end-1),') returns']);
-                par = {sys.pardef.value};
-                aux = sys.auxfun(sol,par{:});
-                disp(['  ',num2str(size(aux),'aux as size [%d %d]')]);      
-                if size(aux,2)~=size(sol.y,2)
-                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with the same number of columns as sol.y'));
-                end
-                aux0 = bdGetValues(sys.auxdef);
-                if size(aux,1)~=numel(aux0)
-                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
-                end                
-                disp('  sys.auxfun format is OK');
-            end            
+            disp(['  sol.x is size ', solx]);
+            disp(['  sol.y is size ', soly]);
         end
     end
     
@@ -273,29 +239,11 @@ function syscheck(sys)
             solx = num2str(size(sol.x),'[%d %d]');
             soly = num2str(size(sol.y),'[%d %d]');
             solW = num2str(size(sol.dW),'[%d %d]');
-            disp(['  sol.x as size ', solx]);
-            disp(['  sol.y as size ', soly]);
-            disp(['  sol.dW as size ', solW]);
-            
-            % test sys.auxfun with the sol struct
-            if isfield(sys,'auxfun')
-                % call the auxfun with the final sol struct we just computed
-                disp(['Calling aux = sys.auxfun(sol,',parnames(1:end-1),') returns']);
-                par = {sys.pardef.value};
-                aux = sys.auxfun(sol,par{:});
-                disp(['  ',num2str(size(aux),'aux as size [%d %d]')]);      
-                if size(aux,2)~=size(sol.y,2)
-                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with the same number of columns as sol.y'));
-                end
-                aux0 = bdGetValues(sys.auxdef);
-                if size(aux,1)~=numel(aux0)
-                    throwAsCaller(MException('bdtoolkit:syscheck','sys.auxfun must return aux with one row for each value defined in sys.auxdef'));
-                end                
-                disp('  sys.auxfun format is OK');
-            end            
+            disp(['  sol.x is size ', solx]);
+            disp(['  sol.y is size ', soly]);
+            disp(['  sol.dW is size ', solW]);
         end
     end
   
     disp('ALL TESTS PASSED OK');
 end
-

@@ -8,6 +8,16 @@ if ~exist('LinearODE.m', 'file')
     error('bdtoolkit/models is not in the matlab path');
 end
 
+if ~exist('sdeEM.m', 'file')
+    error('bdtoolkit/solvers is not in the matlab path');
+end
+
+%%
+disp 'TESTING BOLDHRF';
+sys = BOLDHRF();
+bdSysCheck(sys);
+disp '===';
+
 %%
 disp 'TESTING BrownianMotion';
 sys = BrownianMotion();
@@ -48,6 +58,18 @@ bdSysCheck(sys);
 disp '===';
 
 %%
+disp 'TESTING Epileptor2014ODE';
+sys = Epileptor2014ODE();
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING Epileptor2014SDE';
+sys = Epileptor2014SDE();
+bdSysCheck(sys);
+disp '===';
+
+%%
 disp 'TESTING FitzhughNagumo';
 n = randi(10);
 disp(num2str(n,'n=%d'));
@@ -77,6 +99,12 @@ disp 'TESTING HindmarshRose';
 n = randi(10);
 disp(num2str(n,'n=%d'));
 sys = HindmarshRose(rand(n));
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING HodgkinHuxley';
+sys = HodgkinHuxley();
 bdSysCheck(sys);
 disp '===';
 
@@ -154,4 +182,41 @@ sys = WilleBakerEx3();
 bdSysCheck(sys);
 disp '===';
 
+%%
+disp 'TESTING WilsonCowan';
+sys = WilsonCowan();
+bdSysCheck(sys);
+disp '===';
 
+%%
+disp 'TESTING WilsonCowanNet';
+n = randi(10);
+disp(num2str(n,'n=%d'));
+Kij = rand(n,n);
+Je = rand(n,1);
+Ji = rand(n,1);
+sys = WilsonCowanNet(Kij,Je,Ji);
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING WilsonCowanRing';
+n = 100;                           % number of spatial steps
+dx = 0.5;                          % length of each spatial step (mm)
+  
+% Gaussian coupling kernels
+gauss1d = @(x,sigma) exp(-x.^2/sigma^2)./(sigma*sqrt(pi));
+sigmaE = 2;                        % spread of excitatory gaussian
+sigmaI = 4;                        % spread of inhibitory gaussian
+kernelx = -10:dx:10;               % spatial domain of kernel (mm)
+Ke = gauss1d(kernelx,sigmaE)*dx;   % excitatory coupling kernel
+Ki = gauss1d(kernelx,sigmaI)*dx;   % inhibitory coupling kernel
+ 
+% Injection currents
+Je = 0.7;
+Ji = 0;
+ 
+% Construct the model and check the system structure
+sys = WilsonCowanRing(n,Ke,Ki,Je,Ji);
+bdSysCheck(sys);
+disp '===';
