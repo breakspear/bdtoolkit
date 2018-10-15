@@ -108,7 +108,10 @@ classdef (Abstract) bdPanel < handle
             % Construct the axes
             ax = axes('Parent',spanel, ...
                 'Units','normal', ...
-                'OuterPosition',axespos);
+                'OuterPosition',axespos, ...
+                'NextPlot','add', ...
+                'FontSize',12, ...
+                'Box','on');
 
             % Define the icon for the menu button
             cdata = ones(10,10,3);
@@ -358,8 +361,21 @@ classdef (Abstract) bdPanel < handle
             if hi > 1e100
                 hi = 1e100;
             end
-            d = hi-lo;
-            lim = round([lo-0.1*d, hi+0.1*d],2,'significant') + [-1e-4 1e-4];
+            
+            % number of significant digits we want
+            sig = 2;
+            
+            % compute the significant base (with small safety margin)
+            lobase = 10^floor(log10(abs(lo)+1e-4)-sig+1);
+            hibase = 10^floor(log10(abs(hi)+1e-4)-sig+1);
+            
+            % compute the new rounded limits (with a small safety margin)
+            newlo = floor(lo/lobase-0.5)*lobase;
+            newhi = ceil(hi/hibase+0.5)*hibase;
+            lim = [newlo newhi];
+            
+            %d = hi-lo;
+            %lim = round([lo-0.1*d, hi+0.1*d],2,'significant') + [-1e-4 1e-4];
         end
 
         function PanelSelectionChangedFcn(~,evnt)
