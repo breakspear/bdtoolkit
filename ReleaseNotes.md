@@ -1,10 +1,19 @@
 # Release Notes
 # Brain Dynamics Toolbox
 
+## Version 2018b
+Released 21 Oct 2018
+
+This release includes new example scripts for the Hodgkin-Huxley model of the action potential, the Wilson-Cowan model of excitatory-inhibitory dynamics, the Epileptor model of seizure dynamics and the Haemodynamic model of the BOLD response. It also inlcudes new display panels for plotting state variables that have two spatial dimensions (bdSpace2D) and for computing the BOLD response for any state variable (bdBoldHRF). The Auxiliary panel (bdAuxiliary) panel has been improved to allow user-data to be accessible to the workspace. New functions bdSetValues and bdEvolve have been added to the command-line tools. The bdLoadMatrix function has been removed. The HALT, EVOLVE and PERTRUB graphical buttons can now be controlled from the workspace interface. Their initial states can also be specified in the system structure. A RUN button has been added to the graphical interface. It replaces the RAND button when the EVOLVE mode is active. A matrix transpose bug in the BTF2003/SDE/DDE models was fixed. A drawing bug in the phase-portrait 3D View menu was fixed. Chapters 5 and 6 of the Handbook were revised substantially.
+
+Requires Matlab 2014b or newer.
+
 ## Version 2018a
 Released 20 Mar 2018.
 
 This release is a major overhaul of the graphical user interface and the design of the display panel classes. Notable additions are slider controls and the capability to evolve the initial conditions to follow a solution in paramater space. Bifurcation plots and Auxiliary panels have also been added. The auxiliary panel replaces the old auxiliary variables.
+
+Requires Matlab 2014b or newer.
 
 ## Version 2017c
 Released 16 Nov 2017.
