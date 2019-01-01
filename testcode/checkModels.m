@@ -162,6 +162,12 @@ bdSysCheck(sys);
 disp '===';
 
 %%
+disp 'TESTING Tsodyks1997';
+sys = Tsodyks1997();
+bdSysCheck(sys);
+disp '===';
+
+%%
 disp 'TESTING VanDerPolOscillators';
 n = randi(10);
 disp(num2str(n,'n=%d'));
