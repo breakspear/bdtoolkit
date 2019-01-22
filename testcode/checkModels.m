@@ -178,7 +178,18 @@ disp '===';
 %%
 disp 'TESTING WaveEquation1D';
 n = 100;
-sys = WaveEquation1D(n);
+sys = WaveEquation1D(n,'periodic');
+bdSysCheck(sys);
+sys = WaveEquation1D(n,'reflecting');
+bdSysCheck(sys);
+sys = WaveEquation1D(n,'free');
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING WaveEquation2D';
+n = 100;
+sys = WaveEquation2D(n);
 bdSysCheck(sys);
 disp '===';
 

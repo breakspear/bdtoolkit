@@ -1,4 +1,4 @@
-function sys = WaveEquation1D(n)
+function sys = WaveEquation1D(n,bflag)
     % WaveEquation1D Wave Equation in one spatial dimension
     %   The second-order Wave Equation in one spatial dimension
     %        Dtt U = c^2 Dxx U
@@ -8,15 +8,23 @@ function sys = WaveEquation1D(n)
     %   where U is wave amplitude, V is the speed of the vertical 
     %   displacement and c is the wave propagation speed. 
     %
+    % Usage:
+    %   sys = WaveEquation1D(n,bflag)
+    % where
+    %   n is the number of nodes
+    %   bflag defines the boundary conditions. Valid values are
+    %      'periodic', 'reflecting', 'free'.
+    %
     % Example:
-    %   n = 100;                    % number of spatial nodes
-    %   sys = WaveEquation1D(n);    % construct our system
-    %   gui = bdGUI(sys);           % run the GUI application
+    %   n = 100;                        % number of spatial nodes
+    %   bflag = 'periodic';             % periodic boundaries
+    %   sys = WaveEquation1D(n,bflag);  % construct our system
+    %   gui = bdGUI(sys);               % run the GUI application
     %
     % Authors
-    %   Stewart Heitmann (2016a,2017a,2018a)
+    %   Stewart Heitmann (2016a,2017a,2018a,2019a)
     
-    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -44,39 +52,45 @@ function sys = WaveEquation1D(n)
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
 
+    
     % Precompute the Laplacian (excluding the dx term)
-    switch 2    % edit me
-        case 1
+    switch bflag    % edit me
+        case 'periodic'
             % periodic boundary conditions
             Dxx = sparse( circshift(eye(n),1) -2*eye(n) + circshift(eye(n),-1) );  
-        case 2
+        case 'reflecting'
             % reflecting boundaries
             Dxx = sparse(diag(ones(1,n-1),1) - 2*eye(n) + diag(ones(1,n-1),-1));    
             Dxx(1,2) = 0;
             Dxx(n,n-1) = 0;
-        case 3
+        case 'free'
             % free boundaries
             Dxx = sparse(diag(ones(1,n-1),1) - 2*eye(n) + diag(ones(1,n-1),-1));    
             Dxx(1,1) = -1;
             Dxx(n,n) = -1;
+        otherwise
+            error('bflag must be ''periodic'', ''reflecting'' or ''free''');
     end
-    
-    % Initial conditions
-    x0 = 0.2*n;
-    x1 = 0.4*n;
-    U0 = ((1:n)>x0) .* ((1:n)<x1);
-    V0 = zeros(n,1);
     
     % Handle to our ODE function
     sys.odefun = @odefun;
     
     % Our ODE parameters
-    sys.pardef = [ struct('name','c',  'value',1.0);
-                   struct('name','dx', 'value',0.1) ];
+    dx = 1;
+    sys.pardef = [ 
+        struct('name','c',  'value',10, 'lim',[0 20])
+        struct('name','dx', 'value',dx, 'lim',[0.5 10])
+        ];
+    
+    % Initial conditions
+    U0 = 2*Gauss1D(n,dx,n/20);
+    V0 = zeros(n,1);
     
     % Our ODE variables
-    sys.vardef = [ struct('name','U', 'value',U0);
-                   struct('name','V', 'value',V0) ];
+    sys.vardef = [
+        struct('name','U', 'value',U0, 'lim',[-0.5 2])
+        struct('name','V', 'value',V0, 'lim',[-0.5 2])
+        ];
                
     % Default time span
     sys.tspan = [0 20];
@@ -88,32 +102,26 @@ function sys = WaveEquation1D(n)
 
     % Include the Latex (Equations) panel in the GUI
     sys.panels.bdLatexPanel.title = 'Equations'; 
-    sys.panels.bdLatexPanel.latex = {'\textbf{WaveEquation1D}';
+    sys.panels.bdLatexPanel.latex = {
+        '\textbf{WaveEquation1D}';
         '';
-        'The second-order Wave Equation';
+        'The second-order Wave Equation in one spatial dimension';
         '\qquad $\partial^2 U/ \partial t^2 = c^2 \; \partial^2 U / \partial x^2$';
-        'is a PDE in one spatial dimension, $x \in \mathrm{R}^1.$';
-        '';
-        'The PDE is transformed into a system of first-order ODEs';
+        'is transformed into a system of first-order ODEs';
         '\qquad $\dot U = V$';
         '\qquad $\dot V = c^2 \; \partial_{xx} U$';
-        'by discretizing space using the method of lines.'
+        'where'
+        '\qquad $\partial_{xx} U \approx \big( U_{i-1} - 2U_{i} + U_{i+1} \big) / dx^2$';
+        'is the second-order central difference approximation of the Laplacian.';
         '';
-        'Notes';
-        '\qquad 1. $c$ is the wave propagation speed.';
-        '\qquad 2. $\partial_{xx} U \approx \big( U_{i+1} - 2U_{i} + U_{i+1} \big) / dx^2$ is the spatial Laplacian.';
-        '\qquad 3. $dx$ is the spatial discretization step.';
-        ['\qquad 4. $n{=}',num2str(n),'$.']};
+        num2str(n,'$U$ and $V$ are both nx1 vectors where n=%d in this simulation.');
+        'Parameter $c$ is the wave propagation speed.';
+        'Parameter $dx$ is the spatial step sizes.';
+        ['Boundary conditions are ' bflag '.'];
+        };
               
-    % Include the Time Portrait panel in the GUI
-    sys.panels.bdTimePortrait.title = 'Time Portrait';
- 
     % Include the Space-Time panel in the GUI
     sys.panels.bdSpaceTime.title = 'Space-Time';
-
-    % Include the Solver panel in the GUI
-    sys.panels.bdSolverPanel.title = 'Solver';                                   
-
               
     % The ODE function; using the precomputed values of Dxx
     function dY = odefun(~,Y,c,dx)
@@ -132,3 +140,10 @@ function sys = WaveEquation1D(n)
     end
 
 end
+
+% Gaussian function
+function Y = Gauss1D(n,dx,sigma)
+    x = linspace(-n*dx/3,+2*n*dx/3,n);
+    Y = exp(-x.^2/sigma^2);
+end
+
