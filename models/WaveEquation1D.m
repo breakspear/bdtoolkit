@@ -57,7 +57,7 @@ function sys = WaveEquation1D(n,bflag)
     sys.odefun = @odefun;
 
     % Precompute the Laplacian (excluding the dx term)
-    switch bflag    % edit me
+    switch bflag
         case 'periodic'
             % periodic boundary conditions
             % Dxx = [-2  1  0  1 ]
