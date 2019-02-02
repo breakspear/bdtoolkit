@@ -1,10 +1,10 @@
 function sys = WaveEquation1D(n,bflag)
-    % WaveEquation1D Wave Equation in one spatial dimension
+    % WaveEquation1Db The 1D Wave Equation
     %   The second-order Wave Equation in one spatial dimension
-    %        Dtt U = c^2 Dxx U
+    %        Utt = c^2 Uxx
     %   converted into a system of first-order equations
-    %        U' = V
-    %        V' = c^2 dxx V
+    %        Ut = V
+    %        Vt = c^2 Uxx
     %   where U is wave amplitude, V is the speed of the vertical 
     %   displacement and c is the wave propagation speed. 
     %
@@ -13,10 +13,10 @@ function sys = WaveEquation1D(n,bflag)
     % where
     %   n is the number of nodes
     %   bflag defines the boundary conditions. Valid values are
-    %      'periodic', 'reflecting', 'free'.
+    %      'periodic', 'reflecting', 'free' and 'absorbing'.
     %
     % Example:
-    %   n = 100;                        % number of spatial nodes
+    %   n = 200;                        % number of spatial nodes
     %   bflag = 'periodic';             % periodic boundaries
     %   sys = WaveEquation1D(n,bflag);  % construct our system
     %   gui = bdGUI(sys);               % run the GUI application
@@ -53,27 +53,43 @@ function sys = WaveEquation1D(n,bflag)
     % POSSIBILITY OF SUCH DAMAGE.
 
     
+    % Handle to our ODE function
+    sys.odefun = @odefun;
+
     % Precompute the Laplacian (excluding the dx term)
     switch bflag    % edit me
         case 'periodic'
             % periodic boundary conditions
+            % Dxx = [-2  1  0  1 ]
+            %       [ 1 -2  1  0 ]
+            %       [ 0  1 -2  1 ]
+            %       [ 1  0  1 -2 ]
             Dxx = sparse( circshift(eye(n),1) -2*eye(n) + circshift(eye(n),-1) );  
+        case 'absorbing'
+            % periodic boundary conditions + odefun2
+            Dxx = sparse( circshift(eye(n),1) -2*eye(n) + circshift(eye(n),-1) );  
+            sys.odefun = @odefun2;
         case 'reflecting'
             % reflecting boundaries
+            % Dxx = [-2  0  0  0 ]
+            %       [ 1 -2  1  0 ]
+            %       [ 0  1 -2  1 ]
+            %       [ 0  0  0 -2 ]
             Dxx = sparse(diag(ones(1,n-1),1) - 2*eye(n) + diag(ones(1,n-1),-1));    
             Dxx(1,2) = 0;
             Dxx(n,n-1) = 0;
         case 'free'
             % free boundaries
+            % Dxx = [-1  1  0  0 ]
+            %       [ 1 -2  1  0 ]
+            %       [ 0  1 -2  1 ]
+            %       [ 0  0  1 -1 ]
             Dxx = sparse(diag(ones(1,n-1),1) - 2*eye(n) + diag(ones(1,n-1),-1));    
             Dxx(1,1) = -1;
             Dxx(n,n) = -1;
         otherwise
-            error('bflag must be ''periodic'', ''reflecting'' or ''free''');
+            error('bflag must be ''periodic'', ''reflecting'', ''free'' or ''absorbing''');
     end
-    
-    % Handle to our ODE function
-    sys.odefun = @odefun;
     
     % Our ODE parameters
     dx = 1;
@@ -96,7 +112,7 @@ function sys = WaveEquation1D(n,bflag)
     sys.tspan = [0 20];
     
     % Specify ODE solvers and default solver options
-    sys.odesolver = {@ode45,@ode23,@ode113,@odeEul};
+    sys.odesolver = {@ode45,@ode23};
     sys.odeoption.RelTol = 1e-6;
     sys.InitialStep = 0.00001;
 
@@ -107,33 +123,49 @@ function sys = WaveEquation1D(n,bflag)
         '';
         'The second-order Wave Equation in one spatial dimension';
         '\qquad $\partial^2 U/ \partial t^2 = c^2 \; \partial^2 U / \partial x^2$';
-        'is transformed into a system of first-order ODEs';
+        'where $c$ is the wave propagation speed.';
+        'The system is transformed into a system of first-order ODEs';
         '\qquad $\dot U = V$';
         '\qquad $\dot V = c^2 \; \partial_{xx} U$';
-        'where'
-        '\qquad $\partial_{xx} U \approx \big( U_{i-1} - 2U_{i} + U_{i+1} \big) / dx^2$';
-        'is the second-order central difference approximation of the Laplacian.';
+        num2str(n,'with space discretised into $n{=}%d$ nodes using the method lines.');
         '';
-        num2str(n,'$U$ and $V$ are both nx1 vectors where n=%d in this simulation.');
-        'Parameter $c$ is the wave propagation speed.';
-        'Parameter $dx$ is the spatial step sizes.';
-        ['Boundary conditions are ' bflag '.'];
+        'The Laplacian is approximated by the second-order central-difference'
+        '\qquad $\partial_{xx} U \approx \big( U_{i-1} - 2U_{i} + U_{i+1} \big) / dx^2$';
+        ['with ' bflag ' boundary conditions.'];
         };
               
     % Include the Space-Time panel in the GUI
     sys.panels.bdSpaceTime.title = 'Space-Time';
               
-    % The ODE function; using the precomputed values of Dxx
+    % The ODE function
     function dY = odefun(~,Y,c,dx)
         % incoming variables
         Y = reshape(Y,[],2);
         U = Y(:,1);
         V = Y(:,2);
         
-        % Second-order Wave Equations. Converted to a system of first-order
-        % equations that are discretized in space.
-        dV = c^2 * Dxx./dx^2 * U;
+        % Wave Equation
+        dV = c^2 * Dxx*U./(dx^2);
         dU = V;
+
+        % return result as a vector
+        dY = [dU; dV];
+    end
+
+    % The odefun with absorbing boundary conditions
+    function dY = odefun2(~,Y,c,dx)
+        % incoming variables
+        Y = reshape(Y,[],2);
+        U = Y(:,1);
+        V = Y(:,2);
+
+        % Wave Equation
+        dV = c^2 * Dxx*U./(dx^2);
+        dU = V;
+        
+        % Mur's absorbing boundary
+        dU(1) = c*(U(2)-U(1))./dx;
+        dU(end) = -c*(U(end)-U(end-1))./dx;      
         
         % return result as a vector
         dY = [dU; dV];
