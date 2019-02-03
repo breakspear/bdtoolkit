@@ -206,8 +206,8 @@ function sys = WaveEquation2D(n,bflag)
         % Mur's absorbing boundary conditions
         dU(:,1) = c*(U(:,2)-U(:,1))./dx;
         dU(:,end) = -c*(U(:,end)-U(:,end-1))./dx;
-        dU(1,:) = c*(U(2,:)-U(1,:))./dx;
-        dU(end,:) = -c*(U(end,:)-U(end-1,:))./dx;
+        dU(1,:) = c*(U(2,:)-U(1,:))./dy;
+        dU(end,:) = -c*(U(end,:)-U(end-1,:))./dy;
 
         % Return a column vector
         dY = reshape( cat(3,dU,dV), [], 1);
