@@ -184,12 +184,20 @@ sys = WaveEquation1D(n,'reflecting');
 bdSysCheck(sys);
 sys = WaveEquation1D(n,'free');
 bdSysCheck(sys);
+sys = WaveEquation1D(n,'absorbing');
+bdSysCheck(sys);
 disp '===';
 
 %%
 disp 'TESTING WaveEquation2D';
 n = 100;
-sys = WaveEquation2D(n);
+sys = WaveEquation2D(n,'periodic');
+bdSysCheck(sys);
+sys = WaveEquation2D(n,'reflecting');
+bdSysCheck(sys);
+sys = WaveEquation2D(n,'free');
+bdSysCheck(sys);
+sys = WaveEquation2D(n,'absorbing');
 bdSysCheck(sys);
 disp '===';
 
