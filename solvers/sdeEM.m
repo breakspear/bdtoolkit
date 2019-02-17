@@ -1,6 +1,6 @@
 %sdeEM  Solve an Ito SDE using the Euler-Marayuma method.
 %   SOL = sdeEM(ODEFUN,SDEFUN,TSPAN,Y0,OPTIONS,...)
-%   uses the Euler-Marayuma method to integrate a system of Ito stochastic
+%   uses the Euler-Maruyama method to integrate a system of Ito stochastic
 %   differential equations of the form 
 %      dy = F(t,y,...)*dt + G(t,y,...)*dW(t)
 %   where F(t,y,...)*dt is the deterministic part and G(t,y,...)*dW(t) is
