@@ -787,11 +787,6 @@ classdef bdControl < handle
         
         % Recompute the solution (called by the timer)
         function Recompute(this)
-            % Do nothing if the HALT button is active
-            if this.sys.halt
-                return
-            end
-            
             % Remember the parameters of the (to be computed) solution in the control.par struct.
             % We do this because the controls can change the values in sys.pardef
             % faster than the solver can keep up.
@@ -808,6 +803,11 @@ classdef bdControl < handle
                     value = this.sys.lagdef(indx).value;
                     this.lag.(name) = value;
                 end
+            end
+            
+            % Do no more if the HALT button is active
+            if this.sys.halt
+                return
             end
                         
             % clear the last warning message
