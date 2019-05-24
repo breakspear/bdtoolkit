@@ -638,9 +638,11 @@ classdef bdPhasePortrait < bdPanel
                     
                     % compute the 3D vector field (if required)
                     if vecflag
-                        % compute the 3D vector field on the hypercube that passes through the initial conditions
-                        tval = control.sol.x(1);
-                        Yval = control.sol.y(:,1);                        
+                        % compute the 3D vector field at the current time slider value
+                        tval = control.sys.tval;                % current time slider value
+                        tval = max(tval,control.sol.x(1));      % ... in case the soln is absent at tval
+                        tval = min(tval,control.sol.x(end));    % ... in case the soln is absent at tval
+                        Yval = bdEval(control.sol,tval);        % evaluate Y at the current time slider
                         [xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh] = this.VectorField3D(control,tval,Yval,solrow1,solrow2,solrow3,lim1,lim2,lim3);
                     end
                     
@@ -648,7 +650,8 @@ classdef bdPhasePortrait < bdPanel
                     if strcmp(this.vecfmenu.Checked,'on')
                         % plot the 3D vector field (after deleting the existing one)
                         delete(this.vecfplot);
-                        this.vecfplot = quiver3(xmesh,ymesh,zmesh,dxmesh,dymesh,dzmesh,'parent',this.ax, 'color',[0.75 0.75 0.75], 'ShowArrowHead','off', 'Marker','none', 'HitTest','off');
+                        % we only use every second mesh point for the vector field otherwise it looks too busy                        
+                        this.vecfplot = quiver3(xmesh(1:2:end,1:2:end,1:2:end),ymesh(1:2:end,1:2:end,1:2:end),zmesh(1:2:end,1:2:end,1:2:end),dxmesh(1:2:end,1:2:end,1:2:end),dymesh(1:2:end,1:2:end,1:2:end),dzmesh(1:2:end,1:2:end,1:2:end),'parent',this.ax, 'color',[0.75 0.75 0.75], 'ShowArrowHead','off', 'Marker','.', 'HitTest','off');
                     end
                     
                     % if the NULLCLINE menu is checked then ...
@@ -743,6 +746,14 @@ classdef bdPhasePortrait < bdPanel
                                 'LineStyle',linestyle, ...
                                 'Linewidth',1.5, ...
                                 'Marker',markerstyle );
+                           
+                            % ensure that fixed points are visible
+                            plot3(this.ax, ...
+                                this.y1(end), this.y2(end), this.y3(end), ...
+                                'color','k', ...
+                                'Marker','o', ...
+                                'MarkerSize',1.5, ...
+                                'MarkerFaceColor','k');
 
                             % if the TRANSIENT menu is enabled then  ...
                             if strcmp(this.tranmenu.Checked,'on')                            
@@ -771,7 +782,6 @@ classdef bdPhasePortrait < bdPanel
                     end
                     
                     % update the plot title
-                    %title(this.ax,[varname1 ' versus ' varname2 ' versus ' varname3]);
                     title(this.ax,'Phase Portrait (3D)');
 
                     % update the plot labels
@@ -787,9 +797,11 @@ classdef bdPhasePortrait < bdPanel
 
                     % compute the 2D vector field (if required)
                     if vecflag
-                        % compute the 2D vector field on the hyperplane that passes through the initial conditions
-                        tval = control.sol.x(1);
-                        Yval = control.sol.y(:,1);
+                        % compute the 2D vector field at the current time slider value
+                        tval = control.sys.tval;                % current time slider value
+                        tval = max(tval,control.sol.x(1));      % ... in case the soln is absent at tval
+                        tval = min(tval,control.sol.x(end));    % ... in case the soln is absent at tval
+                        Yval = bdEval(control.sol,tval);        % evaluate Y at the current time slider
                         [xmesh,ymesh,dxmesh,dymesh] = this.VectorField2D(control,tval,Yval,solrow1,solrow2,lim1,lim2);
                     end
 
@@ -797,7 +809,8 @@ classdef bdPhasePortrait < bdPanel
                     if strcmp(this.vecfmenu.Checked,'on')
                         % plot the 2D vector field (after deleting the existing one)
                         delete(this.vecfplot);
-                        this.vecfplot = quiver(xmesh,ymesh,dxmesh,dymesh,'parent',this.ax, 'color',[0.75 0.75 0.75], 'ShowArrowHead','off', 'Marker','.', 'HitTest','off');
+                        % we only use every second mesh point for the vector field otherwise it looks too busy
+                        this.vecfplot = quiver(xmesh(1:2:end,1:2:end),ymesh(1:2:end,1:2:end),dxmesh(1:2:end,1:2:end),dymesh(1:2:end,1:2:end),'parent',this.ax, 'color',[0.75 0.75 0.75], 'ShowArrowHead','off', 'Marker','.', 'HitTest','off');
                     end
                     
                     % if the NULLCLINE menu is checked then ...
@@ -825,7 +838,7 @@ classdef bdPhasePortrait < bdPanel
                                 'LineStyle',linestyle, ...
                                 'LineWidth',1.5, ...
                                 'Marker',markerstyle);
-                            
+                                                      
                             % if the TRANSIENT menu is enabled then  ...
                             if strcmp(this.tranmenu.Checked,'on')                            
                                 % plot the pentagram marker
@@ -864,6 +877,13 @@ classdef bdPhasePortrait < bdPanel
                                 'Marker',markerstyle, ...
                                 'LineStyle',linestyle, ...
                                 'Linewidth',1.5 );
+                            
+                            % ensure that fixed points are visible
+                            plot(this.ax, this.y1(end), this.y2(end), ...
+                                'color','k', ...
+                                'Marker','o', ...
+                                'MarkerSize',1.5, ...
+                                'MarkerFaceColor','k');
 
                             % if the TRANSIENT menu is enabled then  ...
                             if strcmp(this.tranmenu.Checked,'on')                            
@@ -917,8 +937,8 @@ classdef bdPhasePortrait < bdPanel
             end
             
             % compute a mesh for the domain
-            nx = 21;
-            ny = 21;
+            nx = 41;
+            ny = 41;
             xdomain = linspace(xlimit(1),xlimit(2), nx);
             ydomain = linspace(ylimit(1),ylimit(2), ny);
             [xmesh,ymesh] = meshgrid(xdomain,ydomain);
