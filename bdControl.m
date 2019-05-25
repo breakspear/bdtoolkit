@@ -1094,10 +1094,31 @@ classdef bdControl < handle
                 return
             end
             
-            % recompute the solution if required
-            if this.recomputeflag
-                this.recomputeflag = false;
-                this.Recompute();
+            try
+                % recompute the solution if required
+                if this.recomputeflag
+                    this.recomputeflag = false;
+                    this.Recompute();
+                end
+                
+            catch ME
+                % display the warning
+                this.ui_warning.String = ME.identifier;
+                this.ui_warning.TooltipString = ME.message;
+                this.ui_warning.ForegroundColor = 'r';
+                warning(ME.identifier,ME.message);
+                for indx=1:size(ME.stack)
+                    [~,filename,fileext] = fileparts(ME.stack(indx).file);
+                    funcname = ME.stack(indx).name;
+                    linenum  = num2str(ME.stack(indx).line);
+                    disp([funcname, ': ', filename, fileext, ' line ', linenum]);
+                end
+                
+                % halt the solver
+                this.sys.halt = true;
+                
+                % notify the widgets to refresh themselves
+                notify(this,'refresh');
             end
             
         end
