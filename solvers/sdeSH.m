@@ -115,10 +115,15 @@ function sol = sdeSH(odefun,sdefun,tspan,y0,options,varargin)
     
     % Get the time step from the InitialStep option (if it exists)
     if isfield(options,'InitialStep')
-        dt = options.InitialStep;
+        dt = options.InitialStep;       % may return dt=[]
     else
-        % Default to 101 steps in tspan
-        dt = (tspan(end) - tspan(1))/100;
+        dt = [];                        % use an empty time step
+    end
+        
+    % If the given time step is empty then ....
+    if isempty(dt)     
+        dt = 1;     % default time step
+        warning('sdeSH:InitialStep','Step size is undefined. Using InitialStep=%g',dt);
     end
         
     % If random number sequences have been by supplied by the user then we

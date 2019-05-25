@@ -76,8 +76,8 @@ function sol = odeEul(ode,tspan,y0,options,varargin)
     dt = odeget(options,'InitialStep');
     if isempty(dt)
         % Default InitialStep
-        dt = (tspan(end) - tspan(1))/100;
-        %warning('Step size is undefined. Using InitialStep=%g',dt);
+        dt = 1;
+        warning('odeEul:InitialStep','Step size is undefined. Using InitialStep=%g',dt);
     end
 
     % span the time domain in fixed steps
