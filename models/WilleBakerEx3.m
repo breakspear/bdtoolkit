@@ -67,7 +67,7 @@ function sys = WilleBakerEx3()
     sys.tspan = [0 20]; 
 
     % Specify DDE solvers and default options
-    sys.ddesolver = {@dde23};                  % DDE solvers
+    sys.ddesolver = {@dde23,@dde23a};          % DDE solvers
     sys.ddeoption = ddeset('RelTol',1e-6);     % DDE solver options    
     
     % Include the Latex (Equations) panel in the GUI
