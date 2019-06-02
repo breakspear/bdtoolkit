@@ -8,9 +8,9 @@ if ~exist('LinearODE.m', 'file')
     error('bdtoolkit/models is not in the matlab path');
 end
 
-if ~exist('sdeEM.m', 'file')
-    error('bdtoolkit/solvers is not in the matlab path');
-end
+%if ~exist('sdeEM.m', 'file')
+%    error('bdtoolkit/solvers is not in the matlab path');
+%end
 
 %%
 disp 'TESTING BOLDHRF';
@@ -134,6 +134,16 @@ disp '===';
 %%
 disp 'TESTING LinearODE';
 sys = LinearODE();
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING MorrisLecar';
+sys = MorrisLecar('Hopf');
+bdSysCheck(sys);
+sys = MorrisLecar('SNLC');
+bdSysCheck(sys);
+sys = MorrisLecar('Homoclinic');
 bdSysCheck(sys);
 disp '===';
 
