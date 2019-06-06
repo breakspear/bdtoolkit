@@ -4,7 +4,7 @@ classdef bdSpaceTime < bdPanel
     %  variables side-by-side as if they were arranged spatially.
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a-c,2018a)
+    %  Stewart Heitmann (2016a,2017a-c,2018a,2019a)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.

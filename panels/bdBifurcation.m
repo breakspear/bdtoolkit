@@ -509,12 +509,14 @@ classdef bdBifurcation < bdPanel
             
             % change the last plot line to a thin line
             if ~isempty(this.lastplot) && isvalid(this.lastplot)
-                set(this.lastplot, 'LineWidth',1, 'Color',[0.75 0.75 0.75]);
+                %set(this.lastplot, 'LineWidth',1, 'Color',[0.75 0.75 0.75]);
+                set(this.lastplot, 'LineWidth',1, 'Color',[0.5 0.5 0.5]);
             end
             
             % change the last fixed point to a gray dot
             if ~isempty(this.lastfp) && isvalid(this.lastfp)
-                set(this.lastfp, 'MarkerSize',2, 'Color',[0.75 0.75 0.75], 'MarkerFaceColor',[0.75 0.75 0.75]);
+                %set(this.lastfp, 'MarkerSize',2, 'Color',[0.75 0.75 0.75], 'MarkerFaceColor',[0.75 0.75 0.75]);
+                set(this.lastfp, 'MarkerSize',2, 'Color',[0 0 0], 'MarkerFaceColor',[0.75 0.75 0.75]);
             end
             
             % if the 3D VIEW menu is checked then plot 3D view else plot 2D view
@@ -527,7 +529,8 @@ classdef bdBifurcation < bdPanel
                     % plot the entire trajectory as a thin grey line (if transients are required)
                     if transflag
                         plot3(this.ax, p, y, z, ...
-                            'color',[0.75 0.75 0.75], ...
+                       ...     'color',[0.75 0.75 0.75], ...
+                            'color',[0.5 0.5 0.5], ...
                             'Tag','transient', ...
                             'HitTest','off');
                     end
@@ -537,7 +540,7 @@ classdef bdBifurcation < bdPanel
                         'color','k', ...
                         'Marker',markerstyle, ...
                         'LineStyle',linestyle, ...
-                        'Linewidth',1.5);
+                        'Linewidth',3);
                     
                     % Fixed points need highlighting 
                     if fixedpoint
@@ -582,7 +585,7 @@ classdef bdBifurcation < bdPanel
                         'color','k', ...
                         'Marker',markerstyle, ...
                         'LineStyle',linestyle, ...
-                        'Linewidth',1);
+                        'Linewidth',3);
 
                     % Fixed points need highlighting 
                     if fixedpoint

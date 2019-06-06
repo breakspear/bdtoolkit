@@ -207,7 +207,7 @@ classdef bdSpace2D < bdPanel
             this.ax.YLim = [0.5 nr+0.5];
 
             % update the title
-            title(this.ax,num2str(this.t,['Variable ' varname ' at time t=%g']));
+            title(this.ax,num2str(this.t,[varname '(t=%g)']));
         end
 
     end

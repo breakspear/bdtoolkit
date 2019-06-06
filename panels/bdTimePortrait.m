@@ -4,7 +4,7 @@ classdef bdTimePortrait < bdPanel
     %  the time traces of selected variables.
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a-c,2018a)
+    %  Stewart Heitmann (2016a,2017a-c,2019a)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -510,14 +510,24 @@ classdef bdTimePortrait < bdPanel
                         'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
                         'Visible',this.markmenu.Checked, 'Tag','Fgnd');
                     
-                    % plot the circle marker (upper plot)
+                    % plot the open circle marker (upper plot)
                     plot(this.ax1, this.t(indxt), mod1band(this.y1(valindx1,indxt),ylim1), ...
                         'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6, ...
                         'Visible',this.markmenu.Checked, 'Tag','Fgnd');
 
-                    % plot the circle marker (lower plot)
+                    % plot the open circle marker (lower plot)
                     plot(this.ax2, this.t(indxt), mod1band(this.y2(valindx2,indxt),ylim2), ...
                         'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6, ...
+                        'Visible',this.markmenu.Checked, 'Tag','Fgnd');
+
+                    % plot the close circle marker (upper plot)
+                    plot(this.ax1, this.t(end), mod1band(this.y1(valindx1,end),ylim1), ...
+                        'Marker','o', 'Color','k', 'MarkerFaceColor',[0.5 0.5 0.5], 'MarkerSize',6, ...
+                        'Visible',this.markmenu.Checked, 'Tag','Fgnd');
+
+                    % plot the closed circle marker (lower plot)
+                    plot(this.ax2, this.t(end), mod1band(this.y2(valindx2,end),ylim2), ...
+                        'Marker','o', 'Color','k', 'MarkerFaceColor',[0.5 0.5 0.5], 'MarkerSize',6, ...
                         'Visible',this.markmenu.Checked, 'Tag','Fgnd');
                     
                 case 'notworkingyet'
@@ -611,14 +621,24 @@ classdef bdTimePortrait < bdPanel
                         'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
                         'Visible',this.markmenu.Checked, 'Tag','Fgnd');
                     
-                    % plot the circle marker (upper plot)
+                    % plot the open circle marker (upper plot)
                     plot(this.ax1, this.t(indxt), this.y1(valindx1,indxt), ...
                         'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6, ...
                         'Visible',this.markmenu.Checked, 'Tag','Fgnd');
 
-                    % plot the circle marker (lower plot)
+                    % plot the open circle marker (lower plot)
                     plot(this.ax2, this.t(indxt), this.y2(valindx2,indxt), ...
                         'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6, ...
+                        'Visible',this.markmenu.Checked, 'Tag','Fgnd');
+
+                    % plot the closed circle marker (upper plot)
+                    plot(this.ax1, this.t(end), this.y1(valindx1,end), ...
+                        'Marker','o', 'Color','k', 'MarkerFaceColor',[0.5 0.5 0.5], 'MarkerSize',6, ...
+                        'Visible',this.markmenu.Checked, 'Tag','Fgnd');
+
+                    % plot the closed circle marker (lower plot)
+                    plot(this.ax2, this.t(end), this.y2(valindx2,end), ...
+                        'Marker','o', 'Color','k', 'MarkerFaceColor',[0.5 0.5 0.5], 'MarkerSize',6, ...
                         'Visible',this.markmenu.Checked, 'Tag','Fgnd');
             end
             
