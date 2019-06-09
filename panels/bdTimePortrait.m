@@ -491,24 +491,28 @@ classdef bdTimePortrait < bdPanel
                     % Modulo the plot lines into two separate bands (to avoid sawtooth effect)
                     [y1a,y1b] = mod2band(this.y1,ylim1);
                     [y2a,y2b] = mod2band(this.y2,ylim2);
-                    
-                    % plot the background traces as thin grey lines
-                    plot(this.ax1, this.t, [y1a',y1b'], 'color',[0.75 0.75 0.75], 'HitTest','off');
-                    plot(this.ax2, this.t, [y2a',y2b'], 'color',[0.75 0.75 0.75], 'HitTest','off');
 
+                    % if the TRANSIENT menu is enabled then  ...
+                    switch this.tranmenu.Checked
+                        case 'on'
+                            % plot the background traces as thin grey lines
+                            plot(this.ax1, this.t, [y1a',y1b'], 'color',[0.75 0.75 0.75], 'HitTest','off');
+                            plot(this.ax2, this.t, [y2a',y2b'], 'color',[0.75 0.75 0.75], 'HitTest','off');
+
+                            % plot the pentagram marker (upper plot)
+                            plot(this.ax1, this.t(1), mod1band(this.y1(valindx1,1),ylim1), ...
+                                'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
+                                'Visible',this.markmenu.Checked, 'Tag','Fgnd');
+
+                            % plot the pentagram marker (lower plot)
+                            plot(this.ax2, this.t(1), mod1band(this.y2(valindx2,1),ylim2), ...
+                                'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
+                                'Visible',this.markmenu.Checked, 'Tag','Fgnd');
+                    end
+                    
                     % (re)plot the non-transient part of the variable of interest as a heavy black line
                     plot(this.ax1, this.t(tindx), [y1a(valindx1,tindx); y1b(valindx1,tindx)], 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
-                    plot(this.ax2, this.t(tindx), [y2a(valindx2,tindx); y2b(valindx2,tindx)], 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
-                    
-                    % plot the pentagram marker (upper plot)
-                    plot(this.ax1, this.t(1), mod1band(this.y1(valindx1,1),ylim1), ...
-                        'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
-                        'Visible',this.markmenu.Checked, 'Tag','Fgnd');
-
-                    % plot the pentagram marker (lower plot)
-                    plot(this.ax2, this.t(1), mod1band(this.y2(valindx2,1),ylim2), ...
-                        'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
-                        'Visible',this.markmenu.Checked, 'Tag','Fgnd');
+                    plot(this.ax2, this.t(tindx), [y2a(valindx2,tindx); y2b(valindx2,tindx)], 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);                   
                     
                     % plot the open circle marker (upper plot)
                     plot(this.ax1, this.t(indxt), mod1band(this.y1(valindx1,indxt),ylim1), ...
@@ -603,24 +607,28 @@ classdef bdTimePortrait < bdPanel
                         'Tag','Fgnd');
 
                 case 'off'
-                    % plot the background traces as thin grey lines
-                    plot(this.ax1, this.t, this.y1', 'color',[0.75 0.75 0.75], 'HitTest','off');
-                    plot(this.ax2, this.t, this.y2', 'color',[0.75 0.75 0.75], 'HitTest','off');
+                    % if the TRANSIENT menu is enabled then  ...
+                    switch this.tranmenu.Checked
+                        case 'on'                   
+                            % plot the background traces as thin grey lines
+                            plot(this.ax1, this.t, this.y1', 'color',[0.75 0.75 0.75], 'HitTest','off');
+                            plot(this.ax2, this.t, this.y2', 'color',[0.75 0.75 0.75], 'HitTest','off');
 
+                            % plot the pentagram marker (upper plot)
+                            plot(this.ax1, this.t(1), this.y1(valindx1,1), ...
+                                'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
+                                'Visible',this.markmenu.Checked, 'Tag','Fgnd');
+
+                           % plot the pentagram marker (lower plot)
+                            plot(this.ax2, this.t(1), this.y2(valindx2,1), ...
+                                'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
+                                'Visible',this.markmenu.Checked, 'Tag','Fgnd');
+                    end
+                    
                     % (re)plot the non-transient part of the variable of interest as a heavy black line
                     plot(this.ax1, this.t(tindx), this.y1(valindx1,tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
                     plot(this.ax2, this.t(tindx), this.y2(valindx2,tindx), 'color','k', 'Marker',markerstyle, 'LineStyle',linestyle, 'Linewidth',1.5);
- 
-                   % plot the pentagram marker (upper plot)
-                    plot(this.ax1, this.t(1), this.y1(valindx1,1), ...
-                        'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
-                        'Visible',this.markmenu.Checked, 'Tag','Fgnd');
-                    
-                   % plot the pentagram marker (lower plot)
-                    plot(this.ax2, this.t(1), this.y2(valindx2,1), ...
-                        'Marker','p', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',10 , ...
-                        'Visible',this.markmenu.Checked, 'Tag','Fgnd');
-                    
+                     
                     % plot the open circle marker (upper plot)
                     plot(this.ax1, this.t(indxt), this.y1(valindx1,indxt), ...
                         'Marker','o', 'Color','k', 'MarkerFaceColor','y', 'MarkerSize',6, ...
