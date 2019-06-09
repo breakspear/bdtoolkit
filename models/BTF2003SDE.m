@@ -15,9 +15,9 @@
 %   gui = bdGUI(sys);           % Open the Brain Dynamics GUI.
 
 % Authors
-%   Stewart Heitmann (2017b,2017c,2018a)
+%   Stewart Heitmann (2017b,2017c,2018a,2019a)
 
-% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -82,12 +82,30 @@ function sys = BTF2003SDE(Kij)
         struct('name','phi',  'value',  0.7);
 
         % Ion channel parameters
-        struct('name','Gion', 'value', [1.1, 2.0, 6.70, 0.5]);     % Ion Conductances [gCa, gK, gNa, gL]
-        struct('name','Vion', 'value', [1.0,-0.7, 0.53,-0.5]);     % Nernst Potential [VCa, VK, VNa, VL]
+        struct('name','gCa',  'value', 1.10);           % Conductance of Ca
+        struct('name','gK',   'value', 2.00);           % Conductance of K
+        struct('name','gNa',  'value', 6.70);           % Conductance of Na
+        struct('name','gL',   'value', 0.50);           % Conductance of Leak
+        %struct('name','Gion', 'value', [1.1, 2.0, 6.70, 0.5]);     % Ion Conductances [gCa, gK, gNa, gL]
+        %struct('name','Vion', 'value', [1.0,-0.7, 0.53,-0.5]);     % Nernst Potential [VCa, VK, VNa, VL]
+        struct('name','VCa',  'value',  1.00);          % Nernst Potential of Ca
+        struct('name','VK',   'value', -0.70);          % Nernst Potential of K
+        struct('name','VNa',  'value',  0.53);          % Nernst Potential of Na
+        struct('name','VL',   'value', -0.50);          % Nernst Potential of Leak
                    
         % Gain parameters
-        struct('name','thrsh', 'value', [ 0.0, 0.0,-0.01, 0.00, 0.30]);    % Firing threshold [VT, ZT, TCa, TK, TNa]
-        struct('name','delta', 'value', [ 0.7, 0.7, 0.15, 0.30, 0.15]);    % Firing fun slope [deltaV, deltaZ, deltaCa, deltaK, deltaNa]
+        struct('name','VT',  'value', 0.0);     % Firing threshold VT
+        struct('name','ZT',  'value', 0.0);     % Firing threshold ZT
+        struct('name','TCa', 'value',-0.01);    % Firing threshold TCa
+        struct('name','TK',  'value', 0.00);    % Firing threshold TK
+        struct('name','TNa', 'value', 0.30);    % Firing threshold TNa      
+        %struct('name','thrsh', 'value', [ 0.0, 0.0,-0.01, 0.00, 0.30]);    % Firing threshold [VT, ZT, TCa, TK, TNa]
+        struct('name','deltaV', 'value', 0.7);  % Firing fun slope deltaV
+        struct('name','deltaZ', 'value', 0.7);  % Firing fun slope deltaZ
+        struct('name','deltaCa','value',0.15);  % Firing fun slope deltaCa
+        struct('name','deltaK', 'value',0.30);  % Firing fun slope deltaK
+        struct('name','deltaNa', 'value',0.15); % Firing fun slope deltaNa]     
+        %struct('name','delta', 'value', [ 0.7, 0.7, 0.15, 0.30, 0.15]);    % Firing fun slope [deltaV, deltaZ, deltaCa, deltaK, deltaNa]
 
         % Strength of subcortical input
         struct('name','I',    'value', 0.3);
@@ -143,10 +161,10 @@ function sys = BTF2003SDE(Kij)
         '\qquad b is the time constant of inhibition, ';
         '\qquad r is the number of NMDA receptors relative to the number of AMPA receptors,';
         '\qquad phi $=\frac{\phi}{\tau}$ is the temperature scaling factor,';
-        '\qquad Gion $= [g_{Ca},g_{K},g_{Na},g_L]$ are the ion conducances,';
-        '\qquad Vion $= [V_{Ca},V_{K},V_{Na},V_L]$ are the Nernst potentials,';
-        '\qquad thrsh $= [V_T,Z_T,T_{Ca},T_K,T_{Na}]$ are the gain thresholds,';
-        '\qquad delta $= [\delta_V,\delta_Z,\delta_{Ca},\delta_K,\delta_{Na}]$ are the gain slopes,';
+        '\qquad $g_{Ca},g_{K},g_{Na},g_L$ are the ion conducances,';
+        '\qquad $V_{Ca},V_{K},V_{Na},V_L$ are the Nernst potentials,';
+        '\qquad $V_T,Z_T,T_{Ca},T_K,T_{Na}$ are the gain thresholds,';
+        '\qquad $\delta_V,\delta_Z,\delta_{Ca},\delta_K,\delta_{Na}$ are the gain slopes,';
         '\qquad $I$ is the strength of the subcortical input.';
         '\qquad $\alpha$ and $\beta$ are the volatility of the \textit{additive} and \textit{multiplicative} noise terms, respectively.';
         };
@@ -167,38 +185,12 @@ end
 % The deterministic part of the model
 %   dY = sdeF(t,Y,Kij,a,b,r,phi,gion,Vion,thrsh,delta,I,alpha,beta) 
 % is from Breakspear, Terry & Friston (2003) Network: Comp Neural Syst (14).
-function dY = sdeF(~,Y,Kij,aee,aei,aie,ane,ani,b,C,r,phi,Gion,Vion,thrsh,delta,I,~,~)  
+function dY = sdeF(~,Y,Kij,aee,aei,aie,ane,ani,b,C,r,phi,gCa,gK,gNa,gL,VCa,VK,VNa,VL,VT,ZT,TCa,TK,TNa,deltaV,deltaZ,deltaCa,deltaK,deltaNa,I,~,~)  
     % Extract incoming values from Y
     Y = reshape(Y,[],3);        % reshape Y to 3 columns
     V = Y(:,1);                 % 1st column of Y contains vector V
     W = Y(:,2);                 % 2nd column of Y contains vector W    
     Z = Y(:,3);                 % 3rd column of Y contains vector Z
-
-    % Extract conductance parameters
-    gCa = Gion(1);
-    gK  = Gion(2);
-    gNa = Gion(3);
-    gL  = Gion(4);
-    
-    % Extract Nerst potentials
-    VCa = Vion(1);
-    VK  = Vion(2);
-    VNa = Vion(3);
-    VL  = Vion(4);
-    
-    % Extract Gain threshold parameters
-    VT  = thrsh(1);
-    ZT  = thrsh(2);
-    TCa = thrsh(3);
-    TK  = thrsh(4);
-    TNa = thrsh(5);
-    
-    % Extract Gain slope parameters
-    deltaV  = delta(1);
-    deltaZ  = delta(2);
-    deltaCa = delta(3);
-    deltaK  = delta(4);
-    deltaNa = delta(5);
     
     % firing-rate functions
     Qv = gain(V, VT, deltaV);       % (nx1) vector
@@ -237,7 +229,7 @@ end
 % returns the (Nxm) noise coefficients where N=3n is the number of state
 % variables and m=n is the number of noise sources. In this case
 % noise is only applied to the first state variable (which is V).
-function G = sdeG(~,Y,~,~,~,~,ane,~,~,~,~,~,~,~,~,~,~,alpha,beta)
+function G = sdeG(~,Y,~,~,~,~,ane,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,~,alpha,beta)
     % Extract incoming values from Y
     Y = reshape(Y,[],3);        % reshape Y to 3 columns
     V = Y(:,1);                 % 1st column of Y contains vector V

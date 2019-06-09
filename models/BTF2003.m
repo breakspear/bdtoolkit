@@ -17,9 +17,9 @@
 %
 % Authors
 %   Michael Breakspear (2017b)
-%   Stewart Heitmann (2017b,2017c,2018a)
+%   Stewart Heitmann (2017b,2017c,2018a,2019a)
 
-% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
@@ -83,16 +83,26 @@ function sys = BTF2003(Kij)
         struct('name','phi',  'value',  0.7);
 
         % Ion channel parameters
-        struct('name','Gion', 'value', [ 1.10,  2.00, 6.70,  0.5 ]);    % Ion Conductances [gCa, gK, gNa, gL]
-        struct('name','Vion', 'value', [ 1.00, -0.70, 0.53, -0.5 ]);    % Nernst Potential [VCa, VK, VNa, VL]
-        struct('name','thrsh', 'value', [-0.01,  0.00, 0.30] );         % Firing threshold [TCa, TK, TNa]
-        struct('name','delta', 'value', [ 0.15,  0.30, 0.15] );         % Firing fun slope [deltaCa, deltaK, deltaNa]
+        struct('name','gCa',  'value', 1.10);           % Conductance of Ca
+        struct('name','gK',   'value', 2.00);           % Conductance of K
+        struct('name','gNa',  'value', 6.70);           % Conductance of Na
+        struct('name','gL',   'value', 0.50);           % Conductance of Leak
+        struct('name','VCa',  'value',  1.00);          % Nernst Potential of Ca
+        struct('name','VK',   'value', -0.70);          % Nernst Potential of K
+        struct('name','VNa',  'value',  0.53);          % Nernst Potential of Na
+        struct('name','VL',   'value', -0.50);          % Nernst Potential of Leak
+        struct('name','TCa',  'value', -0.01 );         % Firing threshold of Ca
+        struct('name','TK',   'value',  0.00 );         % Firing threshold of K
+        struct('name','TNa',  'value',  0.30 );         % Firing threshold of Na
+        struct('name','deltaCa', 'value', 0.15 );       % Firing function slope for Ca
+        struct('name','deltaK',  'value', 0.30 );       % Firing function slope for K
+        struct('name','deltaNa', 'value', 0.15 );       % Firing function slope  for Na
                    
         % Gain parameters
-        struct('name','VT',    'value', zeros(n,1));               % [VT_1,...,VT_n]
-        struct('name','ZT',    'value', zeros(n,1));               % [ZT_1,...,ZT_n]
-        struct('name','deltaV','value', 0.7*ones(n,1));            % [deltaV_1,...,deltaV_n]
-        struct('name','deltaZ','value', 0.7*ones(n,1));            % [deltaZ_1,...,deltaZ_n]
+        struct('name','VT',    'value', zeros(n,1));        % [VT_1,...,VT_n]
+        struct('name','ZT',    'value', zeros(n,1));        % [ZT_1,...,ZT_n]
+        struct('name','deltaV','value', 0.7*ones(n,1));     % [deltaV_1,...,deltaV_n]
+        struct('name','deltaZ','value', 0.7*ones(n,1));     % [deltaZ_1,...,deltaZ_n]
 
         % Strength of subcortical input
         struct('name','I',    'value', 0.3);
@@ -141,12 +151,12 @@ function sys = BTF2003(Kij)
         '\qquad C is the relative coupling between (versus within) ensembles,';
         '\qquad r is the number of NMDA receptors relative to the number of AMPA receptors,';
         '\qquad phi $=\frac{\phi}{\tau}$ is the temperature scaling factor,';
-        '\qquad Gion $= [g_{Ca},g_{K},g_{Na},g_L]$,';
-        '\qquad Vion $= [V_{Ca},V_{K},V_{Na},V_L]$,';
-        '\qquad thrsh $= [T_{Ca},T_K,T_{Na}]$,';
-        '\qquad delta $= [\delta_{Ca},\delta_K,\delta_{Na}]$,';
-        '\qquad VT $= [V_T^{(1)},\dots,V_T^{(n)}]$';
-        '\qquad ZT $= [Z_T^{(1)},\dots,Z_T^{(n)}]$';
+        '\qquad $g_{Ca},g_{K},g_{Na},g_L$ are the conductances of the ion channels,';
+        '\qquad $V_{Ca},V_{K},V_{Na},V_L$ are the Nernst potentials of the ion channels,';
+        '\qquad $T_{Ca},T_K,T_{Na}$ are the firing thresholds of the ion channels,';
+        '\qquad $\delta_{Ca},\delta_K,\delta_{Na}$ are the slopes of the firing rate functions,';
+        '\qquad VT $= [V_T^{(1)},\dots,V_T^{(n)}]$,';
+        '\qquad ZT $= [Z_T^{(1)},\dots,Z_T^{(n)}]$,';
         '\qquad deltaV $= [\delta_V^{(1)},\dots,\delta_V^{(n)}]$,';
         '\qquad deltaZ $= [\delta_Z^{(1)},\dots,\delta_Z^{(n)}]$,';
         '\qquad $I$ is the strength of the subcortical input.';
@@ -168,34 +178,12 @@ function sys = BTF2003(Kij)
     sys.panels.bdSolverPanel = []; 
 end
 
-function dYdt = odefun(~,Y,Kij,aee,aei,aie,ane,ani,b,C,r,phi,Gion,Vion,thrsh,delta,VT,ZT,deltaV,deltaZ,I)  
+function dYdt = odefun(~,Y,Kij,aee,aei,aie,ane,ani,b,C,r,phi,gCa,gK,gNa,gL,VCa,VK,VNa,VL,TCa,TK,TNa,deltaCa,deltaK,deltaNa,VT,ZT,deltaV,deltaZ,I)  
     % Extract incoming values from Y
     Y = reshape(Y,[],3);        % reshape Y to 3 columns
     V = Y(:,1);                 % 1st column of Y contains vector V
     W = Y(:,2);                 % 2nd column of Y contains vector W    
     Z = Y(:,3);                 % 3rd column of Y contains vector Z
-
-    % Extract conductance parameters
-    gCa = Gion(1);
-    gK  = Gion(2);
-    gNa = Gion(3);
-    gL  = Gion(4);
-    
-    % Extract Nerst potentials
-    VCa = Vion(1);
-    VK  = Vion(2);
-    VNa = Vion(3);
-    VL  = Vion(4);
-    
-    % Extract Gain threshold parameters
-    TCa = thrsh(1);
-    TK  = thrsh(2);
-    TNa = thrsh(3);
-    
-    % Extract Gain slope parameters
-    deltaCa = delta(1);
-    deltaK  = delta(2);
-    deltaNa = delta(3);
     
     % Compute Firing-rate functions
     Qv = gain(V, VT, deltaV);       % (nx1) vector
