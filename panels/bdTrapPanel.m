@@ -42,6 +42,7 @@ classdef bdTrapPanel < bdPanel
     
     properties
         ax              % Handle to the trap axes
+        control         % Handle to the control panel
     end
 
     properties (Access=private) 
@@ -54,6 +55,9 @@ classdef bdTrapPanel < bdPanel
 
             % initialise the base class (specifically this.menu and this.tab)
             this@bdPanel(tabgroup);
+            
+            % expose the control panel to the user workspace (for debugging)
+            this.control = control;
             
             % assign default values to missing options in sys.panels.bdTrapPanel
             control.sys.panels.bdTrapPanel = bdTrapPanel.syscheck(control.sys);
