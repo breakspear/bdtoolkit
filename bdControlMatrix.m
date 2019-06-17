@@ -4,9 +4,9 @@ classdef bdControlMatrix < handle
     %  It is not intended to be called directly by users.
     % 
     %AUTHORS
-    %  Stewart Heitmann (2017d,2018a)
+    %  Stewart Heitmann (2017d,2018a,2019a)
 
-    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -69,6 +69,13 @@ classdef bdControlMatrix < handle
             xxxvalue = control.sys.(xxxdef)(xxxindx).value;
             xxxlim   = control.sys.(xxxdef)(xxxindx).lim;
 
+            % convert the data (which might be 3D) into a 2D image
+            if ndims(xxxvalue)>2
+                xxximage = xxxvalue(:,:,1);
+            else
+                xxximage = xxxvalue;
+            end
+            
             % remember our parent and the vertical offset
             this.parent = parent;
             
@@ -185,7 +192,7 @@ classdef bdControlMatrix < handle
             this.imgaxes = axes('Parent', this.panel, ...
                 'Units','pixels', ...
                 'Position',[col5+1 row1 col7-col5-gap-2 row3-row1-4]);
-            this.imgplot = imagesc(xxxvalue(:,:,1), ...
+            this.imgplot = imagesc(xxximage, ...
                 'Parent',this.imgaxes, ...
                 xxxlim);
             axis off;
@@ -416,6 +423,13 @@ classdef bdControlMatrix < handle
             xxxvalue = control.sys.(xxxdef)(xxxindx).value;
             xxxlim   = control.sys.(xxxdef)(xxxindx).lim;
 
+            % convert the data (which might be 3D) into a 2D image
+            if ndims(xxxvalue)>2
+                xxximage = xxxvalue(:,:,1);
+            else
+                xxximage = xxxvalue;
+            end
+
             % update the min box widget
             this.minbox.Value = xxxlim(1);
             this.minbox.String = num2str(xxxlim(1),'%0.4g');
@@ -425,7 +439,7 @@ classdef bdControlMatrix < handle
             this.maxbox.String = num2str(xxxlim(2),'%0.4g');
 
             % update the contents of the image widget
-            this.imgplot.CData = xxxvalue(:,:,1);
+            this.imgplot.CData = xxximage;
             
             % update the colour scale limits of the image
             this.imgaxes.CLim = [this.minbox.Value, this.maxbox.Value] + [-1e-6, 1e-6];
