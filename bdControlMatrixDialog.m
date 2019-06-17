@@ -4,9 +4,9 @@ classdef bdControlMatrixDialog < handle
     %   It should not be called directly by the user. 
     % 
     %AUTHORS
-    %  Stewart Heitmann (2017c-d,2018b)
+    %  Stewart Heitmann (2017c-d,2018b,2019a)
 
-    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -212,17 +212,23 @@ classdef bdControlMatrixDialog < handle
     methods (Access=private)
         % TABLE cell edit callback
         function CellEditCallback(this,xxxdef,xxxindx)
-            %disp('CellEditCallback'); 
+            %disp('bdControlMatrixDialog.CellEditCallback'); 
+            
             % get the data from the table
             data = get(this.datatable,'data');
             
+            % update the data image
+            this.dataimage.CData = data;
+
             % update the control panel.
             this.control.sys.(xxxdef)(xxxindx).value = data;
             
-            % notify all widgets (which includes ourself) that sys.xxxdef has changed
-            %notify(this.control,'refresh');
+            % notify all widgets (except ourself) that sys.xxxdef has changed
+            this.listener1.Enabled = 0;
+            this.listener2.Enabled = 0;
             notify(this.control,xxxdef);
-
+            this.listener1.Enabled = 1;
+            this.listener2.Enabled = 1;
             
             % tell the solver to recompute the solution
             if ~this.control.sys.halt
@@ -237,7 +243,6 @@ classdef bdControlMatrixDialog < handle
             this.control.sys.(xxxdef)(xxxindx).value = zeros(valsize);
             
             % notify all widgets (which includes ourself) that sys.xxxdef has changed
-            %notify(this.control,'refresh');
             notify(this.control,xxxdef);
             
             % tell the solver to recompute the solution
@@ -258,7 +263,6 @@ classdef bdControlMatrixDialog < handle
             this.control.sys.(xxxdef)(xxxindx).value = (hi-lo)*rand(valsize) + lo;
             
             % notify all widgets (which includes ourself) that sys.xxxdef has changed
-            %notify(this.control,'refresh');
             notify(this.control,xxxdef);
             
             % tell the solver to recompute the solution
@@ -281,7 +285,6 @@ classdef bdControlMatrixDialog < handle
                 0.05*(hi-lo)*(rand(valsize)-0.5);
             
             % notify all widgets (which includes ourself) that sys.xxxdef has changed
-            %notify(this.control,'refresh');
             notify(this.control,xxxdef);
             
             % tell the solver to recompute the solution
@@ -308,7 +311,6 @@ classdef bdControlMatrixDialog < handle
                 this.control.sys.(xxxdef)(xxxindx).lim = [minval maxval];
                 
                 % notify all widgets (which includes ourself) that sys.xxxdef has changed
-                %notify(this.control,'refresh');
                 notify(this.control,xxxdef);
 
                 % notify all display panels to redraw themselves
@@ -334,7 +336,6 @@ classdef bdControlMatrixDialog < handle
                 this.control.sys.(xxxdef)(xxxindx).lim = [minval maxval];
                 
                 % notify all widgets (which includes ourself) that sys.xxxdef has changed
-                %notify(this.control,'refresh');
                 notify(this.control,xxxdef);
 
                 % notify all display panels to redraw themselves
@@ -345,7 +346,14 @@ classdef bdControlMatrixDialog < handle
         % HALT button callback
         function HaltCallback(this,haltbutton)
             this.control.sys.halt = haltbutton.Value;   % get the HALT button state
-            notify(this.control,'refresh');             % notify all widgets to refresh themselves
+
+            % notify all widgets (except ourself) that to refresh themselves
+            this.listener1.Enabled = 0;
+            this.listener2.Enabled = 0;
+            notify(this.control,'refresh');
+            this.listener1.Enabled = 1;
+            this.listener2.Enabled = 1;
+
             if ~this.control.sys.halt
                 notify(this.control,'recompute');       % tell the solver to recompute
             end
