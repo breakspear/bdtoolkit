@@ -1,27 +1,21 @@
-%bdSetValue  Write a value in a pardef/vardef/lagdef cell array.
+%bdGetLag  Read a lag parameter from a system structure
 %Usage:
-%   yyydef = bdSetValue(xxxdef,'name',val)
+%   [val,idx] = bdGetLag(sys,'name')
 %where
-%   xxxdef is the incoming pardef, vardef or lagdef cell array.
-%   name is the string name of the element to be updated.
-%   val is the new value to be applied.
-%   yyydef is the returned cell array.
+%   sys is the system structure containing the lag parameter definition.
+%   'name' is the string name of the lag parameter (sys.lagdef(idx).name).
+%   val is its corresponding value (sys.lagdef(idx).value).
+%   idx is its index in the sys.pardef array.
+%   All output parameters are returned empty if no matching name was found.
 %
-%EXAMPLE
-%  pardef = [ struct('name','a', 'value', 1);
-%             struct('name','b', 'value',[2,3,4]);
-%             struct('name','c', 'value',[5 6; 7 8]) ];
-%  pardef = bdSetValue(pardef,'b',[3 6 9]);
-%  bdGetValue(pardef,'b')
-%
-%  ans =
-%     3     6     9
-%
+%bdGetLar(sys) displays the names of all lag parameters in sys.
+%bdGetLag(sys,'name') is equivalent to bdGetValue(sys.lagdef,'name')
+%  
 %SEE ALSO
-%  bdSetValues, bdSetPar, bdSetVar, bdSetLag
+%  bdGetVar, bdGetPar, bdGetValue, bdGetValues
 %
 %AUTHORS
-%  Stewart Heitmann (2016a,2017a,2019a)
+%  Stewart Heitmann (2019a)
 
 % Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -50,14 +44,20 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function yyydef = bdSetValue(xxxdef,name,val)
-    yyydef = xxxdef;
-    nvar = numel(yyydef);
-    for indx=1:nvar
-        if strcmp(yyydef(indx).name,name)==1
-            yyydef(indx).value = val;
-            return
-        end
+function [val,idx] = bdGetLag(sys,name)
+    switch nargin
+        case 0
+            throwAsCaller(MException('bdGetLag:Syntax','Not enough input arguments'));
+        case 1
+            if isfield(sys,'lagdef')
+                disp({sys.lagdef.name});
+            end
+        case 2
+            if ~isfield(sys,'lagdef')
+               throwAsCaller(MException('bdGetLag:lagdef','No lag parameters are defined in sys'));
+            end
+            [val,idx] = bdGetValue(sys.lagdef,name);
+        otherwise
+            throwAsCaller(MException('bdGetLag:Syntax','Too many input arguments'));
     end
-    throwAsCaller(MException('bdSetValue:NotFound',['Name ''' name ''' not found in xxxdef']));
 end

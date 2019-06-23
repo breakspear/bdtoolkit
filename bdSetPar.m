@@ -1,27 +1,19 @@
-%bdSetValue  Write a value in a pardef/vardef/lagdef cell array.
+%bdSetPar  Write a parameter value into a system structure
 %Usage:
-%   yyydef = bdSetValue(xxxdef,'name',val)
+%   sys = bdSetPar(sys,'name',val)
 %where
-%   xxxdef is the incoming pardef, vardef or lagdef cell array.
-%   name is the string name of the element to be updated.
-%   val is the new value to be applied.
-%   yyydef is the returned cell array.
+%   sys is the system structure containing the parameter definition.
+%   'name' is the string name of the parameter (sys.pardef.name).
+%   val is its new value (sys.pardef.value)
 %
-%EXAMPLE
-%  pardef = [ struct('name','a', 'value', 1);
-%             struct('name','b', 'value',[2,3,4]);
-%             struct('name','c', 'value',[5 6; 7 8]) ];
-%  pardef = bdSetValue(pardef,'b',[3 6 9]);
-%  bdGetValue(pardef,'b')
-%
-%  ans =
-%     3     6     9
-%
+%sys = bdSetPar(sys,'name',val) is equivalent to 
+%sys.pardef = bdSetValue(sys.pardef,'name',val)
+%  
 %SEE ALSO
-%  bdSetValues, bdSetPar, bdSetVar, bdSetLag
+%  bdSetVar, bdSetLag, bdSetValue, bdSetValues
 %
 %AUTHORS
-%  Stewart Heitmann (2016a,2017a,2019a)
+%  Stewart Heitmann (2019a)
 
 % Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
 % All rights reserved.
@@ -50,14 +42,20 @@
 % LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
-function yyydef = bdSetValue(xxxdef,name,val)
-    yyydef = xxxdef;
-    nvar = numel(yyydef);
-    for indx=1:nvar
-        if strcmp(yyydef(indx).name,name)==1
-            yyydef(indx).value = val;
-            return
-        end
+function sys = bdSetPar(sys,name,val)
+    switch nargin
+        case {0 1 2}
+            throwAsCaller(MException('bdSetPar:Syntax','Not enough input arguments'));
+        case 3
+            if ~isfield(sys,'pardef')
+                throwAsCaller(MException('bdSetPar:InvalidSys','Invalid system structure'));
+            end
+            try
+                sys.pardef = bdSetValue(sys.pardef,name,val);
+            catch ME
+                throwAsCaller(MException('bdSetPar:NotFound',['Name ''' name ''' not found in sys.pardef']));
+            end
+        otherwise
+            throwAsCaller(MException('bdSetPar:Syntax','Too many input arguments'));
     end
-    throwAsCaller(MException('bdSetValue:NotFound',['Name ''' name ''' not found in xxxdef']));
 end

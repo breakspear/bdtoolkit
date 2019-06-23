@@ -16,7 +16,10 @@
 %
 %  val =
 %     2     3     4
-%  
+%
+%SEE ALSO
+%  bdGetValues, bdGetPar, bdGetVar, bdGetLag
+%
 %AUTHORS
 %  Stewart Heitmann (2016a,2017a,2017b)
 
