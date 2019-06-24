@@ -35,7 +35,7 @@ classdef (Abstract) bdPanel < handle
     % ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     % POSSIBILITY OF SUCH DAMAGE.
     
-    properties (Access=protected)
+    properties %(Access=protected)
         menu                                % Handle to the panel's toolbar uimenu
         tab                                 % Handle to the panel's uitab
     end

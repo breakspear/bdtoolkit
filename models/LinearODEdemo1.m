@@ -13,15 +13,15 @@ sys = LinearODE();
 
 % set ODE parameters a=1, b=-1, c=10, d=-2 
 disp('Configuring the parameters');
-sys.pardef = bdSetValue(sys.pardef,'a',1);
-sys.pardef = bdSetValue(sys.pardef,'b',-1);
-sys.pardef = bdSetValue(sys.pardef,'c',10);
-sys.pardef = bdSetValue(sys.pardef,'d',-2);
+sys = bdSetPar(sys,'a',1);
+sys = bdSetPar(sys,'b',-1);
+sys = bdSetPar(sys,'c',10);
+sys = bdSetPar(sys,'d',-2);
 
 % set ODE variables x and y to random initial conditions 
 disp('Configuring the initial conditions');
-sys.vardef = bdSetValue(sys.vardef,'x',rand);
-sys.vardef = bdSetValue(sys.vardef,'y',rand);
+sys = bdSetVar(sys,'x',rand);
+sys = bdSetVar(sys,'y',rand);
 
 % integrate from t=0 to t=10 using the ode45 solver
 disp('Calling the solver');

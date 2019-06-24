@@ -79,7 +79,7 @@ function sys = WilsonCowan()
     sys.tspan = [0 300];
     
     % Default ODE options
-    sys.odeoption.RelTol = 1e-5;
+    sys.odeoption.RelTol = 1e-6;
     
     % Latex Panel
     sys.panels.bdLatexPanel.latex = {

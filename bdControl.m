@@ -4,7 +4,7 @@ classdef bdControl < handle
     %  by bdGUI. It is not intended to be called directly by users.
     % 
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a-c,2018a-b)
+    %  Stewart Heitmann (2016a,2017a-c,2018a-b,2019a)
 
     % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -340,18 +340,26 @@ classdef bdControl < handle
                 'Position',[col4-1 ypos col5-col4-5 boxh]);
 
             % RUN button
-            this.ui_run = uicontrol('Style','pushbutton', ...
-                'String','RUN', ...
-                'Value',0, ...
-                'Visible','off', ...
-                'HorizontalAlignment','center', ...
-                'FontUnits','pixels', ...
-                'FontSize',12, ...
-                'Parent', scroll.panel, ...
-                'Callback', @(src,~) notify(this,'recompute'), ...
-                'ToolTipString', 'Run (evolve) the simulation once more', ...
-                'Position',[col4-1 ypos col5-col4-5 boxh]);
-
+%             %this.ui_run = uicontrol('Style','pushbutton', ...
+%             this.ui_run = uicontrol('Style','togglebutton', ...
+%                 'String','RUN', ...
+%                 'Value',0, ...
+%                 'Visible','off', ...
+%                 'HorizontalAlignment','center', ...
+%                 'FontUnits','pixels', ...
+%                 'FontSize',12, ...
+%                 'Parent', scroll.panel, ...
+%            ...     'Callback', @(src,~) notify(this,'recompute'), ...
+%                 'Callback', @(src,~) this.RunCallback(src), ...
+%                 'ToolTipString', 'Run (evolve) the simulation once more', ...
+%                 'Position',[col4-1 ypos col5-col4-5 boxh]);          
+            
+            % Custom java RUN button.
+            % We use a java button here because the standard ui pushbutton
+            % does not allow us to detect when the button is held down
+            % (armed) prior to its release. 
+            this.ui_run = bdControlRun(this,scroll.panel,[col4-1 ypos col5-col4-5 boxh]);
+            
             % next row
             ypos = ypos + 1.25*boxh;   
             
@@ -743,8 +751,9 @@ classdef bdControl < handle
                 %this.ui_progress.String = '-';
                 
                 % disable the RUN button
+                %this.ui_run.Value = 0;
                 this.ui_run.Enable = 'off';
-                this.ui_run.ForegroundColor = 'r';
+                %this.ui_run.ForegroundColor = 'r';
             else
                 % change the solver stats to black
                 this.ui_nsteps.ForegroundColor = 'k';
@@ -755,7 +764,7 @@ classdef bdControl < handle
 
                 % enable the RUN button
                 this.ui_run.Enable = 'on';
-                this.ui_run.ForegroundColor = 'k';
+                %this.ui_run.ForegroundColor = 'k';
             end
             
             % refresh the EVOLVE button
@@ -1095,6 +1104,12 @@ classdef bdControl < handle
             end
             
             try
+                % if the RUN button is armed then flag a recompute
+                if this.ui_run.isArmed()
+                %if this.ui_run.Value()
+                    this.recomputeflag = true;
+                end
+                
                 % recompute the solution if required
                 if this.recomputeflag
                     this.recomputeflag = false;
@@ -1227,7 +1242,13 @@ classdef bdControl < handle
             % tell the solver to recompute the solution
             notify(this,'recompute');
         end
-                
+           
+        % Callback for the RUN button
+        function RunCallback(this,button)
+            if button.Value
+                notify(this,'recompute');
+            end
+        end
     end
 end
 

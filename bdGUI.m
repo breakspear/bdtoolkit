@@ -1,22 +1,29 @@
 classdef bdGUI < handle
     %bdGUI - The Brain Dynamics Toolbox Graphical User Interface (GUI).
     %
-    %   gui = bdGUI();
-    %   gui = bdGUI(sys);
-    %   gui = bdGUI(sys,'sol',sol);
-    %
     %The bdGUI application is the graphical user interface for the Brain
     %Dynamics Toolbox. It loads and runs the dynamical model defined by
-    %the system structure (sys). The system structure defines the names
-    %and initial values of the model's parameters and state variables.
-    %It also contains a handle to the model-specific function which defines
-    %the dynamical equation to be solved. The system structure may be
-    %passed to bdGUI as an input parameter or loaded from a mat file.
-    %If bdGUI is invoked with no parameters then it prompts the user to
-    %load a mat file which is assumed to contain a valid sys. 
-    %A previously computed solution (sol) for the model can be loaded in
-    %tandem with the model's system structure. If no solution is provided
-    %then bdGUI automatically computes one at start-up.
+    %the given system structure (sys). That structure contains a handle
+    %to the model's custom ODE function (sys.odefun). It also defines
+    %the names and and initial values of the system parameters/variables.
+    %
+    %   gui = bdGUI(sys);
+    %
+    %The system structure may be passed to bdGUI as an input parameter or
+    %loaded from a mat file. If bdGUI is invoked with no parameters then it
+    %prompts the user to load a mat file which is assumed to contain a sys.
+    %
+    %   gui = bdGUI();
+    %
+    %A previously computed solution (sol) can be loaded in tandem with the
+    %model's system structure. If no solution is provided then bdGUI
+    %automatically computes one at start-up.
+    %
+    %   gui = bdGUI(sys,'sol',sol);
+    %
+    %The call to bdGUI returns a handle (gui) to the bdGUI class. That
+    %handle can be used to control the graphical user interface from the
+    %matlab workspace.
     %
     %EXAMPLE
     %   >> cd bdtoolkit
@@ -24,22 +31,18 @@ classdef bdGUI < handle
     %   >> sys = LinearODE();
     %   >> gui = bdGUI(sys);
     %
-    %The call to bdGUI returns a handle (gui) to the bdGUI class. That
-    %handle can be used to control the graphical user interface from the
-    %matlab workspace.
-    %
     %   gui = bdGUI with properties:
     %       version: '2018b'
-    %           fig: [1×1 Figure]
-    %           par: [1×1 struct]
-    %          var0: [1×1 struct]
-    %           var: [1×1 struct]
-    %             t: [1×612 double]
-    %         tindx: [1×612 logical]
-    %           lag: [1×1 struct]
-    %           sys: [1×1 struct]
-    %           sol: [1×1 struct]
-    %        panels: [1×1 struct]
+    %           fig: [1x1 Figure]
+    %           par: [1x1 struct]
+    %          var0: [1x1 struct]
+    %           var: [1x1 struct]
+    %             t: [1x612 double]
+    %         tindx: [1x612 logical]
+    %           lag: [1x1 struct]
+    %           sys: [1x1 struct]
+    %           sol: [1x1 struct]
+    %        panels: [1x1 struct]
     %          halt: 0
     %        evolve: 0
     %       perturb: 0
@@ -60,14 +63,17 @@ classdef bdGUI < handle
     %   gui.evolve is the state of the EVOLVE button (read-write)
     %   gui.perturb is the state of the PERTURB button (read-write)
     %
-    %SEE ALSO
-    %   1. Getting Started in the Handbook for the Brain Dynamics Toolbox.
-    %   2. The Toolbox Basics course at http://www.bdtoolbox.org
+    %SOFTWARE MANUAL
+    %   Handbook for the Brain Dynamics Toolbox. Heitmann & Breakspear.
+    %
+    %ONLINE COURSES (bdtoolbox.org)
+    %   Toolbox Basics - Getting started with the Brain Dynamics Toolbox
+    %   Modeller's Workshop - Building custom models with the Brain Dynamics Toolbox
     %
     %AUTHORS
-    %   Stewart Heitmann (2016a-2018b)
+    %   Stewart Heitmann (2016a-2019a)
 
-    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -96,7 +102,7 @@ classdef bdGUI < handle
     % POSSIBILITY OF SUCH DAMAGE.
 
     properties (Constant=true)
-        version = '2018b';      % version number of the toolbox
+        version = '2019a';      % version number of the toolbox
     end
     
     properties
@@ -231,14 +237,6 @@ classdef bdGUI < handle
         function par = get.par(this)
             % return a struct with paramater values stored by name
             par = this.control.par;
-            
-            % the old way
-            %par = [];
-            %for indx = 1:numel(this.control.sys.pardef)
-            %    name = this.control.sys.pardef(indx).name;
-            %    value = this.control.sys.pardef(indx).value;
-            %    par.(name) = value;
-            %end
         end 
         
         % Set par property
@@ -525,7 +523,7 @@ classdef bdGUI < handle
                    'Label','About', ...
                    'Callback',@(~,~) SystemAbout() );
             uimenu('Parent',menuobj, ...
-                   'Label','New', ...
+                   'Label','Duplicate', ...
                    'Callback', @(~,~) bdGUI(this.control.sys) );
             uimenu('Parent',menuobj, ...
                    'Label','Load', ...
@@ -542,10 +540,12 @@ classdef bdGUI < handle
             function SystemAbout()
                 msg = {'The Brain Dynamics Toolbox'
                        ['Version ' this.version]
-                       'http://www.bdtoolbox.org'
+                       'https://bdtoolbox.org'
                        ''
-                       'Stewart Heitmann, Michael Breakspear'
-                       'Copyright (C) 2016-2018'
+                       'Project Leaders'
+                       'Stewart Heitmann & Michael Breakspear'
+                       ''
+                       'Copyright (C) 2016-2019'
                        'QIMR Berghofer Medical Research Institute'
                        };
                 uiwait(helpdlg(msg,'About'));
