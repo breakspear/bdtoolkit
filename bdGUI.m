@@ -36,7 +36,7 @@ classdef bdGUI < handle
     %           fig: [1x1 Figure]
     %           par: [1x1 struct]
     %          var0: [1x1 struct]
-    %           var: [1x1 struct]
+    %          var1: [1x1 struct]
     %             t: [1x612 double]
     %         tindx: [1x612 logical]
     %           lag: [1x1 struct]
@@ -52,7 +52,7 @@ classdef bdGUI < handle
     %   gui.fig is a handle to the application figure (read/write)
     %   gui.par is a struct containing the model parameters (read/write)
     %   gui.var0 is a struct containing the initial conditions (read/write)
-    %   gui.var is a struct containing the computed time-series (read-only)
+    %   gui.var1 is a struct containing the computed time-series (read-only)
     %   gui.t contains the time steps for the computed solution (read-only)
     %   gui.tindx contains the indices of the non-transient time steps (read-only)
     %   gui.lag is a struct containing the DDE lag parameters (read/write)
@@ -112,7 +112,7 @@ classdef bdGUI < handle
     properties (Dependent)
         par             % system parameters (read/write)
         var0            % initial conditions (read/write)
-        var             % solution varables (read only)
+        var1            % solution varables (read only)
         t               % solution time steps (read only)
         tindx           % logical index of the non-transient time steps (read only)
         lag             % DDE time lags (read/write)
@@ -345,9 +345,9 @@ classdef bdGUI < handle
         end
         
         % Get var (solution variables) property
-        function var = get.var(this)
+        function var1 = get.var1(this)
             % return a struct with the solution variables stored by name
-            var = [];
+            var1 = [];
             solindx = 0;
             for indx = 1:numel(this.control.sys.vardef)
                 % get name and length of variable
@@ -356,7 +356,7 @@ classdef bdGUI < handle
                 % compute the index of the variable in sol.y
                 solindx = solindx(end) + (1:len);
                 % return the solution variables
-                var.(name) = this.control.sol.y(solindx,:);
+                var1.(name) = this.control.sol.y(solindx,:);
             end
         end
 
@@ -374,16 +374,6 @@ classdef bdGUI < handle
         function lag = get.lag(this)
             % return a struct with initial values stored by name
             lag = this.control.lag;
-            
-            %the old way
-            %lag = [];
-            %if isfield(this.control.sys,'lagdef')
-            %    for indx = 1:numel(this.control.sys.lagdef)
-            %        name = this.control.sys.lagdef(indx).name;
-            %        value = this.control.sys.lagdef(indx).value;
-            %        lag.(name) = value;
-            %    end
-            %end
         end 
         
         % Set lag property
@@ -523,9 +513,6 @@ classdef bdGUI < handle
                    'Label','About', ...
                    'Callback',@(~,~) SystemAbout() );
             uimenu('Parent',menuobj, ...
-                   'Label','Duplicate', ...
-                   'Callback', @(~,~) bdGUI(this.control.sys) );
-            uimenu('Parent',menuobj, ...
                    'Label','Load', ...
                    'Callback', @(~,~) bdGUI() );
             uimenu('Parent',menuobj, ...
@@ -534,6 +521,9 @@ classdef bdGUI < handle
             uimenu('Parent',menuobj, ...
                    'Label','Export', ...
                    'Callback', @(~,~) this.SystemExportDialog() );
+            uimenu('Parent',menuobj, ...
+                   'Label','Duplicate', ...
+                   'Callback', @(~,~) bdGUI(this.control.sys) );
             uimenu('Parent',menuobj, ...
                    'Label','Quit', ...
                    'Separator','on', ...
@@ -861,11 +851,11 @@ classdef bdGUI < handle
                 data.var0 = this.var0;
             end
 
-            % find the var checkbox widget in the dialog box
+            % find the var1 checkbox widget in the dialog box
             objs = findobj(dlg,'Tag','bdSaveVar1');
             if objs.Value>0
                 % include the initial values in the outgoing data
-                data.var1 = this.var;
+                data.var1 = this.var1;
             end
             
             % find the time checkbox widget in the dialog box
@@ -888,9 +878,9 @@ classdef bdGUI < handle
         
         % Construct the System-Export Dialog
         function SystemExportDialog(this)
-            labs = {'gui','fig','par','var0','var','t','lag','sys','sol'};
-            vars = {'gui','fig','par','var0','var','t','lag','sys','sol'};
-            vals = {this, this.fig, this.par,this.var0,this.var,this.t,this.lag,this.sys,this.sol};
+            labs = {'gui','fig','par','var0','var1','t','lag','sys','sol'};
+            vars = {'gui','fig','par','var0','var1','t','lag','sys','sol'};
+            vals = {this, this.fig, this.par,this.var0,this.var1,this.t,this.lag,this.sys,this.sol};
             export2wsdlg(labs,vars,vals,'Export to Workspace',false(numel(labs),1));
         end
         
