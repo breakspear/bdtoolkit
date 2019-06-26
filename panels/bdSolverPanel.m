@@ -430,8 +430,8 @@ classdef bdSolverPanel < bdPanel
             tabh = this.tab.Position(4);
 
             % compute axes geometry
-            axesh = (tabh-160)/2;
-            axesw = tabw-120;
+            axesh = (tabh-160)/2;       axesh = max(axesh,0);
+            axesw = tabw-120;           axesw = max(axesw,0);
 
             % resize axes
             this.ax1.Position(2) = 140 + axesh;

@@ -213,6 +213,7 @@ classdef bdControl < handle
             x = 5;
             y = 5;
             w = figw - bdControl.cpanelw - 5;
+            w = max(w,0);
             h = 50;
             this.spanel.Position = [x y w h];
         end

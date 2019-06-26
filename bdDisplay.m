@@ -89,8 +89,8 @@ classdef bdDisplay < handle
             % new geometry of the container uipanel
             x = 0;
             y = this.dpanely;
-            w = figw - bdControl.cpanelw - 10;
-            h = figh - this.dpanely - this.dpanelm;
+            w = figw - bdControl.cpanelw - 10;          w = max(w,0);
+            h = figh - this.dpanely - this.dpanelm;     h = max(h,0);
             this.dpanel.Position = [x y w h];
         end
         
