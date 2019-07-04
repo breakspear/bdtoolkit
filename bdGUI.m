@@ -174,13 +174,19 @@ classdef bdGUI < handle
                         parse(syntax,varargin{:});
                         sys = syntax.Results.sys;
                         sol = syntax.Results.sol;
-
+                        
                         % check that the sol and sys are compatabile
                         solsyscheck(sol,sys);
+                        
+                        % ensure that sys.tspan matches the computed solution
+                        if ~isempty(sol) && isfield(sol,'x')
+                            sys.tspan = sol.x([1 end]);
+                        end
                         
                     catch ME
                         ME.throwAsCaller;
                     end
+                    
             end     
                                     
             % construct figure
@@ -451,6 +457,10 @@ classdef bdGUI < handle
  
         % Set halt property
         function set.halt(this,value)
+            % error handling
+            if ~isnumeric(value) || numel(value)~=1
+                throwAsCaller(MException('bdGUI:halt','gui.halt must be 0 or 1'));
+            end
             % update the halt property of the control panel
             this.control.sys.halt = logical(value);
             % notify all control panel widgets to refresh themselves
@@ -469,6 +479,10 @@ classdef bdGUI < handle
  
         % Set evolve property
         function set.evolve(this,value)
+            % error handling
+            if ~isnumeric(value) || numel(value)~=1
+                throwAsCaller(MException('bdGUI:evolve','gui.evolve must be 0 or 1'));
+            end
             % update the evolve property of the control panel
             this.control.sys.evolve = logical(value);
             % notify the panel widgets to refresh themselves
@@ -487,6 +501,10 @@ classdef bdGUI < handle
  
         % Set perturb property
         function set.perturb(this,value)
+            % error handling
+            if ~isnumeric(value) || numel(value)~=1
+                throwAsCaller(MException('bdGUI:perturb','gui.perturb must be 0 or 1'));
+            end
             % update the perturb property of the control panel
             this.control.sys.perturb = logical(value);
             % notify the widgets to refresh themselves
@@ -997,13 +1015,14 @@ function solcheck(sol)
 end
 
 % Cross-checks the format of the sol struct against the sys struct.
-function solsyscheck(sol,sys)
+function  solsyscheck(sol,sys)
     if isempty(sol)
         return
     end
     if numel(bdGetValues(sys.vardef)) ~= size(sol.y,1)
         throw(MException('bdGUI:badsol','The sol and sys structs are incompatible'));
     end
+    
 end
 
 % Prompt the user to load a sys struct (and optionally a sol struct) from a matlab file. 
