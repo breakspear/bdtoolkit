@@ -2,10 +2,10 @@ classdef bdGUI < handle
     %bdGUI - The Brain Dynamics Toolbox Graphical User Interface (GUI).
     %
     %The bdGUI application is the graphical user interface for the Brain
-    %Dynamics Toolbox. It loads and runs the dynamical model defined by
-    %the given system structure (sys). That structure contains a handle
-    %to the model's custom ODE function (sys.odefun). It also defines
-    %the names and and initial values of the system parameters/variables.
+    %Dynamics Toolbox. It loads and runs the model defined by the given
+    %system structure (sys). That structure contains a handle to the
+    %model's ODE function (sys.odefun). It also defines the names and
+    %initial values of the system parameters/variables.
     %
     %   gui = bdGUI(sys);
     %
@@ -32,13 +32,15 @@ classdef bdGUI < handle
     %   >> gui = bdGUI(sys);
     %
     %   gui = bdGUI with properties:
-    %       version: '2018b'
+    %       version: '2019a'
     %           fig: [1x1 Figure]
     %           par: [1x1 struct]
     %          var0: [1x1 struct]
     %          var1: [1x1 struct]
-    %             t: [1x612 double]
-    %         tindx: [1x612 logical]
+    %         tspan: [0 20]
+    %          tval: 0
+    %             t: [1x116 double]
+    %         tindx: [1x116 logical]
     %           lag: [1x1 struct]
     %           sys: [1x1 struct]
     %           sol: [1x1 struct]
@@ -53,18 +55,20 @@ classdef bdGUI < handle
     %   gui.par is a struct containing the model parameters (read/write)
     %   gui.var0 is a struct containing the initial conditions (read/write)
     %   gui.var1 is a struct containing the computed time-series (read-only)
+    %   gui.tspan is the time span of the simulation (read/write)
+    %   gui.tval is the current value of the time slider (read/write)
     %   gui.t contains the time steps for the computed solution (read-only)
     %   gui.tindx contains the indices of the non-transient time steps (read-only)
     %   gui.lag is a struct containing the DDE lag parameters (read/write)
     %   gui.sys is a copy of the model's system structure (read-only)
     %   gui.sol is the output of the solver (read-only)
     %   gui.panels contains the outputs of the display panels (read-only)
-    %   gui.halt is the state of the HALT button (read-write)
-    %   gui.evolve is the state of the EVOLVE button (read-write)
-    %   gui.perturb is the state of the PERTURB button (read-write)
+    %   gui.halt is the state of the HALT button (read/write)
+    %   gui.evolve is the state of the EVOLVE button (read/write)
+    %   gui.perturb is the state of the PERTURB button (read/write)
     %
     %SOFTWARE MANUAL
-    %   Handbook for the Brain Dynamics Toolbox. Heitmann & Breakspear.
+    %   Handbook for the Brain Dynamics Toolbox: Version 2019a.
     %
     %ONLINE COURSES (bdtoolbox.org)
     %   Toolbox Basics - Getting started with the Brain Dynamics Toolbox
@@ -113,6 +117,8 @@ classdef bdGUI < handle
         par             % system parameters (read/write)
         var0            % initial conditions (read/write)
         var1            % solution varables (read only)
+        tspan           % time domain (read/write)
+        tval            % time slider value (read/write) 
         t               % solution time steps (read only)
         tindx           % logical index of the non-transient time steps (read only)
         lag             % DDE time lags (read/write)
@@ -350,7 +356,7 @@ classdef bdGUI < handle
             this.control.RecomputeWait();         
         end
         
-        % Get var (solution variables) property
+        % Get var1 (solution variables) property
         function var1 = get.var1(this)
             % return a struct with the solution variables stored by name
             var1 = [];
@@ -366,6 +372,73 @@ classdef bdGUI < handle
             end
         end
 
+        % Get tspan (time domain) property
+        function tspan = get.tspan(this)
+            tspan = this.control.sys.tspan;
+        end 
+        
+        % Set tspan (time domain) property
+        function set.tspan(this,tspan)
+            % error handling
+            if ~isnumeric(tspan) || numel(tspan)~=2
+                throwAsCaller(MException('bdGUI:tspan','gui.tspan must contain exactly two numeric values'));
+            end
+            if tspan(1) >= tspan(2)
+                throwAsCaller(MException('bdGUI:tspan','gui.tspan=[t0 t1] must have t0<t1'));
+            end
+            
+            % update the system structure
+            this.control.sys.tspan = tspan;
+            this.control.sys.tval = max(tspan(1),this.control.sys.tval);
+            this.control.sys.tval = min(tspan(2),this.control.sys.tval);
+            
+            % Notify the control panel to refresh its widgets
+            notify(this.control,'refresh');
+            
+            % recompute and wait until complete
+            this.control.RecomputeWait();         
+        end
+        
+        % Get tval (time slider value) property
+        function tval = get.tval(this)
+            tval = this.control.sys.tval;
+        end
+        
+        % Set tval (time slider value) property
+        function set.tval(this,tval)
+            % error handling
+            if ~isnumeric(tval) || numel(tval)~=1
+                throwAsCaller(MException('bdGUI:tval','gui.tval must be numeric'));
+            end
+            
+            % update the system structure
+            this.control.sys.tval = tval;
+
+            % adjust tspan if necessary
+            Tspan = this.control.sys.tspan;
+            if tval<Tspan(1) || tval>Tspan(2)
+                Tspan(1) = min(Tspan(1),tval);
+                Tspan(2) = max(Tspan(2),tval);
+                this.control.sys.tspan = Tspan;
+            
+                % Notify the control panel to refresh its widgets
+                notify(this.control,'refresh');
+            
+                % recompute and wait until complete
+                this.control.RecomputeWait();
+            else
+                % Notify the control panel to refresh its widgets
+                notify(this.control,'refresh');
+
+                % update the indicies of the non-tranient time steps in sol.x
+                this.control.tindx = (this.control.sol.x >= this.control.sys.tval);
+
+                % Notify all panels to redraw
+                notify(this.control,'redraw');                
+                drawnow;
+            end
+        end
+        
         % Get t (solution time steps) property
         function t = get.t(this)
             t = this.control.sol.x;
