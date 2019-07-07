@@ -3,9 +3,9 @@ classdef bdCorrPanel < bdPanel
     %   Displays the linear correlation matrix for the system variables.
     %
     %AUTHORS
-    %  Stewart Heitmann (2016a,2017a,2017c,2018a)
+    %  Stewart Heitmann (2016a,2017a,2017c,2018a,2019a)
 
-    % Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+    % Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
     % All rights reserved.
     %
     % Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,6 @@ classdef bdCorrPanel < bdPanel
 
             % configure the pull-down menu
             this.menu.Label = control.sys.panels.bdCorrPanel.title;
-            this.InitCalibrateMenu(control);
             this.InitTransientsMenu(control);
             this.InitExportMenu(control);
             this.InitCloseMenu(control);
@@ -72,6 +71,14 @@ classdef bdCorrPanel < bdPanel
             this.tab.Title = control.sys.panels.bdCorrPanel.title;
             this.InitSubpanel(control);
 
+            % construct the color map
+            cmapG = [linspace(0,1,32)'; linspace(1,1,32)'];
+            cmapB = [linspace(0,1,32)'; linspace(1,0,32)'];
+            cmapR = [linspace(1,1,32)'; linspace(1,0,32)'];
+            cmap = [cmapR, cmapG, cmapB];
+            colormap(this.ax,cmap);
+            caxis(this.ax,[-1 1]);
+            
             % listen to the control panel for redraw events
             this.listener = addlistener(control,'redraw',@(~,~) this.redraw(control));    
         end
@@ -151,25 +158,7 @@ classdef bdCorrPanel < bdPanel
     
     
     methods (Access=private)
-        
-        % Initialise the CALIBRATE menu item
-        function InitCalibrateMenu(this,control)
-            % construct the menu item
-            uimenu(this.menu, ...
-               'Label','Calibrate Axes', ...
-                'Callback', @CalibrateMenuCallback );
-            
-            % Menu callback function
-            function CalibrateMenuCallback(~,~)
-                % adjust the color axis limits of the correlation martix
-                hi = max(this.R(:));    % Get the maximum value in R
-                lo = min(this.R(:));    % Get the minimum value in R
-                clim = bdPanel.RoundLim(lo - 1e-4, hi + 1e-4);
-                caxis(this.ax, clim);
-            end
-
-        end
-        
+               
         % Initiliase the TRANISENTS menu item
         function InitTransientsMenu(this,control)
             % get the default transient menu setting from sys.panels
