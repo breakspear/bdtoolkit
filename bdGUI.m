@@ -622,7 +622,7 @@ classdef bdGUI < handle
 
             % Callback for System-About menu
             function SystemAbout()
-                dlg = dialog('Position',[300 300 500 300],'Name','Brain Dynamics Toolbox');
+                dlg = dialog('Position',[300 300 500 300],'Name',['Brain Dynamics Toolbox: Version ' this.version]);
                 ax = axes('Parent',dlg, 'Position',[0 0 1 1]);
                 img = imread('About.png');
                 imshow(img,'Parent',ax);
