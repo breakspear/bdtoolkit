@@ -622,17 +622,13 @@ classdef bdGUI < handle
 
             % Callback for System-About menu
             function SystemAbout()
-                dlg = dialog('Position',[300 300 750 480],'Name','About');
-                uicontrol('Parent',dlg, 'Position',[20 20 70 25], ...
+                dlg = dialog('Position',[300 300 500 300],'Name','Brain Dynamics Toolbox');
+                ax = axes('Parent',dlg, 'Position',[0 0 1 1]);
+                img = imread('About.png');
+                imshow(img,'Parent',ax);
+                uicontrol('Parent',dlg, 'Position',[430 20 50 25], ...
                     'String','Close', ...
                     'Callback',@(src,evnt) delete(dlg));
-                ax = axes('Parent',dlg, 'Position',[0.5 0.05 0.475 0.9]);
-                img = imread('CoverArt.png');
-                imshow(img,'Parent',ax);
-                xlim(ax,[950 1875])
-                text(ax,-300,0,{'Brain Dynamics','Toolbox'},'color','k','FontName','Times','FontWeight','bold','FontSize',48, 'VerticalAlignment','top')
-                text(ax,-300,450,['Version ' this.version],'color','k','FontName','Times','FontWeight','normal','FontSize',32)
-                text(ax,-300,700,'bdtoolbox.org','color','k','FontName','Times','FontWeight','bold','FontSize',32)
             end
             
         end
