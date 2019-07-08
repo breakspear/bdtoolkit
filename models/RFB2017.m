@@ -13,7 +13,7 @@
 % Authors
 %   Stewart Heitmann (2017b,2018a)
 
-% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without

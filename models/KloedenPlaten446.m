@@ -10,7 +10,7 @@
 %   Matthew Aburn (2016a)
 %   Stewart Heitmann (2016a,2017a,2017c,2018a)
  
-% Copyright (C) 2016-2018 QIMR Berghofer Medical Research Institute
+% Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
 % All rights reserved.
 %
 % Redistribution and use in source and binary forms, with or without
