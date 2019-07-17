@@ -1,6 +1,13 @@
 # Release Notes
 # Brain Dynamics Toolbox
 
+## Version 2019a
+Released July 2019
+
+Improved error handling. New and updated models: BTF2003, FisherKolmogoriv1D, MorrisLecar, Pendulum, Tsodyks1997, WaveEquation1D, WaveEquation2D.  New command-line tools: bdSetPar, bdSetVar, bdSetLab, bdGetPar, bdGetVar, bdGetLag. System-Export menu allows direct export to workspace. File-Save supports large files. Smoother nullclines in the Phase Portrait. Trajectory endpoints are now marked by a filled circle. RUN and RAND buttons now repond continuously when held down. New color map for the Correlation panel. New About Dialog. Minor bug fixes. 
+
+Requires MATLAB 2015a or newer.
+
 ## Version 2018b
 Released 21 Oct 2018
 

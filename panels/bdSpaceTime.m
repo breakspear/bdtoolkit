@@ -50,6 +50,7 @@ classdef bdSpaceTime < bdPanel
         tranmenu        % handle to TRANSIENTS menu item
         markmenu        % handle to MARKERS menu item
         blendmenu       % handle to BLEND menu item
+        modulomenu      % handle to MODULO menu item
         submenu         % handle to subpanel selector menu item
         listener        % handle to our listener object
     end
@@ -73,6 +74,8 @@ classdef bdSpaceTime < bdPanel
             this.InitMarkerMenu(control);
             this.InitBlendMenu(control);
             this.InitClipMenu(control);
+            this.InitModuloMenu(control);
+            this.InitColorMenu(control);
             this.InitExportMenu(control);
             this.InitCloseMenu(control);
 
@@ -245,11 +248,11 @@ classdef bdSpaceTime < bdPanel
             end
 
             % construct the menu item
-            this.blendmenu = uimenu(this.menu, ...
+            uimenu(this.menu, ...
                 'Label','Clipping', ...
                 'Checked',clipcheck, ...
                 'Callback', @ClipMenuCallback);
-
+            
             % Menu callback function
             function ClipMenuCallback(menuitem,~)
                 % toggle the surface clipping and the menu state
@@ -263,7 +266,85 @@ classdef bdSpaceTime < bdPanel
                 end
             end
         end
+        
+        % Initiliase the MODULO menu item
+        function InitModuloMenu(this,control)
+            % get the default clipping menu setting from sys.panels
+            if control.sys.panels.bdSpaceTime.modulo
+                modulocheck = 'on';
+            else
+                modulocheck = 'off';
+            end
 
+            % construct the menu item
+            this.modulomenu = uimenu(this.menu, ...
+                'Label','Modulo', ...
+                'Checked',modulocheck, ...
+                'Callback', @ModuloMenuCallback);
+            
+            % Menu callback function
+            function ModuloMenuCallback(menuitem,~)
+                % toggle the modulo menu state
+                switch menuitem.Checked
+                    case 'on'
+                        menuitem.Checked='off';
+                    case 'off'
+                        menuitem.Checked='on';
+                end
+                % redraw this panel only
+                this.redraw(control);
+            end
+        end
+
+        % Initiliase the COLORMAP menu item
+        function InitColorMenu(this,control)
+            % construct the menu item and its children
+            colormenu = uimenu(this.menu, 'Label','Colormap');
+            uimenu(colormenu, 'Label','parula',    'Checked','on',  'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','jet',       'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','hsv',       'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','hot',       'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','cool',      'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','spring',    'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','summer',    'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','autumn',    'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','winter',    'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','gray',      'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','bone',      'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','copper',    'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','pink',      'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','lines',     'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','colorcube', 'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','prism',     'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','flag',      'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+            uimenu(colormenu, 'Label','circular',  'Checked','off', 'Callback', @ColorMenuCallback, 'Tag','ColormapMenu');
+
+            % Menu callback function
+            function ColorMenuCallback(menuitem,~)
+                % uncheck all color menu items
+                objs = findobj(colormenu,'Tag','ColormapMenu');
+                for idx=1:numel(objs)
+                    objs(idx).Checked='off';
+                end
+                
+                % check the chosen menu
+                menuitem.Checked='on';
+                
+                % apply the colormap to the axes
+                switch menuitem.Label
+                    case 'circular'
+                        % custom colormap
+                        x = linspace(-pi,pi,64);
+                        b = 0.5*sin(x-pi/2)+0.5;
+                        r = 0.5*sin(x+pi/2)+0.5;
+                        g = r;
+                        colormap(this.ax,[r',g',b']);
+                    otherwise
+                        colormap(this.ax,menuitem.Label);                
+                end
+            end
+        end
+        
         % Initialise the EXPORT menu item
         function InitExportMenu(this,~)
             % construct the menu item
@@ -353,6 +434,14 @@ classdef bdSpaceTime < bdPanel
             % get the solution data (including the transient part)
             this.t = control.sol.x;
             this.y = control.sol.y(solindx,:);
+
+            % if the MODULO menu is enabled then modulo the data
+            switch this.modulomenu.Checked
+                case 'on'
+                    ylo = varlim(1);
+                    yhi = varlim(2);
+                    this.y = mod(this.y-ylo, yhi-ylo) + ylo;
+            end
             
             % get the number of rows in the solution
             n = size(this.y,1);
@@ -412,6 +501,7 @@ classdef bdSpaceTime < bdPanel
             syspanel.markers = true;
             syspanel.blend = false;
             syspanel.clipping = false;
+            syspanel.modulo = false;
             
             % Nothing more to do if sys.panels.bdSpaceTime is undefined
             if ~isfield(sys,'panels') || ~isfield(sys.panels,'bdSpaceTime')
@@ -435,12 +525,17 @@ classdef bdSpaceTime < bdPanel
             
             % sys.panels.bdSpaceTime.blend
             if isfield(sys.panels.bdSpaceTime,'blend')
-                syspanel.grid = sys.panels.bdSpaceTime.blend;
+                syspanel.blend = sys.panels.bdSpaceTime.blend;
             end
             
             % sys.panels.bdSpaceTime.clipping
             if isfield(sys.panels.bdSpaceTime,'clipping')
                 syspanel.grid = sys.panels.bdSpaceTime.clipping;
+            end
+            
+            % sys.panels.bdSpaceTime.modulo
+            if isfield(sys.panels.bdSpaceTime,'modulo')
+                syspanel.modulo = sys.panels.bdSpaceTime.modulo;
             end           
         end
         
