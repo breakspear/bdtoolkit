@@ -1,6 +1,6 @@
 # Brain Dynamics Toolbox
 
-##Version 2018b
+##Version 2019b
 
 The [Brain Dynamics Toolbox](http://www.bdtoolbox.org) is an open-source software toolbox for simulating dynamical systems in neuroscience. It is for students and researchers who wish to explore numerical models  using Matlab.
 
