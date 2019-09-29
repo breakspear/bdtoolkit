@@ -53,8 +53,8 @@ function sys = HodgkinHuxley()
     sys.vardef = [ 
         struct('name','V', 'value',-65,      'lim',[-90 50]);
         struct('name','m', 'value',0.0527,   'lim',[0 1]);
-        struct('name','h', 'value',0.597,    'lim',[0 1])
         struct('name','n', 'value',0.317,    'lim',[0 1]);
+        struct('name','h', 'value',0.597,    'lim',[0 1])
         ];
     
     % Default time span
