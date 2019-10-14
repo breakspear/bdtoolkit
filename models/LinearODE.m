@@ -9,23 +9,23 @@ function sys = LinearODE()
     %   sys = LinearODE();      % construct the system struct
     %   gui = bdGUI(sys);       % open the Brain Dynamics GUI
     % 
-    % Example 2: Using the Brain Dynamics command-line solver
-    %   sys = LinearODE();                              % system struct
-    %   sys.pardef = bdSetValue(sys.pardef,'a',1);      % parameter a=1
-    %   sys.pardef = bdSetValue(sys.pardef,'b',-1);     % parameter b=-1
-    %   sys.pardef = bdSetValue(sys.pardef,'c',10);     % parameter c=10
-    %   sys.pardef = bdSetValue(sys.pardef,'d',-2);     % parameter d=-2
-    %   sys.vardef = bdSetValue(sys.vardef,'x',rand);   % variable x=rand
-    %   sys.vardef = bdSetValue(sys.vardef,'y',rand);   % variable y=rand
-    %   tspan = [0 10];                                 % soln time span
-    %   sol = bdSolve(sys,tspan);                       % call the solver
-    %   tplot = 0:0.1:10;                               % plot time domain
-    %   Y = bdEval(sol,tplot);                          % extract solution
-    %   plot(tplot,Y);                                  % plot the result
+    % Example 2: Using the Brain Dynamics command-line tools
+    %   sys = LinearODE();                 % system struct
+    %   sys = bdSetPar(sys,'a',1);         % parameter a=1
+    %   sys = bdSetPar(sys,'b',-1);        % parameter b=-1
+    %   sys = bdSetPar(sys,'c',10);        % parameter c=10
+    %   sys = bdSetPar(sys,'d',-2);        % parameter d=-2
+    %   sys = bdSetVar(sys,'x',rand);      % variable x=rand
+    %   sys = bdSetVar(sys,'y',rand);      % variable y=rand
+    %   tspan = [0 10];                    % soln time span
+    %   sol = bdSolve(sys,tspan);          % call the solver
+    %   tplot = 0:0.1:10;                  % plot time domain
+    %   Y = bdEval(sol,tplot);             % extract solution
+    %   plot(tplot,Y);                     % plot the result
     %   xlabel('time'); ylabel('x,y');
     %
     % Authors
-    %   Stewart Heitmann (2017a,2018a)
+    %   Stewart Heitmann (2017a,2018a,2019)
 
     % Copyright (C) 2016-2019 QIMR Berghofer Medical Research Institute
     % All rights reserved.
@@ -97,6 +97,7 @@ function sys = LinearODE()
     % ODE solver options (optional)
     sys.odeoption.RelTol = 1e-6;        % Relative Tolerance
     sys.odeoption.Jacobian = @jacfun;   % Handle to Jacobian function 
+    sys.odeoption.InitialStep = 0.01;   % Required by odeEul solver
 end
 
 % The ODE function.
