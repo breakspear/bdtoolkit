@@ -132,6 +132,16 @@ bdSysCheck(sys);
 disp '===';
 
 %%
+disp 'TESTING KuramotoSakaguchi';
+n = randi(10);
+disp(num2str(n,'n=%d'));
+Kij = rand(n);
+Aij = rand(n)
+sys = KuramotoSakaguchi(Kij,Aij);
+bdSysCheck(sys);
+disp '===';
+
+%%
 disp 'TESTING LinearODE';
 sys = LinearODE();
 bdSysCheck(sys);
