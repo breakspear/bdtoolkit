@@ -89,15 +89,14 @@ function sys = HodgkinHuxley()
         '\qquad $g_{Na}, g_K, g_L$ are the maximal conductances of the ion channels,';
         '\qquad $E_{Na}, E_K, E_L$ are the reversal potentials of the ion chanels.';
         '';
-        'The injection current ($I$) is the principal parameter of interest for'
-        'this model. The equations are described further in Chapter 6 of';
-        'the Handbook for the Brain Dynamics Toolbox (Version 2018b).';
+        'The external current ($I$) is the principal parameter of interest.';
         '';
         '\textbf{References}';
         'Hodgkin, Huxley (1952) A quantitative description of membrane current and';
         '\quad its application to conduction and excitation in a nerve. J Physiol 117';
         'Hansel, Mato, Meunier (1993) Phase Dynamics for Weakly Coupled Hodgkin-';
         '\quad Huxley Neurons. Europhys Lett 23 (5)';
+        'Handbook for the Brain Dynamics Toolbox (Version 2018b), Chapter 6.';
         };
     
     % Time-Portrait panel
