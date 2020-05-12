@@ -166,6 +166,24 @@ bdSysCheck(sys);
 disp '===';
 
 %%
+disp 'TESTING Pospischil2008('RS')';
+sys = Pospischil2008('RS');
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING Pospischil2008('FS')';
+sys = Pospischil2008('FS');
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING Pospischil2008('IB')';
+sys = Pospischil2008('IB');
+bdSysCheck(sys);
+disp '===';
+
+%%
 disp 'TESTING RFB2017';
 sys = RFB2017();
 bdSysCheck(sys);
