@@ -3,7 +3,7 @@ function syscheck(sys)
     %Use syscheck to check the validity of a user-defined sys struct.
     %
     %EXAMPLE
-    %  >> sys = LinearODE2D();
+    %  >> sys = LinearODE();
     %  >> syscheck(sys);
     %
     %  sys struct format is OK

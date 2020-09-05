@@ -58,6 +58,30 @@ bdSysCheck(sys);
 disp '===';
 
 %%
+disp 'TESTING EI0D';
+sys = EI0D();
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING EIE0D';
+sys = EIE0D();
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING EI1D';
+sys = EI1D(200);
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING EIE1D';
+sys = EIE1D(200);
+bdSysCheck(sys);
+disp '===';
+
+%%
 disp 'TESTING Epileptor2014ODE';
 sys = Epileptor2014ODE();
 bdSysCheck(sys);
@@ -148,6 +172,12 @@ bdSysCheck(sys);
 disp '===';
 
 %%
+disp 'TESTING Lorenz';
+sys = Lorenz();
+bdSysCheck(sys);
+disp '===';
+
+%%
 disp 'TESTING MorrisLecar';
 sys = MorrisLecar('Hopf');
 bdSysCheck(sys);
@@ -162,6 +192,18 @@ disp 'TESTING OrnsteinUhlenbeck';
 n = randi(10);
 disp(num2str(n,'n=%d'));
 sys = OrnsteinUhlenbeck(n);
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING Othmer1997';
+sys = Othmer1997();
+bdSysCheck(sys);
+disp '===';
+
+%%
+disp 'TESTING Pendulum';
+sys = Pendulum();
 bdSysCheck(sys);
 disp '===';
 
